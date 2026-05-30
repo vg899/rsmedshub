@@ -51,6 +51,9 @@
       <button data-target="panel-marketing" class="admin-nav-btn flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left whitespace-nowrap cursor-pointer">
         <i class="fa-solid fa-rectangle-ad text-lg w-5"></i>Promo & Marketing
       </button>
+      <button data-target="panel-categories" class="admin-nav-btn flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left whitespace-nowrap cursor-pointer">
+        <i class="fa-solid fa-layer-group text-lg w-5"></i>Category Manager
+      </button>
     </nav>
   </aside>
 
@@ -546,6 +549,86 @@
 
             <div class="h-64 overflow-y-auto border border-slate-100 rounded-xl bg-slate-50/50 p-2 space-y-2" id="coupon-list-container">
               <!-- Coupons managed dynamically -->
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ================================= PANEL 6: CATEGORIES MANAGEMENT ================================= -->
+      <section id="panel-categories" class="admin-panel hidden space-y-6">
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          <!-- Category Creator & Modifier -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4 lg:col-span-1 h-fit">
+            <h3 id="category-form-title" class="text-xs font-black text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-1.5 uppercase tracking-wider font-display">
+              <i class="fa-solid fa-plus text-teal-500"></i> Add New Category
+            </h3>
+            
+            <form id="form-category" class="space-y-4">
+              <div class="space-y-3">
+                <div>
+                  <label class="block text-[10px] font-black text-slate-500 uppercase tracking-wide mb-1.5">Category Code</label>
+                  <input type="text" id="category-code" required placeholder="E.g., DIABETES" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-black outline-none focus:border-teal-500 uppercase">
+                  <p class="text-[9px] text-slate-400 mt-1">Unique identifier (letters/underscores only).</p>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-black text-slate-500 uppercase tracking-wide mb-1.5">Category Name</label>
+                  <input type="text" id="category-name" required placeholder="E.g., Diabetes Care" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-teal-500">
+                </div>
+                <div>
+                  <label class="block text-[10px] font-black text-slate-500 uppercase tracking-wide mb-1.5">Initial Status</label>
+                  <select id="category-status" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-teal-500">
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <button type="submit" id="btn-save-category" class="flex-1 bg-teal-500 hover:bg-teal-600 text-white font-bold py-2.5 rounded-xl text-xs transition-all tracking-wide shadow shadow-teal-100 flex items-center justify-center gap-2 cursor-pointer">
+                  Save Category
+                </button>
+                <button type="button" id="btn-cancel-category-edit" class="hidden px-3 bg-slate-150 hover:bg-slate-200 text-slate-600 font-bold py-2.5 rounded-xl text-xs transition-all cursor-pointer">
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Category Table List & Search Search controls -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4 lg:col-span-2">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+              <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5 font-display">
+                <i class="fa-solid fa-layer-group text-indigo-500"></i> Active Operational Categories
+              </h3>
+              <!-- Category Search Input -->
+              <div class="relative w-full sm:w-64">
+                <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+                  <i class="fa-solid fa-magnifying-glass text-slate-400 text-xs"></i>
+                </span>
+                <input type="text" id="category-search" placeholder="Search code or name..." class="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg text-xs outline-none focus:border-teal-500">
+              </div>
+            </div>
+
+            <!-- Categories Table UI -->
+            <div class="overflow-x-auto border border-slate-150 rounded-xl">
+              <table class="w-full text-left text-xs border-collapse font-sans">
+                <thead>
+                  <tr class="bg-slate-55 bg-slate-50 border-b border-slate-100 text-slate-500 uppercase font-bold text-[9px] tracking-wider">
+                    <th class="p-3">Category Code</th>
+                    <th class="p-3">Category Name</th>
+                    <th class="p-3">Status</th>
+                    <th class="p-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="category-table-body" class="divide-y divide-slate-100">
+                  <!-- Categories will inject dynamically -->
+                  <tr>
+                    <td colspan="4" class="p-4 text-center text-slate-400 font-medium">Loading categories tracker...</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
 

@@ -158,72 +158,9 @@
         <h4 class="text-xs font-black text-slate-900 uppercase tracking-widest flex items-center gap-1.5 font-display">
           <span class="w-1.5 h-3.5 bg-blue-600 rounded-full"></span> Categories
         </h4>
-        <div class="grid grid-cols-4 gap-2">
-          
-          <!-- Category 1: Diabetes -->
-          <button class="cat-badge-btn group flex flex-col items-center justify-center p-2.5 rounded-2xl bg-white border border-slate-100 hover:border-emerald-500/30 hover:shadow-md transition-all cursor-pointer focus:outline-none" data-category="Diabetes">
-            <div class="w-9 h-9 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center mb-1 group-hover:scale-110 transition-all shrink-0">
-              <i class="fa-solid fa-droplet text-sm"></i>
-            </div>
-            <span class="text-[8px] font-black text-slate-700 uppercase tracking-tight text-center truncate w-full">Diabetes</span>
-          </button>
-
-          <!-- Category 2: Heart Care -->
-          <button class="cat-badge-btn group flex flex-col items-center justify-center p-2.5 rounded-2xl bg-white border border-slate-100 hover:border-emerald-500/30 hover:shadow-md transition-all cursor-pointer focus:outline-none" data-category="Heart Care">
-            <div class="w-9 h-9 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center mb-1 group-hover:scale-110 transition-all shrink-0">
-              <i class="fa-solid fa-heart-pulse text-sm"></i>
-            </div>
-            <span class="text-[8px] font-black text-slate-700 uppercase tracking-tight text-center truncate w-full">Heart Care</span>
-          </button>
-
-          <!-- Category 3: Vitamins -->
-          <button class="cat-badge-btn group flex flex-col items-center justify-center p-2.5 rounded-2xl bg-white border border-slate-100 hover:border-emerald-500/30 hover:shadow-md transition-all cursor-pointer focus:outline-none" data-category="Wellness & Vitamins">
-            <div class="w-9 h-9 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center mb-1 group-hover:scale-110 transition-all shrink-0">
-              <i class="fa-solid fa-bottle-droplet text-sm"></i>
-            </div>
-            <span class="text-[8px] font-black text-slate-700 uppercase tracking-tight text-center truncate w-full">Vitamins</span>
-          </button>
-
-          <!-- Category 4: Baby Care -->
-          <button class="cat-badge-btn group flex flex-col items-center justify-center p-2.5 rounded-2xl bg-white border border-slate-100 hover:border-emerald-500/30 hover:shadow-md transition-all cursor-pointer focus:outline-none" data-category="Baby Care">
-            <div class="w-9 h-9 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center mb-1 group-hover:scale-110 transition-all shrink-0">
-              <i class="fa-solid fa-baby text-sm"></i>
-            </div>
-            <span class="text-[8px] font-black text-slate-700 uppercase tracking-tight text-center truncate w-full">Baby Care</span>
-          </button>
-
-          <!-- Category 5: Allergy -->
-          <button class="cat-badge-btn group flex flex-col items-center justify-center p-2.5 rounded-2xl bg-white border border-slate-100 hover:border-emerald-500/30 hover:shadow-md transition-all cursor-pointer focus:outline-none" data-category="Allergies">
-            <div class="w-9 h-9 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center mb-1 group-hover:scale-110 transition-all shrink-0">
-              <i class="fa-solid fa-capsules text-sm"></i>
-            </div>
-            <span class="text-[8px] font-black text-slate-700 uppercase tracking-tight text-center truncate w-full">Allergy</span>
-          </button>
-
-          <!-- Category 6: Pain Relief -->
-          <button class="cat-badge-btn group flex flex-col items-center justify-center p-2.5 rounded-2xl bg-white border border-slate-100 hover:border-emerald-500/30 hover:shadow-md transition-all cursor-pointer focus:outline-none" data-category="Fever & Cold">
-            <div class="w-9 h-9 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center mb-1 group-hover:scale-110 transition-all shrink-0">
-              <i class="fa-solid fa-bolt text-sm"></i>
-            </div>
-            <span class="text-[8px] font-black text-slate-700 uppercase tracking-tight text-center truncate w-full">Pain Relief</span>
-          </button>
-
-          <!-- Category 7: Personal Care -->
-          <button class="cat-badge-btn group flex flex-col items-center justify-center p-2.5 rounded-2xl bg-white border border-slate-100 hover:border-emerald-500/30 hover:shadow-md transition-all cursor-pointer focus:outline-none" data-category="Personal Care">
-            <div class="w-9 h-9 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center mb-1 group-hover:scale-110 transition-all shrink-0">
-              <i class="fa-solid fa-pump-soap text-sm"></i>
-            </div>
-            <span class="text-[8px] font-black text-slate-700 uppercase tracking-tight text-center truncate w-full block">Personal Care</span>
-          </button>
-
-          <!-- Category 8: Healthcare Devices -->
-          <button class="cat-badge-btn group flex flex-col items-center justify-center p-2.5 rounded-2xl bg-white border border-slate-100 hover:border-emerald-500/30 hover:shadow-md transition-all cursor-pointer focus:outline-none" data-category="Prescription">
-            <div class="w-9 h-9 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center mb-1 group-hover:scale-110 transition-all shrink-0">
-              <i class="fa-solid fa-stethoscope text-sm"></i>
-            </div>
-            <span class="text-[8px] font-black text-slate-700 uppercase tracking-tight text-center truncate w-full leading-none">Devices</span>
-          </button>
-
+        <div class="grid grid-cols-4 gap-2" id="categories-container-grid font-sans">
+          <!-- Dynamically populated categories from Firebase realtime database -->
+          <div class="col-span-4 py-6 text-center text-[10px] font-bold text-slate-400">Loading live medical segments...</div>
         </div>
       </div>
 

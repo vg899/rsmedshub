@@ -241,26 +241,100 @@ function syncMainMarketplace() {
 
     renderMedicinesGrid();
   });
+
+  // Subscribe dynamic marketplace segments / categories
+  onValue(ref(db, "categories"), (snapshot) => {
+    const list: any[] = [];
+    if (snapshot.exists()) {
+      snapshot.forEach(child => {
+        const cat = child.val();
+        if (cat.active) {
+          list.push(cat);
+        }
+      });
+    }
+    renderDynamicCategoriesList(list);
+  });
 }
 
-// Category tabs toggle
-document.querySelectorAll(".cat-badge-btn").forEach((btn) => {
-  btn.addEventListener("click", (e) => {
-    const target = e.currentTarget as HTMLButtonElement;
-    activeCategory = target.getAttribute("data-category")!;
-    
-    document.querySelectorAll(".cat-badge-btn").forEach((b) => {
-      b.classList.remove("border-emerald-500", "bg-emerald-50/20", "ring-2", "ring-emerald-500/20");
-      b.classList.add("border-slate-100", "bg-white");
-    });
-    
-    target.classList.remove("border-slate-100", "bg-white");
-    target.classList.add("border-emerald-500", "bg-emerald-50/20", "ring-2", "ring-emerald-500/20");
+const categoryIcons: { [key: string]: string } = {
+  "ALL": "fa-notes-medical",
+  "DIABETES": "fa-droplet",
+  "HEART": "fa-heart-pulse",
+  "BP": "fa-wave-square",
+  "ALLERGY": "fa-prescription-bottle-medical",
+  "COLD_FLU": "fa-hand-holding-droplet",
+  "FEVER": "fa-temperature-high",
+  "PAIN": "fa-bolt",
+  "STOMACH": "fa-user-doctor",
+  "DIGESTION": "fa-shield-halved",
+  "VITAMINS": "fa-capsules",
+  "IMMUNITY": "fa-shield-virus",
+  "BABY_CARE": "fa-baby",
+  "WOMEN_CARE": "fa-venus",
+  "MEN_CARE": "fa-mars",
+  "SENIOR_CARE": "fa-wheelchair",
+  "SKIN_CARE": "fa-face-laugh",
+  "HAIR_CARE": "fa-scissors",
+  "EYE_CARE": "fa-eye",
+  "DENTAL": "fa-tooth",
+  "PERSONAL_CARE": "fa-pump-soap",
+  "FIRST_AID": "fa-kit-medical",
+  "MEDICAL_DEVICES": "fa-stethoscope",
+  "AYURVEDA": "fa-leaf",
+  "HOMEOPATHY": "fa-vial",
+  "NUTRITION": "fa-apple-whole",
+  "FITNESS": "fa-weight-scale",
+  "ORTHOPEDIC": "fa-bone",
+  "RESPIRATORY": "fa-lungs"
+};
 
-    renderMedicinesGrid();
-    triggerAISuggestion();
+function renderDynamicCategoriesList(categories: any[]) {
+  const container = document.getElementById("categories-container-grid");
+  if (!container) return;
+
+  const sorted = [...categories].sort((a, b) => {
+    if (a.code === "ALL") return -1;
+    if (b.code === "ALL") return 1;
+    return (a.name || "").localeCompare(b.name || "");
   });
-});
+
+  container.innerHTML = sorted.map(it => {
+    const icon = categoryIcons[it.code] || "fa-prescription-bottle-medical";
+    const mappedVal = it.code === "ALL" ? "All" : it.name;
+    const isActive = activeCategory === mappedVal;
+    const activeStylingClass = isActive 
+      ? "border-emerald-500 bg-emerald-50/20 ring-2 ring-emerald-500/20" 
+      : "border-slate-100 bg-white";
+
+    return `
+      <button class="cat-badge-btn group flex flex-col items-center justify-center p-2 rounded-2xl border transition-all cursor-pointer focus:outline-none ${activeStylingClass}" data-category="${mappedVal}">
+        <div class="w-8 h-8 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center mb-1 group-hover:scale-110 transition-all shrink-0">
+          <i class="fa-solid ${icon} text-xs"></i>
+        </div>
+        <span class="text-[7.5px] font-black text-slate-700 uppercase tracking-tight text-center truncate w-full" title="${it.name}">${it.name}</span>
+      </button>
+    `;
+  }).join("");
+
+  document.querySelectorAll(".cat-badge-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      const target = e.currentTarget as HTMLButtonElement;
+      activeCategory = target.getAttribute("data-category")!;
+      
+      document.querySelectorAll(".cat-badge-btn").forEach((b) => {
+        b.classList.remove("border-emerald-500", "bg-emerald-50/20", "ring-2", "ring-emerald-500/20");
+        b.classList.add("border-slate-100", "bg-white");
+      });
+      
+      target.classList.remove("border-slate-100", "bg-white");
+      target.classList.add("border-emerald-500", "bg-emerald-50/20", "ring-2", "ring-emerald-500/20");
+
+      renderMedicinesGrid();
+      triggerAISuggestion();
+    });
+  });
+}
 
 // Search input keyword tracking
 document.getElementById("search-medicine-input")?.addEventListener("input", (e) => {

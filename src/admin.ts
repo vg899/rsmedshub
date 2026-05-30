@@ -101,6 +101,9 @@ function initDashboard() {
   subscribeToFinanceArea();
   subscribeToBannersCoupons();
   subscribeToWarehouses();
+  checkAndPreloadCategories();
+  subscribeToCategories();
+  setupCategoryFormListeners();
 }
 
 // 1. STATS ENGINE
@@ -955,11 +958,225 @@ document.getElementById("form-warehouse")?.addEventListener("submit", (e) => {
   });
 });
 
+let allCategoriesList: any[] = [];
+let categorySearchQuery = "";
+let categoryEditModeCode: string | null = null;
+
+function checkAndPreloadCategories() {
+  get(ref(db, "categories")).then((snapshot) => {
+    if (!snapshot.exists()) {
+      const defaultCategories = {
+        "ALL": { code: "ALL", name: "All Medicines", active: true },
+        "DIABETES": { code: "DIABETES", name: "Diabetes Care", active: true },
+        "HEART": { code: "HEART", name: "Heart Care", active: true },
+        "BP": { code: "BP", name: "Blood Pressure", active: true },
+        "ALLERGY": { code: "ALLERGY", name: "Allergy Relief", active: true },
+        "COLD_FLU": { code: "COLD_FLU", name: "Cold & Flu", active: true },
+        "FEVER": { code: "FEVER", name: "Fever Medicines", active: true },
+        "PAIN": { code: "PAIN", name: "Pain Relief", active: true },
+        "STOMACH": { code: "STOMACH", name: "Stomach Care", active: true },
+        "DIGESTION": { code: "DIGESTION", name: "Digestion", active: true },
+        "VITAMINS": { code: "VITAMINS", name: "Vitamins & Supplements", active: true },
+        "IMMUNITY": { code: "IMMUNITY", name: "Immunity Boosters", active: true },
+        "BABY_CARE": { code: "BABY_CARE", name: "Baby Care", active: true },
+        "WOMEN_CARE": { code: "WOMEN_CARE", name: "Women's Care", active: true },
+        "MEN_CARE": { code: "MEN_CARE", name: "Men's Care", active: true },
+        "SENIOR_CARE": { code: "SENIOR_CARE", name: "Senior Citizen Care", active: true },
+        "SKIN_CARE": { code: "SKIN_CARE", name: "Skin Care", active: true },
+        "HAIR_CARE": { code: "HAIR_CARE", name: "Hair Care", active: true },
+        "EYE_CARE": { code: "EYE_CARE", name: "Eye Care", active: true },
+        "DENTAL": { code: "DENTAL", name: "Dental Care", active: true },
+        "PERSONAL_CARE": { code: "PERSONAL_CARE", name: "Personal Care", active: true },
+        "FIRST_AID": { code: "FIRST_AID", name: "First Aid", active: true },
+        "MEDICAL_DEVICES": { code: "MEDICAL_DEVICES", name: "Medical Devices", active: true },
+        "AYURVEDA": { code: "AYURVEDA", name: "Ayurveda", active: true },
+        "HOMEOPATHY": { code: "HOMEOPATHY", name: "Homeopathy", active: true },
+        "NUTRITION": { code: "NUTRITION", name: "Nutrition", active: true },
+        "FITNESS": { code: "FITNESS", name: "Fitness & Wellness", active: true },
+        "ORTHOPEDIC": { code: "ORTHOPEDIC", name: "Orthopedic Care", active: true },
+        "RESPIRATORY": { code: "RESPIRATORY", name: "Respiratory Care", active: true }
+      };
+      set(ref(db, "categories"), defaultCategories).then(() => {
+        showToast("Initial category catalogue seeded in Database!", "success");
+      });
+    }
+  });
+}
+
+function subscribeToCategories() {
+  onValue(ref(db, "categories"), (snapshot) => {
+    allCategoriesList = [];
+    if (snapshot.exists()) {
+      snapshot.forEach((child) => {
+        allCategoriesList.push(child.val());
+      });
+    }
+    renderCategoriesTable();
+  });
+}
+
+function renderCategoriesTable() {
+  const tableBody = document.getElementById("category-table-body");
+  if (!tableBody) return;
+
+  const query = categorySearchQuery.toLowerCase().trim();
+  const filtered = allCategoriesList.filter(it => 
+    (it.code && it.code.toLowerCase().includes(query)) || 
+    (it.name && it.name.toLowerCase().includes(query))
+  );
+
+  if (filtered.length === 0) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="4" class="p-4 text-center text-slate-400 font-medium">No operational segments found.</td>
+      </tr>
+    `;
+    return;
+  }
+
+  tableBody.innerHTML = filtered.map(it => {
+    const statusColor = it.active 
+      ? "bg-emerald-50 text-emerald-600 border border-emerald-100" 
+      : "bg-rose-50 text-rose-600 border border-rose-100";
+    const statusText = it.active ? "Active" : "Inactive";
+    const toggleIcon = it.active ? "fa-toggle-on text-emerald-500" : "fa-toggle-off text-slate-400";
+    const toggleTitle = it.active ? "Deactivate Category" : "Activate Category";
+
+    return `
+      <tr class="hover:bg-slate-50/40 transition-colors border-b border-slate-100 font-sans">
+        <td class="p-3 font-mono font-black text-slate-700 text-xs">${it.code}</td>
+        <td class="p-3 font-bold text-slate-800 text-xs">${it.name}</td>
+        <td class="p-3">
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide ${statusColor}">
+            ${statusText}
+          </span>
+        </td>
+        <td class="p-3 text-right space-x-1 whitespace-nowrap">
+          <button onclick="toggleCategoryStatus('${it.code}', ${it.active})" class="p-1 px-1.5 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-650 transition-all cursor-pointer" title="${toggleTitle}">
+            <i class="fa-solid ${toggleIcon} text-sm"></i>
+          </button>
+          <button onclick="startEditCategory('${it.code}', '${it.name.replace(/'/g, "\\'")}', ${it.active})" class="p-1 px-1.5 hover:bg-teal-50 hover:text-teal-600 text-slate-400 rounded transition-all cursor-pointer" title="Edit Segment">
+            <i class="fa-solid fa-pencil text-xs"></i>
+          </button>
+          <button onclick="deleteCategoryNode('${it.code}')" class="p-1 px-1.5 hover:bg-rose-50 hover:text-rose-600 text-slate-400 rounded transition-all cursor-pointer" title="Delete Segment">
+            <i class="fa-solid fa-trash-can text-xs"></i>
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function setupCategoryFormListeners() {
+  const searchInput = document.getElementById("category-search") as HTMLInputElement;
+  if (searchInput) {
+    searchInput.addEventListener("input", (e) => {
+      categorySearchQuery = (e.target as HTMLInputElement).value;
+      renderCategoriesTable();
+    });
+  }
+
+  const formCategory = document.getElementById("form-category") as HTMLFormElement;
+  if (formCategory) {
+    formCategory.addEventListener("submit", (e) => {
+      e.preventDefault();
+      
+      const codeInput = document.getElementById("category-code") as HTMLInputElement;
+      const nameInput = document.getElementById("category-name") as HTMLInputElement;
+      const statusSelect = document.getElementById("category-status") as HTMLSelectElement;
+
+      const codeRaw = codeInput.value.trim().toUpperCase();
+      const code = codeRaw.replace(/[^A-Z0-9_]/g, "_");
+      const name = nameInput.value.trim();
+      const active = statusSelect.value === "active";
+
+      if (!code || !name) {
+        showToast("Operational segment Code and Name are both mandatory.", "error");
+        return;
+      }
+
+      set(ref(db, `categories/${code}`), { code, name, active })
+        .then(() => {
+          showToast(categoryEditModeCode ? "Category configuration saved!" : "Category established successfully!", "success");
+          resetCategoryForm();
+        })
+        .catch((err) => {
+          showToast(`Save failure: ${err.message}`, "error");
+        });
+    });
+  }
+
+  const btnCancel = document.getElementById("btn-cancel-category-edit") as HTMLButtonElement;
+  if (btnCancel) {
+    btnCancel.addEventListener("click", () => {
+      resetCategoryForm();
+    });
+  }
+}
+
+function resetCategoryForm() {
+  const codeInput = document.getElementById("category-code") as HTMLInputElement;
+  const nameInput = document.getElementById("category-name") as HTMLInputElement;
+  const statusSelect = document.getElementById("category-status") as HTMLSelectElement;
+  const formTitle = document.getElementById("category-form-title")!;
+  const btnCancel = document.getElementById("btn-cancel-category-edit")!;
+  const codeLabel = codeInput?.parentElement?.querySelector("p")!;
+
+  categoryEditModeCode = null;
+  if (codeInput) {
+    codeInput.value = "";
+    codeInput.disabled = false;
+  }
+  if (nameInput) nameInput.value = "";
+  if (statusSelect) statusSelect.value = "active";
+  if (formTitle) formTitle.innerHTML = `<i class="fa-solid fa-plus text-teal-500"></i> Add New Category`;
+  if (btnCancel) btnCancel.classList.add("hidden");
+  if (codeLabel) codeLabel.innerText = "Unique identifier (letters/underscores only).";
+}
+
 Object.assign(window, {
   removeWarehouseNode(id: string) {
     if (confirm("Remove this warehouse profile?")) {
       remove(ref(db, `warehouses/${id}`))
         .then(() => showToast("Warehouse hub scrubbed.", "info"));
+    }
+  },
+  toggleCategoryStatus(code: string, currentStatus: boolean) {
+    update(ref(db, `categories/${code}`), { active: !currentStatus })
+      .then(() => {
+        showToast(`Category status modified successfully.`, "success");
+      });
+  },
+  startEditCategory(code: string, name: string, active: boolean) {
+    categoryEditModeCode = code;
+    
+    const codeInput = document.getElementById("category-code") as HTMLInputElement;
+    const nameInput = document.getElementById("category-name") as HTMLInputElement;
+    const statusSelect = document.getElementById("category-status") as HTMLSelectElement;
+    const formTitle = document.getElementById("category-form-title")!;
+    const btnCancel = document.getElementById("btn-cancel-category-edit")!;
+    const codeLabel = codeInput?.parentElement?.querySelector("p")!;
+
+    if (codeInput) {
+      codeInput.value = code;
+      codeInput.disabled = true; 
+    }
+    if (nameInput) nameInput.value = name;
+    if (statusSelect) statusSelect.value = active ? "active" : "inactive";
+    
+    if (formTitle) formTitle.innerHTML = `<i class="fa-solid fa-pencil text-teal-500"></i> Edit Category: ${code}`;
+    if (btnCancel) btnCancel.classList.remove("hidden");
+    if (codeLabel) codeLabel.innerText = "Category code is locked during active edits.";
+  },
+  deleteCategoryNode(code: string) {
+    if (confirm(`Are you sure you want to permanently delete category ${code}?`)) {
+      remove(ref(db, `categories/${code}`))
+        .then(() => {
+          showToast(`Category scrubbed.`, "info");
+          if (categoryEditModeCode === code) {
+            resetCategoryForm();
+          }
+        });
     }
   }
 });

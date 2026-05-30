@@ -83,6 +83,7 @@ document.getElementById("btn-store-signout")?.addEventListener("click", async ()
 
 // Synchronize Store dashboards and lists
 function syncStoreDashboard() {
+  loadDynamicCategories();
   // Subscribe store info details
   onValue(ref(db, `stores/${currentStoreId}`), (snapshot) => {
     if (snapshot.exists()) {
@@ -437,3 +438,23 @@ Object.assign(window, {
       });
   }
 });
+
+function loadDynamicCategories() {
+  const selectEl = document.getElementById("med-category") as HTMLSelectElement;
+  if (!selectEl) return;
+
+  onValue(ref(db, "categories"), (snapshot) => {
+    if (snapshot.exists()) {
+      let optionsHtml = "";
+      snapshot.forEach((child) => {
+        const cat = child.val();
+        if (cat.active && cat.code !== "ALL") {
+          optionsHtml += `<option value="${cat.name}">${cat.name}</option>`;
+        }
+      });
+      if (optionsHtml) {
+        selectEl.innerHTML = optionsHtml;
+      }
+    }
+  });
+}
