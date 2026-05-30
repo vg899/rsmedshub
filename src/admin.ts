@@ -132,82 +132,122 @@ interface OrderDetails {
 function subscribeToStats() {
   // Real-time counter subscriptions
   onValue(ref(db, "users"), (snapshot) => {
-    let clients = 0;
-    let total = 0;
-    const items: any[] = [];
-    snapshot.forEach((child) => {
-      total++;
-      const u = child.val();
-      if (u.role === "user") {
-        clients++;
-        items.push(u);
+    try {
+      let clients = 0;
+      let total = 0;
+      const items: any[] = [];
+      if (snapshot.exists()) {
+        snapshot.forEach((child) => {
+          total++;
+          const u = child.val();
+          if (u && u.role === "user") {
+            clients++;
+            items.push(u);
+          }
+        });
       }
-    });
 
-    document.getElementById("stat-users")!.innerText = clients.toString();
-    renderCustomersTable(items);
+      const statUsers = document.getElementById("stat-users");
+      if (statUsers) {
+        statUsers.innerText = clients.toString();
+      }
+      renderCustomersTable(items);
+    } catch (err) {
+      console.error("Error in onValue(users):", err);
+    }
   });
 
   onValue(ref(db, "stores"), (snapshot) => {
-    let active = 0;
-    let total = 0;
-    const items: any[] = [];
+    try {
+      let active = 0;
+      let total = 0;
+      const items: any[] = [];
 
-    snapshot.forEach((child) => {
-      total++;
-      const s = child.val();
-      if (s.active) active++;
-      items.push(s);
-    });
+      if (snapshot.exists()) {
+        snapshot.forEach((child) => {
+          const s = child.val();
+          if (s) {
+            total++;
+            if (s.active) active++;
+            items.push(s);
+          }
+        });
+      }
 
-    document.getElementById("stat-stores")!.innerText = total.toString();
-    document.getElementById("stat-stores-active")!.innerText = `${active} Active Nodes`;
-    document.getElementById("cnt-stores")!.innerText = `${total} Stores`;
-    renderStoresTable(items);
-    updateGeoapifyAdminMap(items);
+      const statStores = document.getElementById("stat-stores");
+      if (statStores) statStores.innerText = total.toString();
+
+      const statStoresActive = document.getElementById("stat-stores-active");
+      if (statStoresActive) statStoresActive.innerText = `${active} Active Nodes`;
+
+      const cntStores = document.getElementById("cnt-stores");
+      if (cntStores) cntStores.innerText = `${total} Stores`;
+
+      renderStoresTable(items);
+      updateGeoapifyAdminMap(items);
+    } catch (err) {
+      console.error("Error in onValue(stores):", err);
+    }
   });
 
   onValue(ref(db, "delivery"), (snapshot) => {
-    let active = 0;
-    let total = 0;
-    const items: any[] = [];
+    try {
+      let active = 0;
+      let total = 0;
+      const items: any[] = [];
 
-    if (snapshot.exists()) {
-      snapshot.forEach((child) => {
-        const d = child.val();
-        if (d) {
-          total++;
-          if (!d.deliveryId) {
-            d.deliveryId = child.key || "";
+      if (snapshot.exists()) {
+        snapshot.forEach((child) => {
+          const d = child.val();
+          if (d) {
+            total++;
+            if (!d.deliveryId) {
+              d.deliveryId = child.key || "";
+            }
+            if (d.active) active++;
+            items.push(d);
           }
-          if (d.active) active++;
-          items.push(d);
-        }
-      });
+        });
+      }
+
+      const statDelivery = document.getElementById("stat-delivery");
+      if (statDelivery) statDelivery.innerText = total.toString();
+
+      const statActive = document.getElementById("stat-delivery-active");
+      if (statActive) statActive.innerText = `${active} Active Riders`;
+
+      const cntRiders = document.getElementById("cnt-riders");
+      if (cntRiders) cntRiders.innerText = `${total} Riders`;
+
+      renderRidersTable(items);
+    } catch (err) {
+      console.error("Error in onValue(delivery):", err);
     }
-
-    const statDelivery = document.getElementById("stat-delivery");
-    if (statDelivery) statDelivery.innerText = total.toString();
-
-    const statActive = document.getElementById("stat-delivery-active");
-    if (statActive) statActive.innerText = `${active} Active Riders`;
-
-    const cntRiders = document.getElementById("cnt-riders");
-    if (cntRiders) cntRiders.innerText = `${total} Riders`;
-
-    renderRidersTable(items);
   });
 }
 
 // 2. PARTNERS TABLES RENDERING
 function renderStoresTable(stores: any[]) {
-  const tbody = document.getElementById("tbody-stores")!;
+  const tbody = document.getElementById("tbody-stores");
+  if (!tbody) return;
+
   if (stores.length === 0) {
     tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-400 font-medium">No pharmacy nodes registered yet.</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = stores.map((s) => `
+  tbody.innerHTML = stores.map((s) => {
+    const storeId = s.storeId || "";
+    const shortId = storeId ? `${storeId.substring(0, 6)}...` : "N/A";
+    const name = s.name || "Unnamed Store";
+    const ownerName = s.ownerName || "No Owner";
+    const email = s.email || "N/A";
+    const mobile = s.mobile || "N/A";
+    const city = s.city || "Bengaluru";
+    const approved = s.approved !== undefined ? s.approved : false;
+    const active = s.active !== undefined ? s.active : true;
+
+    return `
     <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-all font-medium">
       <td class="px-5 py-3">
         <div class="flex items-center gap-2.5">
@@ -215,40 +255,41 @@ function renderStoresTable(stores: any[]) {
             <i class="fa-solid fa-mortar-pestle"></i>
           </div>
           <div>
-            <h4 class="font-bold text-slate-900">${s.name}</h4>
-            <span class="text-[10px] text-slate-400 font-mono">${s.storeId.substring(0,6)}...</span>
+            <h4 class="font-bold text-slate-900">${name}</h4>
+            <span class="text-[10px] text-slate-400 font-mono">${shortId}</span>
           </div>
         </div>
       </td>
       <td class="px-5 py-3">
-        <div class="text-xs font-semibold">${s.ownerName || "No Owner"}</div>
-        <div class="text-[11px] text-slate-400 font-mono">${s.email} | ${s.mobile}</div>
+        <div class="text-xs font-semibold">${ownerName}</div>
+        <div class="text-[11px] text-slate-400 font-mono">${email} | ${mobile}</div>
       </td>
       <td class="px-5 py-3">
-        <span class="bg-indigo-50 text-indigo-700 text-[10px] px-2 py-0.5 rounded font-black uppercase">${s.city || "Bengaluru"}</span>
+        <span class="bg-indigo-50 text-indigo-700 text-[10px] px-2 py-0.5 rounded font-black uppercase">${city}</span>
       </td>
       <td class="px-5 py-3">
         <div class="flex items-center gap-1.5 flex-wrap">
-          <span class="text-[10px] px-2 py-0.5 rounded font-black uppercase ${s.approved ? "bg-emerald-50 text-emerald-700" : "bg-yellow-50 text-yellow-700"}">
-            ${s.approved ? "Approved" : "Pending Approval"}
+          <span class="text-[10px] px-2 py-0.5 rounded font-black uppercase ${approved ? "bg-emerald-50 text-emerald-700" : "bg-yellow-50 text-yellow-700"}">
+            ${approved ? "Approved" : "Pending Approval"}
           </span>
-          <span class="text-[10px] px-2 py-0.5 rounded font-black uppercase ${s.active ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-500"}">
-            ${s.active ? "Active" : "Deactivated"}
+          <span class="text-[10px] px-2 py-0.5 rounded font-black uppercase ${active ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-500"}">
+            ${active ? "Active" : "Deactivated"}
           </span>
         </div>
       </td>
       <td class="px-5 py-3 text-right space-x-1.5">
-        ${!s.approved ? `
-          <button onclick="approveStore('${s.storeId}')" class="bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-pointer transition-all">Approve</button>
-          <button onclick="rejectStore('${s.storeId}')" class="bg-rose-500 hover:bg-rose-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-pointer transition-all">Reject</button>
+        ${!approved ? `
+          <button onclick="approveStore('${storeId}')" class="bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-pointer transition-all">Approve</button>
+          <button onclick="rejectStore('${storeId}')" class="bg-rose-500 hover:bg-rose-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-pointer transition-all">Reject</button>
         `: `
-          <button onclick="toggleStoreActive('${s.storeId}', ${s.active})" class="text-[10px] font-bold px-2.5 py-1 rounded-lg transition-all border ${s.active ? "border-slate-200 text-slate-600 bg-white hover:bg-slate-50" : "bg-emerald-500 text-white border-transparent hover:bg-emerald-600"}">
-            ${s.active ? "Deactivate" : "Activate"}
+          <button onclick="toggleStoreActive('${storeId}', ${active})" class="text-[10px] font-bold px-2.5 py-1 rounded-lg transition-all border ${active ? "border-slate-200 text-slate-600 bg-white hover:bg-slate-50" : "bg-emerald-500 text-white border-transparent hover:bg-emerald-600"}">
+            ${active ? "Deactivate" : "Activate"}
           </button>
         `}
       </td>
     </tr>
-  `).join("");
+    `;
+  }).join("");
 }
 
 function renderRidersTable(riders: any[]) {
@@ -387,29 +428,42 @@ let ordersFilter = "all";
 
 function subscribeToOrders() {
   onValue(ref(db, "orders"), (snapshot) => {
-    ordersCache = [];
-    let completedEarnings = 0;
-    let pendingCount = 0;
-    
-    snapshot.forEach((child) => {
-      const order = child.val() as OrderDetails;
-      ordersCache.push(order);
+    try {
+      ordersCache = [];
+      let completedEarnings = 0;
+      let pendingCount = 0;
+      
+      if (snapshot.exists()) {
+        snapshot.forEach((child) => {
+          const order = child.val() as OrderDetails;
+          if (order) {
+            ordersCache.push(order);
 
-      if (order.status === "delivered") {
-        // Earnings = platformFee (₹) + (subtotal * commissionRate / 100)
-        completedEarnings += (order.platformFee || 5) + (order.subtotal * 0.10); // 10% standard admin fee
-      } else {
-        pendingCount++;
+            if (order.status === "delivered") {
+              // Earnings = platformFee (₹) + (subtotal * commissionRate / 100)
+              completedEarnings += (order.platformFee || 5) + ((order.subtotal || 0) * 0.10); // 10% standard admin fee
+            } else {
+              pendingCount++;
+            }
+          }
+        });
       }
-    });
 
-    document.getElementById("stat-orders")!.innerText = ordersCache.length.toString();
-    document.getElementById("stat-orders-pending")!.innerText = `${pendingCount} Processing Deliveries`;
-    document.getElementById("stat-earnings")!.innerText = `₹${Math.ceil(completedEarnings)}`;
+      const statOrders = document.getElementById("stat-orders");
+      if (statOrders) statOrders.innerText = ordersCache.length.toString();
 
-    applyOrdersFilter();
-    renderSettlementFinance();
-    buildAnalyticsChart(ordersCache, completedEarnings);
+      const statOrdersPending = document.getElementById("stat-orders-pending");
+      if (statOrdersPending) statOrdersPending.innerText = `${pendingCount} Processing Deliveries`;
+
+      const statEarnings = document.getElementById("stat-earnings");
+      if (statEarnings) statEarnings.innerText = `₹${Math.ceil(completedEarnings)}`;
+
+      applyOrdersFilter();
+      renderSettlementFinance();
+      buildAnalyticsChart(ordersCache, completedEarnings);
+    } catch (err) {
+      console.error("Error inside subscribeToOrders:", err);
+    }
   });
 }
 
@@ -671,7 +725,9 @@ Object.assign(window, {
 
 // 6. COD FINANCE SETTLEMENT MANAGER
 function renderSettlementFinance() {
-  const tbody = document.getElementById("tbody-settlement-cod")!;
+  const tbody = document.getElementById("tbody-settlement-cod");
+  if (!tbody) return;
+
   const delivered = ordersCache.filter((o) => o.status === "delivered");
 
   if (delivered.length === 0) {
