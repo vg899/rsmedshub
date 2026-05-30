@@ -3,152 +3,692 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MedsHub - Delivery Boy Express Portal</title>
-  <!-- Font Awesome -->
+  <title>MedsHub - Rider Express Terminal</title>
+  <!-- Montserrat and Inter fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- Font Awesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Leaflet Map CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <!-- Global Stylesheet -->
+  <!-- Tailwinds Direct Style -->
   <link rel="stylesheet" href="/src/index.css">
+  <style>
+    body {
+      font-family: "Inter", sans-serif;
+    }
+    .font-display {
+      font-family: "Space Grotesk", sans-serif;
+    }
+    .font-mono {
+      font-family: "JetBrains Mono", monospace;
+    }
+    /* Hide scrollbars for chrome, safari, and opera */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    /* Hide scrollbars for IE, Edge and Firefox */
+    .no-scrollbar {
+      -ms-overflow-style: none;  /* IE and Edge */
+      scrollbar-width: none;  /* Firefox */
+    }
+  </style>
 </head>
-<body class="bg-amber-50/10 text-slate-800 flex items-center justify-center min-h-screen">
+<body class="bg-slate-900/40 text-slate-800 flex items-center justify-center min-h-screen">
 
-  <!-- Mobile-first Phone container box -->
-  <div class="w-full max-w-md h-screen md:h-[840px] bg-slate-50 relative flex flex-col md:rounded-3xl md:shadow-2xl md:border md:border-slate-100 overflow-hidden">
+  <!-- Mobile Screen Container -->
+  <div class="w-full max-w-md h-screen md:h-[840px] bg-slate-50 relative flex flex-col md:rounded-[36px] md:shadow-2xl md:border md:border-slate-200/80 overflow-hidden">
     
-    <!-- HEADER BAR -->
-    <header class="bg-amber-500 text-white px-5 py-4 shrink-0 flex items-center justify-between shadow-md relative z-10">
+    <!-- TOP STATUS BAR / APP HEADER -->
+    <header class="bg-gradient-to-r from-amber-500 to-amber-600 text-white px-5 py-4 shrink-0 flex items-center justify-between shadow-md relative z-30">
       <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-full bg-white/20 text-white flex items-center justify-center text-sm font-bold animate-bounce">
-          <i class="fa-solid fa-truck-motorcycle"></i>
+        <div class="w-10 h-10 rounded-2xl bg-white/10 backdrop-blur-md text-white flex items-center justify-center text-lg shadow-inner">
+          <i class="fa-solid fa-truck-fast"></i>
         </div>
         <div>
-          <h3 id="delivery-profile-rider-name" class="text-xs text-amber-50 font-bold uppercase tracking-wider">Rider Agent Base</h3>
-          <p class="text-xs font-black tracking-tight flex items-center gap-1">
-            <span id="tracker-duty-txt">Standby Duty</span>
-            <i class="fa-solid fa-circle-check text-white text-[10px]"></i>
+          <h3 id="delivery-profile-rider-name" class="text-xs text-amber-50 font-black uppercase tracking-widest font-display">RIDER EXPRESS</h3>
+          <p class="text-[10px] font-bold tracking-tight flex items-center gap-1.5 mt-0.5">
+            <span id="tracker-duty-txt">Standby Ready</span>
+            <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
           </p>
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <button id="btn-delivery-signout" class="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center text-rose-100 cursor-pointer" title="Log Out">
-          <i class="fa-solid fa-right-from-bracket"></i>
+        <button id="btn-delivery-signout" class="w-9 h-9 rounded-xl hover:bg-white/10 flex items-center justify-center text-rose-200 cursor-pointer active:scale-90 transition-all" title="Sign Out">
+          <i class="fa-solid fa-right-from-bracket text-lg"></i>
         </button>
       </div>
     </header>
 
-    <!-- CONTENT DISPLAY SCROLL -->
-    <section class="flex-1 overflow-y-auto px-4 py-4 space-y-5 pb-20 no-scrollbar">
-      
-      <!-- STATS COUNTERS -->
-      <div class="grid grid-cols-3 gap-2.5 shrink-0 select-none">
-        <div class="bg-white rounded-xl p-3 border border-slate-100 shadow-xs flex flex-col justify-between">
-          <p class="text-[9px] font-black text-slate-400 uppercase">Payout Earnings</p>
-          <h4 id="rider-stat-earnings" class="text-base font-extrabold text-amber-600 mt-1">₹0</h4>
-          <span class="text-[8px] text-slate-400 mt-2 block font-semibold leading-relaxed">Delivery Charges</span>
+    <!-- LOADING HUB SPINNER OVERLAY -->
+    <div id="rider-global-spinner" class="absolute inset-0 bg-white/95 z-50 flex flex-col items-center justify-center space-y-3 hidden">
+      <div class="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+      <p class="text-xs font-bold text-slate-700 font-display">Synchronizing Dispatch Data...</p>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- 1. APPLICATION SUSPENDED CONTAINER             -->
+    <!-- ============================================== -->
+    <div id="panel-suspended" class="hidden flex-1 overflow-y-auto px-6 py-12 flex flex-col items-center justify-center text-center space-y-4">
+      <div class="w-20 h-20 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center text-3xl shadow-sm">
+        <i class="fa-solid fa-user-slash"></i>
+      </div>
+      <h2 class="text-xl font-bold text-slate-900 font-display">Rider Credentials Suspended</h2>
+      <p class="text-xs text-slate-500 leading-relaxed max-w-xs">
+        Your account access has been restricted by the administrator. Please upload corrected credentials or contact support at <strong class="text-indigo-600 font-mono">support@medshub.com</strong> for swift dispute resolution.
+      </p>
+      <button onclick="window.location.reload()" class="bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold px-6 py-2.5 rounded-full shadow-md transition-all active:scale-95">
+        Referesh Status
+      </button>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- 2. WAITING FOR ACTIVATION (PENDING REVIEW)     -->
+    <!-- ============================================== -->
+    <div id="panel-pending-approval" class="hidden flex-1 overflow-y-auto px-6 py-8 space-y-6">
+      <div class="text-center space-y-3 py-6">
+        <div class="w-20 h-20 bg-amber-50 text-amber-500 rounded-full mx-auto flex items-center justify-center text-3xl shadow-sm animate-pulse">
+          <i class="fa-solid fa-shield-halved animate-bounce"></i>
         </div>
-        <div class="bg-white rounded-xl p-3 border border-slate-100 shadow-xs flex flex-col justify-between">
-          <p class="text-[9px] font-black text-slate-400 uppercase">Pending Pools</p>
-          <h4 id="rider-stat-pools" class="text-base font-extrabold text-indigo-600 mt-1">0</h4>
-          <span class="text-[8px] text-slate-405 text-indigo-500 mt-2 block font-extrabold uppercase">Accept Jobs</span>
-        </div>
-        <div class="bg-white rounded-xl p-3 border border-slate-100 shadow-xs flex flex-col justify-between">
-          <p class="text-[9px] font-black text-slate-400 uppercase">Rider Duty</p>
-          <button id="btn-toggle-pacing-status" class="mt-2 text-[10px] font-black py-1 px-2.5 bg-emerald-500 text-white rounded-lg block cursor-pointer text-center">
-            ACTIVE ON
-          </button>
-          <span class="text-[7.5px] text-slate-400 mt-1 block font-bold text-center leading-tight">GPS Position live</span>
-        </div>
+        <h2 class="text-lg font-extrabold text-slate-900 font-display">Registration Under Review</h2>
+        <p class="text-xs text-slate-500 leading-relaxed max-w-sm mx-auto">
+          We have secured your KYC documents! Our district logistics hub is conducting automated verification checks. This normally completes in 4-6 operational hours.
+        </p>
       </div>
 
-      <!-- ==================== SUBSECTION 1: ACTIVE ORDER DEVIATION WORKSPACE ==================== -->
-      <div id="rider-active-delivery-workspace" class="hidden bg-white rounded-3xl border border-slate-100 p-4 shadow-md space-y-4">
-        <div class="flex items-center justify-between border-b border-slate-50 pb-2">
-          <h4 class="text-xs font-black text-amber-600 flex items-center gap-1.5 animate-pulse">
-            <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> ACTIVE RUN WORKSPACE
-          </h4>
-          <span id="rider-map-eta" class="text-[10px] bg-slate-900 text-white font-black px-2 py-0.5 rounded">Calculating route...</span>
-        </div>
-
-        <!-- Geoapify navigation static route display maps -->
-        <div class="relative bg-slate-100 rounded-xl overflow-hidden h-44 border border-slate-150 flex items-center justify-center">
-          <div id="rider-map-div" class="w-full h-full z-0"></div>
-          <div class="absolute bottom-2 left-2 bg-slate-900/80 backdrop-blur-xs text-white text-[9px] font-black p-1.5 rounded uppercase flex items-center gap-1 shadow z-[500]">
-            <i class="fa-solid fa-diamond-turn-right text-teal-400"></i> Route Optimized Nav
-          </div>
-        </div>
-
-        <!-- Details block of active order stores and addresses -->
-        <div class="space-y-3 text-xs font-semibold">
-          <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
-            <span class="text-[9px] font-black text-slate-400 uppercase flex items-center gap-1 select-none">
-              <i class="fa-solid fa-mortar-pestle text-indigo-500"></i> Pickup Store Pharmacy
-            </span>
-            <h5 id="active-pickup-store-name" class="font-extrabold text-slate-900">Apollo Pharmacy</h5>
-            <p id="active-pickup-store-addr" class="text-[10px] text-slate-500 block truncate font-medium">Store address details</p>
-          </div>
-
-          <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
-            <span class="text-[9px] font-black text-slate-400 uppercase flex items-center gap-1 select-none">
-              <i class="fa-solid fa-user text-emerald-500"></i> Dropoff Patient Client
-            </span>
-            <h5 id="active-dropoff-user" class="font-extrabold text-slate-900">Recipient Name</h5>
-            <p id="active-dropoff-addr" class="text-[10px] text-slate-500 block truncate font-medium">Customer marked address</p>
-          </div>
-        </div>
-
-        <!-- Delivery status progression controller buttons -->
-        <div class="pt-2 border-t border-slate-100 space-y-3">
+      <!-- Live progress steps tracker -->
+      <div class="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm space-y-4 font-medium text-xs">
+        <h4 class="text-xs font-extrabold text-slate-900 uppercase">Verification Progress</h4>
+        <div class="space-y-4 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-200">
           
-          <!-- Proof snapshot upload segment -->
-          <div id="proof-delivery-camera-block" class="hidden p-3.5 bg-indigo-50/50 rounded-2xl border border-dashed border-indigo-200 space-y-2">
-            <h5 class="text-xs font-black text-indigo-900"><i class="fa-solid fa-camera text-indigo-600 mr-1"></i>Camera Delivery Proof Upload</h5>
-            <p class="text-[10px] text-indigo-700 leading-normal font-semibold">Requirement: Upload handover or billing receipt receipt image to complete transaction.</p>
-            
-            <label class="flex items-center justify-center p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-all text-center">
-              <i class="fa-solid fa-plus-circle text-lg text-indigo-500 mr-2" id="proof-icon"></i>
-              <span id="proof-txt" class="text-[10px] text-slate-500 font-sans font-bold">Snap Camera Photo</span>
-              <input type="file" id="proof-file-input" accept="image/*" class="hidden">
-            </label>
-            <input type="hidden" id="proof-image-url">
+          <div class="flex items-start gap-4 relative">
+            <div class="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] shrink-0 z-10 font-bold">✓</div>
+            <div>
+              <p class="font-extrabold text-slate-900">Profile Form Submitted</p>
+              <p class="text-[10px] text-slate-450 text-slate-400 mt-0.5">Account has been created successfully.</p>
+            </div>
+          </div>
+          
+          <div class="flex items-start gap-4 relative">
+            <div class="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-[10px] shrink-0 z-10 font-bold animate-ping absolute"></div>
+            <div class="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-[10px] shrink-0 z-10 font-bold relative">2</div>
+            <div>
+              <p class="font-extrabold text-slate-900">Document Verification Stage</p>
+              <p class="text-[10px] text-slate-400 mt-0.5">Aadhaar & License checks are actively processed.</p>
+            </div>
+          </div>
+          
+          <div class="flex items-start gap-4 relative">
+            <div class="w-6 h-6 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-[10px] shrink-0 z-10 font-bold">3</div>
+            <div>
+              <p class="font-extrabold text-slate-400">Territory Node Activation</p>
+              <p class="text-[10px] text-slate-400 mt-0.5">Assigning active dispatch zone once verified.</p>
+            </div>
           </div>
 
-          <!-- Action buttons triggers dynamically changing inside javascript -->
-          <button id="btn-delivery-progress-action" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl shadow transition-all cursor-pointer text-center text-xs">
-            Awaiting Status Processing...
+        </div>
+      </div>
+
+      <!-- Preview of Submitted Docs -->
+      <div id="pending-docs-preview" class="space-y-2 text-xs font-semibold">
+        <p class="text-[10px] text-slate-400 uppercase tracking-widest font-black">Submitted KYC Elements</p>
+        <div class="grid grid-cols-2 gap-2">
+          <div class="bg-white p-3 rounded-2xl border border-slate-100 shadow-2xs">
+            <span class="text-[9px] text-slate-400 block font-bold leading-none">AADHAAR CARD</span>
+            <p id="preview-aadhaar-num" class="font-mono text-slate-700 mt-1">XXXX-XXXX-XXXX</p>
+          </div>
+          <div class="bg-white p-3 rounded-2xl border border-slate-100 shadow-2xs">
+            <span class="text-[9px] text-slate-400 block font-bold leading-none">LICENSE NUMBER</span>
+            <p id="preview-dl-num" class="font-mono text-slate-700 mt-1">DLX-XXXXXXXXXX</p>
+          </div>
+          <div class="bg-white p-3 rounded-2xl border border-slate-100 shadow-2xs col-span-2">
+            <span class="text-[9px] text-slate-400 block font-bold leading-none">VEHICLE ASSIGNED</span>
+            <p id="preview-vehicle-info" class="text-slate-800 mt-1 font-extrabold">Motorcycle (KA-01-XX-XXXX)</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ============================================== -->
+    <!-- 3. DOCUMENT ONBOARDING / KYC FORM              -->
+    <!-- ============================================== -->
+    <div id="panel-onboarding" class="hidden flex-1 overflow-y-auto px-5 py-6 space-y-5">
+      <div class="text-center py-2">
+        <h2 class="text-xl font-black text-indigo-900 font-display flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-id-card-clip text-indigo-600"></i> KYC Onboarding Hub
+        </h2>
+        <p class="text-[10px] text-slate-500 font-bold uppercase mt-1 tracking-wider leading-relaxed">Submit documents to activate rider credentials</p>
+      </div>
+
+      <form id="form-onboard-kyc" class="space-y-4 text-xs font-semibold">
+        
+        <!-- Field group: Personal profile verification info -->
+        <div class="bg-white p-4 rounded-3xl border border-slate-150/80 shadow-sm space-y-3.5">
+          <h4 class="text-xs font-extrabold text-slate-900 border-b border-slate-50 pb-1.5 uppercase flex items-center gap-1.5">
+            <i class="fa-solid fa-user-check text-slate-500"></i> Local Service Territory
+          </h4>
+          
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">State Name</label>
+              <input type="text" id="onboard-state" required placeholder="e.g. Karnataka" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 focus:bg-white text-xs font-extrabold">
+            </div>
+            <div>
+              <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">District Name</label>
+              <input type="text" id="onboard-district" required placeholder="e.g. Bengaluru" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 focus:bg-white text-xs font-extrabold">
+            </div>
+          </div>
+        </div>
+
+        <!-- Aadhaar section -->
+        <div class="bg-white p-4 rounded-3xl border border-slate-150/80 shadow-sm space-y-3.5 font-semibold text-xs">
+          <h4 class="text-xs font-extrabold text-slate-900 border-b border-slate-50 pb-1.5 uppercase flex items-center gap-1.5">
+            <i class="fa-solid fa-address-card text-indigo-500"></i> Aadhaar Verification KYC
+          </h4>
+          <div>
+            <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Aadhaar Card Number (12 Digits)</label>
+            <input type="text" id="onboard-aadhaar-number" pattern="\d{12}" minlength="12" maxlength="12" required placeholder="Enter Aadhaar Number" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-sm tracking-widest outline-none focus:border-indigo-500 focus:bg-white">
+          </div>
+          
+          <div class="grid grid-cols-2 gap-3.5">
+            <!-- Front Card Upload -->
+            <div class="space-y-1">
+              <label class="block text-[10px] font-black text-slate-400 uppercase">Aadhaar Front Copy</label>
+              <div id="wrapper-aadhaar-front" class="border border-dashed border-slate-200 h-24 rounded-2xl bg-slate-50/50 flex flex-col items-center justify-center p-2 text-center relative cursor-pointer hover:bg-slate-50 transition-all">
+                <i class="fa-solid fa-plus text-slate-400 text-lg mb-1" id="icon-aadhaar-front"></i>
+                <span class="text-[9px] text-slate-500" id="txt-aadhaar-front">Click Upload Front</span>
+                <input type="file" id="onboard-aadhaar-front" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" required>
+                <!-- Image Preview Thumb hidden initially -->
+                <img id="img-aadhaar-front" class="absolute inset-0 w-full h-full object-cover rounded-2xl hidden" alt="Front Preview">
+              </div>
+            </div>
+            <!-- Back Card Upload -->
+            <div class="space-y-1">
+              <label class="block text-[10px] font-black text-slate-400 uppercase">Aadhaar Back Copy</label>
+              <div id="wrapper-aadhaar-back" class="border border-dashed border-slate-200 h-24 rounded-2xl bg-slate-50/50 flex flex-col items-center justify-center p-2 text-center relative cursor-pointer hover:bg-slate-50 transition-all">
+                <i class="fa-solid fa-plus text-slate-400 text-lg mb-1" id="icon-aadhaar-back"></i>
+                <span class="text-[9px] text-slate-500" id="txt-aadhaar-back">Click Upload Back</span>
+                <input type="file" id="onboard-aadhaar-back" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" required>
+                <!-- Image Preview Thumb hidden initially -->
+                <img id="img-aadhaar-back" class="absolute inset-0 w-full h-full object-cover rounded-2xl hidden" alt="Back Preview">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Driving License group -->
+        <div class="bg-white p-4 rounded-3xl border border-slate-150/80 shadow-sm space-y-3.5 font-semibold text-xs">
+          <h4 class="text-xs font-extrabold text-slate-900 border-b border-slate-50 pb-1.5 uppercase flex items-center gap-1.5">
+            <i class="fa-solid fa-id-card text-emerald-500"></i> Driving License Verification
+          </h4>
+          <div>
+            <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Driving License (DL) Number</label>
+            <input type="text" id="onboard-dl-number" required placeholder="DL-XXXXXXXXXXXXX" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono focus:border-indigo-500 focus:bg-white">
+          </div>
+          <div class="space-y-1">
+            <label class="block text-[10px] font-black text-slate-400 uppercase">Driving License Badge / Photo</label>
+            <div id="wrapper-dl-image" class="border border-dashed border-slate-200 h-24 rounded-2xl bg-slate-50/50 flex flex-col items-center justify-center p-2 text-center relative cursor-pointer hover:bg-slate-50 transition-all">
+              <i class="fa-solid fa-cloud-arrow-up text-slate-400 text-lg mb-1" id="icon-dl-image"></i>
+              <span class="text-[9px] text-slate-500" id="txt-dl-image">Upload clear license photograph</span>
+              <input type="file" id="onboard-dl-image" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" required>
+              <!-- Image Preview Thumb hidden initially -->
+              <img id="img-dl-image" class="absolute inset-0 w-full h-full object-cover rounded-2xl hidden" alt="License Preview">
+            </div>
+          </div>
+        </div>
+
+        <!-- Vehicle Details -->
+        <div class="bg-white p-4 rounded-3xl border border-slate-150/80 shadow-sm space-y-3.5 font-semibold text-xs">
+          <h4 class="text-xs font-extrabold text-slate-900 border-b border-slate-50 pb-1.5 uppercase flex items-center gap-1.5">
+            <i class="fa-solid fa-circle-info text-blue-500"></i> Vehicle Allocation Details
+          </h4>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Vehicle Type</label>
+              <select id="onboard-vehicle-type" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 focus:bg-white text-xs">
+                <option value="Motorcycle">Motorcycle / Bike</option>
+                <option value="Scooter">Electric Scooter (EV)</option>
+                <option value="Bicycle">Bicycle / Cycle</option>
+                <option value="Auto">Delivery Van / 3-Wheeler</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Vehicle Plate Number</label>
+              <input type="text" id="onboard-vehicle-number" required placeholder="e.g. KA-01-EL-7140" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono focus:border-indigo-500 focus:bg-white text-xs uppercase">
+            </div>
+          </div>
+        </div>
+
+        <!-- Action trigger button -->
+        <button id="btn-submit-onboarding-docs" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-2xl shadow-md transition-all active:scale-95 text-xs text-center uppercase tracking-wider font-display">
+          Upload Documents & Save Profile
+        </button>
+      </form>
+    </div>
+
+
+    <!-- ============================================== -->
+    <!-- 4. ACTIVE PORTAL DISPATCH MAIN VIEW            -->
+    <!-- ============================================== -->
+    <div id="panel-main-terminal" class="hidden flex-1 overflow-y-auto no-scrollbar pb-24 flex flex-col">
+      
+      <!-- ==================== TAB A: RIDER DASHBOARD ==================== -->
+      <section id="tab-dashboard" class="px-4 py-4 space-y-5 flex-1">
+        
+        <!-- Live Duty Status Header Bar -->
+        <div class="bg-gradient-to-r from-slate-900 to-slate-800 rounded-3xl p-4 text-white flex items-center justify-between shadow-lg relative overflow-hidden">
+          <div class="absolute -right-4 -bottom-4 opacity-15 text-7xl text-white/5 pr-2">
+            <i class="fa-solid fa-radar"></i>
+          </div>
+          <div class="space-y-1 relative z-10">
+            <p class="text-[9px] font-black text-amber-400 uppercase tracking-widest font-display">Active Working State</p>
+            <h4 id="lbl-duty-subtext" class="text-xs font-black">Standby Ready Duty (Active)</h4>
+            <p class="text-[9px] text-slate-300 font-medium">Auto-dispatching packages in your local range</p>
+          </div>
+          <div class="relative z-10">
+            <button id="btn-toggle-duty-state" class="text-[10px] font-black py-2 px-3.5 rounded-xl transition-all cursor-pointer bg-emerald-500 text-white shadow active:scale-95">
+              DUTY: ON
+            </button>
+          </div>
+        </div>
+
+        <!-- Today's Stats Bento Elements -->
+        <div class="grid grid-cols-2 gap-3 select-none">
+          
+          <div class="bg-gradient-to-br from-indigo-500/10 to-indigo-600/5 hover:from-indigo-500/15 duration-200 rounded-3xl p-4 border border-indigo-100/50 shadow-2xs flex flex-col justify-between h-28 relative overflow-hidden">
+            <div class="absolute right-3 top-3 text-indigo-500/30 text-xl font-bold"><i class="fa-solid fa-wallet"></i></div>
+            <p class="text-[9px] font-black text-indigo-900/60 uppercase font-display">TODAY'S EARNINGS</p>
+            <div>
+              <h4 id="lbl-earnings-today" class="text-2xl font-black text-indigo-900 font-display">₹0</h4>
+              <span class="text-[8px] text-slate-400 block font-bold mt-1 uppercase">Today pay quota</span>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-br from-indigo-500/5 to-indigo-600/5 rounded-3xl p-4 border border-indigo-100/30 shadow-2xs flex flex-col justify-between h-28 relative overflow-hidden">
+            <div class="absolute right-3 top-3 text-indigo-500/20 text-xl font-bold"><i class="fa-solid fa-calendar-day"></i></div>
+            <p class="text-[9px] font-black text-slate-400 uppercase font-display">TODAY DELIVERED</p>
+            <div>
+              <h4 id="lbl-deliveries-today" class="text-2xl font-black text-slate-800 font-display">0</h4>
+              <span class="text-[8px] text-slate-400 block font-bold mt-1 uppercase">Success completions</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Performance Dashboard Section -->
+        <div class="bg-white rounded-3xl p-4 border border-slate-100 shadow-sm space-y-3.5">
+          <h4 class="text-xs font-extrabold text-slate-900 uppercase font-display tracking-widest flex items-center gap-1.5 border-b border-slate-50 pb-2">
+            <i class="fa-solid fa-medal text-amber-500"></i> Operations Score Card
+          </h4>
+          <div class="grid grid-cols-3 gap-2.5 text-center text-xs font-semibold">
+            
+            <div class="p-2.5 bg-slate-50 rounded-2xl relative space-y-1">
+              <span class="text-[8px] text-slate-400 uppercase font-black tracking-wider block">Total Trips</span>
+              <h5 id="lbl-perf-trips" class="text-sm font-black text-slate-800">0</h5>
+            </div>
+            
+            <div class="p-2.5 bg-slate-50 rounded-2xl relative space-y-1">
+              <span class="text-[8px] text-slate-400 uppercase font-black tracking-wider block">Success Rate</span>
+              <h5 id="lbl-perf-rate" class="text-sm font-black text-emerald-600">98%</h5>
+            </div>
+
+            <div class="p-2.5 bg-slate-50 rounded-2xl relative space-y-1">
+              <span class="text-[8px] text-slate-400 uppercase font-black tracking-wider block">Rider Rating</span>
+              <h5 id="lbl-perf-rating" class="text-sm font-black text-amber-600 flex items-center justify-center gap-0.5">
+                4.9 <i class="fa-solid fa-star text-[9px]"></i>
+              </h5>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Comprehensive Earnings Breakdown Accordion Card -->
+        <div class="bg-white rounded-3xl p-4 border border-slate-100 shadow-sm space-y-4">
+          <h4 class="text-xs font-extrabold text-slate-900 uppercase font-display tracking-widest flex items-center gap-1.5">
+            <i class="fa-solid fa-piggy-bank text-indigo-500"></i> Earnings Overview
+          </h4>
+          
+          <div class="space-y-3 text-xs">
+            <div class="flex items-center justify-between border-b border-slate-50 pb-2">
+              <span class="text-slate-500 font-medium font-sans">Total Earnings (All-Time)</span>
+              <strong id="lbl-earnings-total" class="font-extrabold text-slate-900 font-mono">₹0</strong>
+            </div>
+            <div class="flex items-center justify-between border-b border-slate-50 pb-2">
+              <span class="text-slate-500 font-medium font-sans">Weekly Earnings (Past 7d)</span>
+              <strong id="lbl-earnings-weekly" class="font-extrabold text-slate-900 font-mono">₹0</strong>
+            </div>
+            <div class="flex items-center justify-between border-b border-slate-50 pb-2">
+              <span class="text-slate-500 font-medium font-sans">Monthly Earnings (Past 30d)</span>
+              <strong id="lbl-earnings-monthly" class="font-extrabold text-slate-900 font-mono">₹0</strong>
+            </div>
+            <div class="flex items-center justify-between text-indigo-700 bg-indigo-50/40 p-2.5 rounded-xl">
+              <span class="font-bold flex items-center gap-1"><i class="fa-solid fa-hand-holding-dollar"></i> Pending Settlement Balance</span>
+              <strong id="lbl-earnings-pending" class="font-black font-display text-sm font-mono">₹0</strong>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ==================== TAB B: ACTIVE JOB TERMINAL ==================== -->
+      <section id="tab-active-order" class="px-4 py-4 space-y-4 flex-1 hidden">
+        
+        <!-- Live status timeline banner -->
+        <div class="bg-amber-100/30 border border-amber-250/30 rounded-2xl p-3 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping shrink-0"></span>
+            <span class="text-xs font-black text-amber-800 uppercase" id="lbl-active-order-status-banner">OUT FOR DELIVERY</span>
+          </div>
+          <span id="rider-map-eta-time" class="text-[9px] bg-slate-950 text-white font-black px-2 py-0.5 rounded font-mono">Calculated on road</span>
+        </div>
+
+        <!-- Geoapify navigation map -->
+        <div class="relative bg-slate-100 rounded-3xl overflow-hidden h-[240px] border border-slate-200/80 shadow-inner flex items-center justify-center">
+          <div id="rider-leaflet-map" class="w-full h-full z-0"></div>
+          <div class="absolute bottom-2 left-2 bg-slate-950/80 backdrop-blur-xs text-white text-[9px] font-black p-1.5 rounded-xl uppercase flex items-center gap-1 shadow z-10">
+            <i class="fa-solid fa-compass text-amber-400"></i> Smart Navigation Map
+          </div>
+          <!-- Centered simulator warning or action button -->
+          <div class="absolute top-2 right-2 bg-indigo-600 border border-indigo-400/30 text-white text-[8px] font-bold px-2 py-1 rounded-lg z-10 cursor-pointer active:scale-95" id="btn-force-track-gps">
+            <i class="fa-solid fa-location-crosshairs mr-1"></i> Forced Track GPS
+          </div>
+        </div>
+
+        <!-- Pickup Pharmacy Details Card -->
+        <div class="bg-white rounded-3xl border border-slate-100 p-4 shadow-sm space-y-3 font-medium text-xs">
+          <div class="p-3 bg-indigo-50/30 rounded-2xl border border-indigo-100/50 space-y-1">
+            <span class="text-[9px] font-black text-indigo-400 uppercase flex items-center gap-1.5 select-none">
+              <i class="fa-solid fa-mortar-pestle"></i> 1. PICKUP DISTRIBUTOR DISPENSARY
+            </span>
+            <h5 id="lbl-active-store-name" class="font-extrabold text-slate-900 text-sm">Apollo Pharmacy Node</h5>
+            <p id="lbl-active-store-address" class="text-[10px] text-slate-500 block leading-tight font-medium">Store Address Details</p>
+          </div>
+
+          <!-- Dropoff Patient Recipient Card -->
+          <div class="p-3 bg-emerald-50/30 rounded-2xl border border-emerald-150/40 space-y-1">
+            <span class="text-[9px] font-black text-emerald-600 uppercase flex items-center gap-1.5 select-none">
+              <i class="fa-solid fa-house-chimney-medical"></i> 2. PATIENT TARGET HOME DELIVER
+            </span>
+            <div class="flex items-center justify-between">
+              <h5 id="lbl-active-user-name" class="font-extrabold text-slate-900 text-sm">Recipient Name</h5>
+              <a id="lnk-active-phone" href="#" class="text-emerald-700 bg-emerald-100/60 px-2 py-0.5 rounded font-black text-[9px] uppercase hover:bg-emerald-100 active:scale-95 transition-all">
+                <i class="fa-solid fa-phone mr-1"></i> Call Phone
+              </a>
+            </div>
+            <p id="lbl-active-user-address" class="text-[10px] text-slate-500 block leading-tight font-medium">Customer Address Location</p>
+          </div>
+
+          <!-- Total Bill / Collected Amount Indicators -->
+          <div class="p-3.5 bg-slate-900 text-white rounded-2xl flex items-center justify-between font-mono">
+            <div>
+              <p class="text-[8px] text-slate-400 font-bold uppercase font-sans">Payment Method Mode</p>
+              <h6 class="text-xs font-black uppercase text-amber-400" id="lbl-active-payment-mode">COD (Cash Collect)</h6>
+            </div>
+            <div class="text-right">
+              <p class="text-[8px] text-slate-400 font-bold uppercase font-sans">Collection Amount</p>
+              <h6 class="text-sm font-black text-white" id="lbl-active-cod-amount">₹0.00</h6>
+            </div>
+          </div>
+        </div>
+
+        <!-- ACTIVE DELIVERY PROGRESS STEPS BLOCK -->
+        <div class="bg-white rounded-3xl p-4 border border-slate-100 shadow-sm space-y-4">
+          <h4 class="text-xs font-extrabold text-slate-900 uppercase font-display tracking-wider border-b border-slate-50 pb-2">
+            Medications Delivery Pipeline Actions
+          </h4>
+
+          <!-- COD Cash Captured Modal Subview -->
+          <div id="wrapper-cod-cash-confirm" class="hidden p-3 bg-amber-50 rounded-2xl border border-amber-200/50 space-y-1.5">
+            <p class="text-[10px] text-amber-800 font-extrabold uppercase"><i class="fa-solid fa-indian-rupee-sign"></i> COD Cash Entry Required</p>
+            <p class="text-[9px] text-slate-500 leading-normal font-medium">Verify you have safely pocketed the exact bill amount of money from the customer:</p>
+            <div class="flex items-center gap-2">
+              <div class="text-xs text-slate-650 font-bold text-slate-500">Cash Received Rupees:</div>
+              <input type="number" id="inp-cod-cash-collected" required class="flex-1 px-3 py-1 bg-white border border-slate-200 font-bold text-slate-800 rounded-lg text-xs outline-none focus:border-amber-500">
+            </div>
+          </div>
+
+          <!-- Snapshot Evidence Cloudinary Block -->
+          <div id="wrapper-active-proof-block" class="hidden p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+            <h5 class="text-[10px] font-black text-indigo-900 border-b border-slate-100 pb-1.5 uppercase flex items-center gap-1"><i class="fa-solid fa-camera"></i> Camera Verification Proof</h5>
+            <p class="text-[9px] text-slate-500 leading-normal font-semibold">Requirement: Provide snap photograph of medication packet handover at host location:</p>
+            
+            <label class="flex items-center justify-center p-3 bg-white border border-dashed border-slate-300 rounded-xl cursor-pointer hover:bg-slate-100 transition-all text-center relative h-16">
+              <i class="fa-solid fa-camera text-base text-indigo-600 mr-2" id="lbl-active-proof-icon"></i>
+              <span id="lbl-active-proof-text" class="text-[10px] text-slate-600 font-bold">Snap Delivery Handover Photo</span>
+              <input type="file" id="inp-active-proof-file" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer">
+              <img id="img-active-proof-preview" class="absolute inset-0 w-full h-full object-cover rounded-xl hidden" alt="Proof Thumb">
+            </label>
+          </div>
+
+          <!-- Main Status Action Button triggers progressions -->
+          <button id="btn-active-transition-step" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 rounded-2xl shadow transition-all cursor-pointer text-center text-xs uppercase tracking-wider font-display active:scale-95">
+            PROCEED ON ROAD
           </button>
         </div>
-      </div>
 
-      <!-- ==================== SUBSECTION 2: JOBS POOL LISTINGS ==================== -->
-      <div id="rider-pools-segment" class="space-y-4">
-        <div class="flex items-center justify-between">
-          <h4 class="text-xs font-black text-slate-800 uppercase tracking-wider">Operational Job Pools</h4>
-          <span class="text-[10px] text-indigo-600 font-bold" id="cnt-pools-indicator">0 Pools</span>
+      </section>
+
+      <!-- ==================== TAB C: POOLS DISPATCH ==================== -->
+      <section id="tab-pools" class="px-4 py-4 space-y-4 flex-1 hidden">
+        <div class="flex items-center justify-between shrink-0 mb-1">
+          <div class="space-y-0.5">
+            <h4 class="text-xs font-black text-slate-900 uppercase font-display tracking-widest">Job Dispatch Pools</h4>
+            <p class="text-[9px] text-slate-400 font-bold uppercase leading-none">Available Packaged Orders</p>
+          </div>
+          <span class="text-[10px] text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded font-black font-mono" id="lbl-pools-indicator">0 PACKED</span>
         </div>
 
-        <div class="space-y-3.5" id="rider-pools-container">
-          <!-- Dynamic packed order pools -->
-          <div class="text-center py-12 text-slate-400">
-            <i class="fa-solid fa-box-open text-4xl mb-2 text-slate-200 animate-pulse"></i>
-            <p class="text-xs font-semibold">Syncing operational packed jobs pools...</p>
+        <!-- Available dispatches container -->
+        <div class="space-y-3.5" id="cnt-pools-list">
+          <div class="text-center py-16 text-slate-400 bg-white border border-slate-100 rounded-3xl p-6 shadow-2xs">
+            <i class="fa-solid fa-box-open text-4xl mb-2 text-slate-100 animate-pulse"></i>
+            <p class="text-xs font-bold font-display text-slate-600">No Orders Packed Currently</p>
+            <p class="text-[9px] mt-1 text-slate-400">Waiting for local pharmacies to prepare items...</p>
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- ==================== SUBSECTION 3: SETTLEMENTS & EARNINGS ==================== -->
-      <div id="rider-settlements-segment" class="space-y-4 pt-2 border-t border-slate-150">
-        <h4 class="text-xs font-black text-slate-800 uppercase tracking-wider">Completed settlements payouts</h4>
-        <div class="space-y-2.5" id="rider-settlements-history-list">
-          <p class="text-[10px] text-slate-450 text-slate-400 text-center py-4 font-semibold">No historic distributions recorded.</p>
+      <!-- ==================== TAB D: SETTLEMENTS TERMINAL ==================== -->
+      <section id="tab-settlements" class="px-4 py-4 space-y-5 flex-1 hidden">
+        
+        <!-- Pending stats overlay card -->
+        <div class="bg-gradient-to-r from-indigo-700 to-indigo-800 p-4 text-white rounded-3xl shadow-lg relative overflow-hidden">
+          <div class="absolute -right-6 -bottom-6 opacity-10 text-8xl text-white/10 shrink-0">
+            <i class="fa-solid fa-indian-rupee-sign"></i>
+          </div>
+          <div class="space-y-1 relative z-10">
+            <span class="text-[9px] font-black tracking-widest uppercase text-indigo-300 font-display">Unsettled Rider Dues</span>
+            <div class="flex items-baseline gap-1">
+              <h2 id="lbl-settle-payout-balance" class="text-2xl font-black font-display font-mono">₹0</h2>
+              <span class="text-[9px] text-indigo-200">Pending disbursement</span>
+            </div>
+            <p class="text-[8.5px] leading-relaxed text-indigo-100 font-medium">To withdraw, initialize settlement request processing below. Claims are reviewed within 24 hours.</p>
+          </div>
         </div>
-      </div>
 
-    </section>
+        <!-- UPI Profile Setup Form -->
+        <div class="bg-white rounded-3xl p-4 border border-slate-100 shadow-sm space-y-4">
+          <h4 class="text-xs font-extrabold text-slate-900 uppercase font-display tracking-wider border-b border-slate-50 pb-2 flex items-center gap-1.5">
+            <i class="fa-solid fa-credit-card text-slate-500"></i> UPI Settlement Endpoint
+          </h4>
 
-    <!-- TOAST OVERLAYS -->
-    <div id="toast-container" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-full max-w-xs px-4"></div>
+          <div class="space-y-3 font-semibold text-xs text-slate-650">
+            <div>
+              <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">UPI Address (Virtual Payment Address)</label>
+              <input type="text" id="inp-settle-upi-id" placeholder="e.g. rider@ybl, 9988776655@paytm" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-sm tracking-wider outline-none focus:border-indigo-500 focus:bg-white text-slate-800">
+            </div>
+
+            <!-- UPI QR image click to upload -->
+            <div class="space-y-1">
+              <label class="block text-[10px] font-black text-slate-400 uppercase">UPI Receiver QR Image (QR Copy)</label>
+              <div id="wrapper-qr-upload" class="border border-dashed border-slate-200 h-20 rounded-2xl bg-slate-50/50 flex items-center justify-center p-2 text-center relative cursor-pointer hover:bg-slate-50 transition-all">
+                <i class="fa-solid fa-qrcode text-lg text-slate-400 mr-2" id="icon-qr-upload"></i>
+                <span class="text-[9px] text-slate-505 text-slate-500" id="txt-qr-upload">Upload QR Code Attachment</span>
+                <input type="file" id="inp-settle-qr-upload" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer">
+                <!-- Preview Thumb -->
+                <img id="img-qr-upload" class="absolute inset-x-2 inset-y-1 w-[90%] h-[90%] object-contain rounded-xl hidden mx-auto" alt="QR Preview">
+              </div>
+            </div>
+
+            <button id="btn-save-upi-profile" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 rounded-xl text-[10px] shadow uppercase tracking-wide font-display active:scale-95 transition-all">
+              Save Payment Address
+            </button>
+          </div>
+        </div>
+
+        <!-- Initiate Settlement request -->
+        <div class="bg-white rounded-3xl p-4 border border-slate-100 shadow-sm space-y-4">
+          <h4 class="text-xs font-extrabold text-slate-900 uppercase font-display tracking-wider border-b border-slate-50 pb-2">
+            Create Redemption Claim
+          </h4>
+
+          <div class="grid grid-cols-2 gap-3 font-semibold text-xs">
+            <div>
+              <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Payout Claim Amount</label>
+              <input type="number" id="inp-settle-claim-amount" placeholder="e.g. 500" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 text-sm font-mono text-slate-800">
+            </div>
+            <div class="flex items-end">
+              <button id="btn-request-settlement" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-xl text-[11px] shadow uppercase tracking-wider font-display shrink-0 active:scale-95 transition-all">
+                Request Payout
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Settlement History list -->
+        <div class="space-y-3 pt-1">
+          <h4 class="text-xs font-black text-slate-900 uppercase font-display tracking-widest">Settlement History Logs</h4>
+          <div id="cnt-settlements-history-list" class="space-y-2.5">
+            <p class="text-[10px] text-slate-400 font-bold text-center py-4 uppercase">No Settlements Disbursed.</p>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ==================== TAB E: MY PROFILE ==================== -->
+      <section id="tab-profile" class="px-4 py-4 space-y-5 flex-1 hidden">
+        
+        <!-- Bio header -->
+        <div class="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm flex items-center gap-4">
+          <div class="w-14 h-14 bg-amber-500 text-white font-black text-lg font-display rounded-full flex items-center justify-center shadow">
+            <i class="fa-solid fa-id-badge text-xl"></i>
+          </div>
+          <div>
+            <h4 id="lbl-profile-name" class="font-extrabold text-slate-800 text-sm">Rider Name</h4>
+            <p id="lbl-profile-email" class="text-[10px] text-slate-450 text-slate-400 font-mono">rider@example.com</p>
+            <span class="inline-block bg-teal-50 text-teal-700 px-2 py-0.5 rounded-lg font-black text-[8px] uppercase mt-1 tracking-wider border border-teal-100">
+              <i class="fa-solid fa-certificate"></i> Verified Fleet Partner
+            </span>
+          </div>
+        </div>
+
+        <!-- KYC Element specifics lists -->
+        <div class="bg-white rounded-3xl p-4 border border-slate-100 shadow-sm space-y-4">
+          <h4 class="text-xs font-extrabold text-slate-900 uppercase font-display tracking-widest border-b border-slate-50 pb-2">
+            KYC Document Records
+          </h4>
+
+          <div class="space-y-3.5 text-xs font-semibold">
+            <div class="flex items-center justify-between border-b border-slate-50 pb-2">
+              <span class="text-slate-500 font-sans">Aadhaar Card Reference</span>
+              <span id="lbl-profile-aadhaar" class="font-mono text-slate-700">XXXX-XXXX-XXXX</span>
+            </div>
+            <div class="flex items-center justify-between border-b border-slate-50 pb-2">
+              <span class="text-slate-500 font-sans font-medium">Driving License Number</span>
+              <span id="lbl-profile-dl" class="font-mono text-slate-700 uppercase">DLX-XXXXXXXXXX</span>
+            </div>
+            <div class="flex items-center justify-between border-b border-slate-50 pb-2">
+              <span class="text-slate-500 font-sans">State & Operating City</span>
+              <span id="lbl-profile-location" class="font-bold text-slate-700">Karnataka, Bengaluru</span>
+            </div>
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+              <span class="text-slate-500 font-sans">Vehicle Allotment Info</span>
+              <span id="lbl-profile-vehicle" class="font-bold text-slate-800">Motorcycle (KA01XX9988)</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500 font-sans">Assigned Driver ID</span>
+              <span id="lbl-profile-driver-id" class="font-mono text-[10px] text-indigo-600 font-bold uppercase overflow-hidden">UID-12345</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Documents Attachments modal links -->
+        <div class="bg-white rounded-3xl p-4 border border-slate-100 shadow-sm space-y-4">
+          <h4 class="text-xs font-extrabold text-slate-900 uppercase font-display tracking-widest border-b border-slate-50 pb-2">
+            Document Attachments
+          </h4>
+
+          <div class="space-y-2.5">
+            <a id="lnk-profile-aadhaar-front" target="_blank" class="w-full bg-slate-50 hover:bg-slate-100 border border-slate-200/80 rounded-2xl p-3 flex justify-between items-center text-xs font-semibold cursor-pointer text-slate-705">
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-image text-indigo-500"></i>
+                <span>Aadhaar Front Snap</span>
+              </div>
+              <i class="fa-solid fa-arrow-up-right-from-square text-slate-400"></i>
+            </a>
+            <a id="lnk-profile-aadhaar-back" target="_blank" class="w-full bg-slate-50 hover:bg-slate-100 border border-slate-200/80 rounded-2xl p-3 flex justify-between items-center text-xs font-semibold cursor-pointer text-slate-705">
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-image text-indigo-500"></i>
+                <span>Aadhaar Back Snap</span>
+              </div>
+              <i class="fa-solid fa-arrow-up-right-from-square text-slate-400"></i>
+            </a>
+            <a id="lnk-profile-dl-photo" target="_blank" class="w-full bg-slate-50 hover:bg-slate-100 border border-slate-200/80 rounded-2xl p-3 flex justify-between items-center text-xs font-semibold cursor-pointer text-slate-705">
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-id-card text-emerald-500"></i>
+                <span>Driving License Card Photo</span>
+              </div>
+              <i class="fa-solid fa-arrow-up-right-from-square text-slate-400"></i>
+            </a>
+          </div>
+        </div>
+
+      </section>
+
+    </div>
+
+
+    <!-- ============================================== -->
+    <!-- 5. BOTTOM NAVIGATION BAR / TACTICAL BOARD      -->
+    <!-- ============================================== -->
+    <nav id="bottom-navigation-nav" class="hidden absolute bottom-0 inset-x-0 bg-white border-t border-slate-150 py-2.5 px-4 z-40 flex items-center justify-between shadow-[0_-4px_16px_rgba(0,0,0,0.04)] select-none">
+      
+      <button data-tab="dashboard" class="flex flex-col items-center justify-center gap-1 text-amber-500 transition-all font-display group cursor-pointer w-12 text-center">
+        <i class="fa-solid fa-chart-pie text-lg group-hover:scale-110 transition-all"></i>
+        <span class="text-[8.5px] font-black uppercase tracking-wider">Home</span>
+      </button>
+
+      <button data-tab="pools" class="flex flex-col items-center justify-center gap-1 text-slate-400 transition-all font-display group cursor-pointer w-12 text-center relative">
+        <span class="absolute -top-1 -right-1.5 w-4 h-4 bg-indigo-600 text-[8px] text-white rounded-full font-black animate-bounce flex items-center justify-center hidden" id="badge-nav-pools">0</span>
+        <i class="fa-solid fa-box-open text-lg group-hover:scale-110 transition-all"></i>
+        <span class="text-[8.5px] font-black uppercase tracking-wider">Pools</span>
+      </button>
+
+      <button data-tab="active-order" class="flex flex-col items-center justify-center gap-1 text-slate-400 transition-all font-display group cursor-pointer w-12 text-center relative">
+        <span class="absolute -top-1 -right-1 bg-amber-500 w-2.5 h-2.5 rounded-full animate-ping hidden" id="badge-nav-active-order-ping"></span>
+        <span class="absolute -top-1 -right-1 bg-amber-500 w-2.5 h-2.5 rounded-full border border-white hidden" id="badge-nav-active-order"></span>
+        <i class="fa-solid fa-location-arrow text-lg group-hover:scale-110 transition-all"></i>
+        <span class="text-[8.5px] font-black uppercase tracking-wider">Transit</span>
+      </button>
+
+      <button data-tab="settlements" class="flex flex-col items-center justify-center gap-1 text-slate-400 transition-all font-display group cursor-pointer w-12 text-center">
+        <i class="fa-solid fa-indian-rupee-sign text-lg group-hover:scale-110 transition-all"></i>
+        <span class="text-[8.5px] font-black uppercase tracking-wider">Payout</span>
+      </button>
+
+      <button data-tab="profile" class="flex flex-col items-center justify-center gap-1 text-slate-400 transition-all font-display group cursor-pointer w-12 text-center">
+        <i class="fa-solid fa-user-circle text-lg group-hover:scale-110 transition-all"></i>
+        <span class="text-[8.5px] font-black uppercase tracking-wider">Profile</span>
+      </button>
+
+    </nav>
+
+
+    <!-- TOAST ELEMENT NOTIFICATIONS DYNAMIC CARDS -->
+    <div id="toast-container" class="fixed bottom-16 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-full max-w-xs px-4 pointer-events-none"></div>
 
   </div>
 
