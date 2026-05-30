@@ -16,9 +16,49 @@ const regRoleInputs = document.getElementsByName("reg-role") as NodeListOf<HTMLI
 const promptBlock = document.getElementById("gps-prompt-block") as HTMLDivElement;
 const btnCaptureGps = document.getElementById("btn-capture-gps") as HTMLButtonElement;
 const gpsStatusTxt = document.getElementById("gps-status-txt") as HTMLSpanElement;
+const roleSelectorContainer = document.getElementById("role-selector-container") as HTMLDivElement;
+const brandingLogo = document.getElementById("branding-logo") as HTMLDivElement;
+const brandingTitle = document.getElementById("branding-title") as HTMLHeadingElement;
 
 // Labels
 const lblFullname = document.getElementById("lbl-fullname") as HTMLLabelElement;
+
+// Helper function to un-hide the partner selectors
+function unlockPartnerMode() {
+  if (roleSelectorContainer && roleSelectorContainer.classList.contains("hidden")) {
+    roleSelectorContainer.classList.remove("hidden");
+    showToast("Partner registration options unlocked! (Store / Rider)", "success");
+  }
+}
+
+// Check URL query parameters on load to auto-unlock
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get("role") || urlParams.get("partner") === "true" || urlParams.get("unlock") === "true") {
+  setTimeout(() => {
+    unlockPartnerMode();
+  }, 300);
+}
+
+// Bind secret double-click handlers on branding log/titles
+if (brandingLogo) {
+  brandingLogo.addEventListener("dblclick", () => {
+    unlockPartnerMode();
+  });
+}
+if (brandingTitle) {
+  brandingTitle.addEventListener("dblclick", () => {
+    unlockPartnerMode();
+  });
+  // Also unlock if developer clicks the title 4 times just in case double click is tricky on mobile screens
+  let clickCount = 0;
+  brandingTitle.addEventListener("click", () => {
+    clickCount++;
+    if (clickCount >= 4) {
+      unlockPartnerMode();
+      clickCount = 0;
+    }
+  });
+}
 
 // Tab Activation state
 let activeTab: "login" | "register" = "login";
