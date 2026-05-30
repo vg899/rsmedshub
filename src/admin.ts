@@ -293,7 +293,7 @@ function renderStoresTable(stores: any[]) {
 }
 
 function renderRidersTable(riders: any[]) {
-  const tbody = document.getElementById("tbody-riders")!;
+  const tbody = document.getElementById("tbody-riders");
   if (!tbody) return;
 
   if (riders.length === 0) {
@@ -357,7 +357,8 @@ function renderRidersTable(riders: any[]) {
 }
 
 function renderCustomersTable(customers: any[]) {
-  const tbody = document.getElementById("tbody-customers")!;
+  const tbody = document.getElementById("tbody-customers");
+  if (!tbody) return;
   if (customers.length === 0) {
     tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-400 font-medium">No general customer profiles synced.</td></tr>`;
     return;
@@ -481,7 +482,8 @@ filterButtons.forEach((btn) => {
 });
 
 function applyOrdersFilter() {
-  const container = document.getElementById("admin-orders-list")!;
+  const container = document.getElementById("admin-orders-list");
+  if (!container) return;
   const filtered = ordersCache.filter((o) => ordersFilter === "all" || o.status === ordersFilter);
 
   if (filtered.length === 0) {
@@ -529,8 +531,9 @@ Object.assign(window, {
     const o = ordersCache.find((order) => order.orderId === orderId);
     if (!o) return;
 
-    const modal = document.getElementById("invoice-modal")!;
-    const content = document.getElementById("invoice-modal-content")!;
+    const modal = document.getElementById("invoice-modal");
+    const content = document.getElementById("invoice-modal-content");
+    if (!modal || !content) return;
     
     // Delivery partner payout & Store payout calculation
     const commRate = 10; // 10% standard admin fee
@@ -625,7 +628,7 @@ Object.assign(window, {
 });
 
 document.getElementById("btn-close-invoice")?.addEventListener("click", () => {
-  document.getElementById("invoice-modal")!.classList.add("hidden");
+  document.getElementById("invoice-modal")?.classList.add("hidden");
 });
 
 // 5. CHARGES & REGIONAL AREA SERVICE BINDINGS
@@ -989,7 +992,8 @@ document.getElementById("btn-trigger-ai-promo")?.addEventListener("click", () =>
 // 10. WAREHOUSE MANAGEMENT SYSTEM
 function subscribeToWarehouses() {
   onValue(ref(db, "warehouses"), (snapshot) => {
-    const listEl = document.getElementById("warehouse-list-container")!;
+    const listEl = document.getElementById("warehouse-list-container");
+    if (!listEl) return;
     if (!snapshot.exists()) {
       listEl.innerHTML = `
         <div class="text-[11px] text-slate-400 text-center font-bold py-6">
@@ -1284,6 +1288,9 @@ function updateGeoapifyAdminMap(stores: any[]) {
   const cLat = centerStore.location?.lat || 12.9716;
   const cLng = centerStore.location?.lng || 77.5946;
 
-  document.getElementById("map-coordinates")!.innerText = `${centerStore.name} Area (${cLat.toFixed(4)}, ${cLng.toFixed(4)})`;
+  const mapCoords = document.getElementById("map-coordinates");
+  if (mapCoords) {
+    mapCoords.innerText = `${centerStore.name} Area (${cLat.toFixed(4)}, ${cLng.toFixed(4)})`;
+  }
   mapImg.src = `https://maps.geoapify.com/v1/staticmap?style=osm-bright&width=800&height=320&center=lonlat:${cLng},${cLat}&zoom=12&marker=${pins}&apiKey=a2f093c8994441179a2c1599f08f7386`;
 }
