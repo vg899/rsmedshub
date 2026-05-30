@@ -3,272 +3,410 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MedsHub - Medicine Delivery User Portal</title>
+  <title>RS Meds Hub - Your Certified Apothecary</title>
+  <!-- Google Fonts for premium display pairs: Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;950&family=JetBrains+Mono:wght@400;500;750&display=swap" rel="stylesheet">
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    h1, h2, h3, h4, .font-display {
+      font-family: 'Outfit', sans-serif;
+    }
+    /* Simple smooth transition for active buttons */
+    .nav-btn-active {
+      color: #2563eb !important; /* blue-600 */
+      font-weight: 800 !important;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .custom-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
   <!-- Global Stylesheet -->
   <link rel="stylesheet" href="/src/index.css">
 </head>
-<body class="bg-slate-50 text-slate-800 flex items-center justify-center min-h-screen">
+<body class="bg-slate-100 text-slate-800 flex items-center justify-center min-h-screen">
 
-  <!-- Mobile Screen Container Shell -->
-  <div class="w-full max-w-md h-screen md:h-[840px] bg-slate-50 relative flex flex-col md:rounded-3xl md:shadow-2xl md:border md:border-slate-100 overflow-hidden">
+  <!-- Mobile Screen Container Shell with beautiful premium bezel frame on desktop -->
+  <div class="w-full max-w-md h-screen md:h-[880px] bg-slate-50 relative flex flex-col md:rounded-[40px] md:shadow-2xl md:border-[10px] md:border-slate-900 overflow-hidden">
     
-    <!-- HEADER BAR -->
-    <header class="bg-teal-500 text-white px-5 py-4 shrink-0 flex items-center justify-between shadow-md relative z-10">
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-full bg-white/20 text-white flex items-center justify-center font-bold text-sm">
-          <i class="fa-solid fa-house-medical"></i>
+    <!-- TOP PARENT CONTAINER: LOGO, LOCATION & SEARCH BAR INNER SHADOW -->
+    <div class="bg-gradient-to-b from-blue-600 via-blue-500 to-blue-600 text-white shrink-0 p-4 pb-6 rounded-b-[2rem] shadow-lg relative z-15 space-y-4">
+      
+      <!-- LOGO & LOCATION ROW -->
+      <div class="flex items-center justify-between gap-2 pt-1">
+        <!-- Brand Logo with Pill Graphics -->
+        <div class="flex items-center gap-1.5 shrink-0">
+          <div class="relative w-8.5 h-8.5 rounded-full bg-white/20 flex items-center justify-center text-white font-black">
+            <i class="fa-solid fa-prescription-bottle-medical text-sm"></i>
+          </div>
+          <div class="flex flex-col">
+            <h1 class="text-sm font-black tracking-tight leading-none text-white font-display flex items-center gap-1">
+              <span>RS Meds</span>
+              <span class="bg-white text-blue-600 rounded-sm px-1 py-0.5 text-[8.5px] uppercase font-black">Hub</span>
+            </h1>
+          </div>
         </div>
-        <div>
-          <h3 class="text-xs text-teal-100 font-bold uppercase tracking-wider">Operational Location</h3>
-          <p id="user-current-city" class="text-xs font-black tracking-tight flex items-center gap-1">
-            <span id="loc-city-txt">Detecting GPS...</span>
-            <i class="fa-solid fa-angle-down"></i>
-          </p>
+
+        <!-- Location Capsule Widget -->
+        <div class="flex items-center gap-1.5 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 text-white shrink-0 max-w-[48%] text-left cursor-pointer transition-all hover:bg-white/15">
+          <i class="fa-solid fa-location-dot text-rose-400 text-xs"></i>
+          <div class="truncate leading-tight flex-1">
+            <span class="text-[7.5px] text-blue-100 block font-normal uppercase tracking-wider">Current Location</span>
+            <span id="loc-city-txt" class="font-extrabold truncate text-[9.5px] block">Gonda, Uttar Pradesh</span>
+          </div>
+          <i class="fa-solid fa-angle-down text-blue-100 text-[8px] opacity-75"></i>
+        </div>
+
+        <!-- Right Alerts Bar -->
+        <div class="flex items-center gap-2">
+          <!-- Notification Bell -->
+          <button id="btn-show-notifications" class="w-8.5 h-8.5 rounded-full bg-white/10 flex items-center justify-center text-white relative transition-all cursor-pointer hover:bg-white/20">
+            <i class="fa-regular fa-bell text-sm"></i>
+            <span id="badge-notifications" class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-blue-500 hidden animate-pulse"></span>
+          </button>
+          
+          <!-- Profile/Signout -->
+          <button id="btn-user-signout" class="w-8.5 h-8.5 rounded-full bg-white/10 flex items-center justify-center text-rose-205 text-white cursor-pointer hover:bg-white/20" title="Log Out App">
+            <i class="fa-solid fa-right-from-bracket text-xs"></i>
+          </button>
         </div>
       </div>
-      <div class="flex items-center gap-2">
-        <button id="btn-show-notifications" class="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center text-sm relative transition-all cursor-pointer">
-          <i class="fa-regular fa-bell text-lg"></i>
-          <span id="badge-notifications" class="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-rose-500 rounded-full border-2 border-teal-500 hidden"></span>
-        </button>
-        <button id="btn-user-signout" class="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center text-rose-250 cursor-pointer" title="Log Out">
-          <i class="fa-solid fa-right-from-bracket"></i>
-        </button>
+
+      <!-- SEARCH ENGINE INTERFACES -->
+      <div class="relative shadow-sm pt-0.5">
+        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 z-10">
+          <i class="fa-solid fa-magnifying-glass text-xs"></i>
+        </span>
+        <input type="text" id="search-medicine-input" placeholder="Medicine Search" class="w-full pl-10 pr-10 py-3 rounded-full border-none bg-white text-slate-800 outline-none placeholder:text-slate-400 text-xs font-semibold shadow-inner transition-all focus:ring-2 focus:ring-blue-300">
+        <!-- Voice-activation placeholder decoration icon -->
+        <span class="absolute inset-y-0 right-0 pr-1.5 flex items-center text-rose-500 hover:scale-105 transition-all cursor-pointer z-10">
+          <i class="fa-solid fa-microphone text-xs bg-rose-50/10 p-2 text-rose-500 hover:bg-rose-50/25 rounded-full transition-all"></i>
+        </span>
       </div>
-    </header>
+    </div>
 
     <!-- NOTIFICATION FEED DROPDOWN -->
-    <div id="notify-dropdown" class="hidden absolute top-16 left-4 right-4 bg-white rounded-2xl shadow-xl z-50 border border-slate-100 p-4 max-h-72 overflow-y-auto space-y-2">
+    <div id="notify-dropdown" class="hidden absolute top-20 left-4 right-4 bg-white rounded-2xl shadow-xl z-50 border border-slate-100 p-4 max-h-72 overflow-y-auto space-y-2">
       <div class="flex justify-between items-center border-b border-slate-50 pb-2">
         <h4 class="text-xs font-black text-slate-800 uppercase tracking-wider">Alerts & Notifications</h4>
-        <button id="btn-clear-notify" class="text-[10px] font-bold text-teal-650 text-teal-600 hover:underline">Dismiss All</button>
+        <button id="btn-clear-notify" class="text-[10px] font-bold text-blue-600 hover:underline">Dismiss All</button>
       </div>
-      <div id="notify-feed-items" class="space-y-1.5 division-y divide-slate-50">
+      <div id="notify-feed-items" class="space-y-1.5">
         <!-- Live alerts list -->
         <p class="text-[11px] text-slate-400 text-center py-4 font-semibold">No recent alerts feed.</p>
       </div>
     </div>
 
-    <!-- MAIN SCROLLABLE WRAPPER -->
-    <section id="user-main-scroll" class="flex-1 overflow-y-auto px-4 py-4 space-y-6 pb-20 no-scrollbar">
+    <!-- MAIN DASHBOARD CONTENT SCROLLABLE SLEEVE -->
+    <section id="user-main-scroll" class="flex-1 overflow-y-auto px-4 py-4 space-y-5 pb-24 custom-scrollbar">
       
-      <!-- AD BANNER SLIDER -->
-      <div class="relative rounded-2xl overflow-hidden shadow-xs h-36 bg-gradient-to-r from-teal-500 to-emerald-500 flex items-center" id="banner-section">
-        <div class="absolute inset-0 bg-slate-950/20 mix-blend-multiply"></div>
-        <div class="p-5 relative z-10 max-w-[65%] space-y-1.5 text-white">
-          <span class="bg-white/20 text-white text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider">Flash Campaign</span>
-          <h2 class="text-sm font-extrabold leading-tight">Authentic Certified Medicines Home Delivered</h2>
-          <p class="text-[10px] text-teal-100 font-semibold">Flat 20% discount on order above ₹300</p>
-        </div>
-        <img class="absolute right-2 bottom-0 w-32 object-contain" src="https://images.unsplash.com/photo-1584017911766-d451b3d0e843?w=300" alt="Flash promo">
-      </div>
-
-      <!-- SEARCH ENGINE & FILTERS BAR -->
-      <div class="space-y-3 shrink-0">
-        <div class="relative shadow-sm">
-          <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
-            <i class="fa-solid fa-magnifying-glass"></i>
-          </span>
-          <input type="text" id="search-medicine-input" placeholder="Search paracetamol, vitamins, amoxicillin..." class="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-100 bg-white outline-none focus:border-teal-500 text-xs font-semibold shadow-xs transition-all">
+      <!-- AD BANNER SLIDER (Pristine layout with heartbeat/pill graphic) -->
+      <div class="relative rounded-2xl overflow-hidden shadow-xs h-36 bg-gradient-to-r from-blue-50 to-blue-100 flex items-center border border-blue-50" id="banner-section">
+        <div class="p-5 pr-2 z-10 max-w-[65%] space-y-1">
+          <span class="bg-blue-600 text-white text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider font-display">DISCOUNT!</span>
+          <h2 class="text-lg font-black text-blue-900 leading-tight">25% OFF</h2>
+          <p class="text-[9px] text-blue-700 font-extrabold uppercase tracking-wide">on HEART CARE MEDS</p>
+          <button class="mt-1.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-[8.5px] px-3.5 py-1 rounded-full uppercase tracking-wider">Shop Now</button>
         </div>
         
-        <!-- Category badges carousel -->
-        <div class="flex gap-2 overflow-x-auto no-scrollbar py-1 select-none">
-          <button class="cat-badge-btn px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-teal-500 text-white transition-all shadow-xs" data-category="All">All</button>
-          <button class="cat-badge-btn px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-white text-slate-600 border border-slate-100 hover:bg-teal-50 hover:text-teal-600 transition-all shadow-xs" data-category="Fever & Cold">Fever & Cold</button>
-          <button class="cat-badge-btn px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-white text-slate-600 border border-slate-100 hover:bg-teal-50 hover:text-teal-600 transition-all shadow-xs" data-category="Prescription">Prescription</button>
-          <button class="cat-badge-btn px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-white text-slate-600 border border-slate-100 hover:bg-teal-50 hover:text-teal-600 transition-all shadow-xs" data-category="Allergies">Allergies</button>
-          <button class="cat-badge-btn px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-white text-slate-600 border border-slate-100 hover:bg-teal-50 hover:text-teal-600 transition-all shadow-xs" data-category="Wellness & Vitamins">Wellness & Vitamins</button>
+        <!-- Illustration on the right -->
+        <div class="absolute right-3.5 top-2.5 bottom-2.5 w-[32%] flex items-center justify-center">
+          <div class="relative">
+            <!-- Ping pulse animations -->
+            <div class="absolute inset-0 bg-red-100 rounded-full blur-xs scale-125 opacity-20 animate-ping"></div>
+            <div class="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center border border-rose-50 z-10 relative">
+              <i class="fa-solid fa-heart-pulse text-rose-500 text-3xl"></i>
+              <!-- Pill decoration -->
+              <span class="absolute -bottom-1 -right-1 bg-blue-500 text-white rounded-full p-1 border border-white shadow-xs">
+                <i class="fa-solid fa-capsules text-[9px]"></i>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pagination dots progress indicators -->
+        <div class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-25">
+          <span class="w-4 h-1 rounded-full bg-blue-600 transition-all"></span>
+          <span class="w-1 h-1 rounded-full bg-slate-300"></span>
+          <span class="w-1 h-1 rounded-full bg-slate-300"></span>
         </div>
       </div>
 
-      <!-- LOCAL AI SMART OFFERS BLOCK -->
+      <!-- LOCAL AI SMART SUGGESTION PHARMACY TIPS -->
       <div id="user-smart-ai-offer" class="p-3.5 bg-violet-50 rounded-2xl border border-violet-100 flex items-start gap-3 shadow-xs">
-        <div class="p-2 bg-violet-150 text-violet-600 rounded-xl bg-violet-100 flex items-center justify-center shrink-0">
+        <div class="p-2 bg-violet-100 text-violet-600 rounded-xl flex items-center justify-center shrink-0">
           <i class="fa-solid fa-brain text-sm animate-pulse"></i>
         </div>
-        <div>
+        <div class="flex-1">
           <h4 class="text-xs font-extrabold text-violet-900">AI Personal Healthcare Offer</h4>
           <p class="text-[10px] text-violet-750 text-violet-700 leading-relaxed font-semibold mt-0.5" id="ai-smart-tip-text">Recommend Cetirizine 10mg allergy pills if you feel local standard cold signs this season!</p>
-          <span class="text-[9px] font-black text-violet-500 uppercase mt-1 inline-block">MedsHub SmartCare Insight</span>
+          <span class="text-[8px] font-black text-violet-400 uppercase tracking-wide mt-1 inline-block">MedsHub SmartCare Insight</span>
         </div>
       </div>
 
-      <!-- ACTIVE STORE / PHARMACY SELECTOR -->
+      <!-- CATEGORIES HEADER & DOUBLE ROW INTEGRATION GRID -->
       <div class="space-y-3">
-        <div class="flex items-center justify-between">
-          <h4 class="text-xs font-black text-slate-800 uppercase tracking-wider">Connected Pharmacies</h4>
-          <span class="text-[10px] text-slate-400 font-bold" id="user-store-cnt">0 Available</span>
+        <h4 class="text-xs font-black text-slate-900 uppercase tracking-widest flex items-center gap-1.5 font-display">
+          <span class="w-1.5 h-3.5 bg-blue-600 rounded-full"></span> Categories
+        </h4>
+        <div class="grid grid-cols-4 gap-2">
+          
+          <!-- Category 1: Diabetes -->
+          <button class="cat-badge-btn group flex flex-col items-center justify-center p-2.5 rounded-2xl bg-white border border-slate-100 hover:border-emerald-500/30 hover:shadow-md transition-all cursor-pointer focus:outline-none" data-category="Diabetes">
+            <div class="w-9 h-9 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center mb-1 group-hover:scale-110 transition-all shrink-0">
+              <i class="fa-solid fa-droplet text-sm"></i>
+            </div>
+            <span class="text-[8px] font-black text-slate-700 uppercase tracking-tight text-center truncate w-full">Diabetes</span>
+          </button>
+
+          <!-- Category 2: Heart Care -->
+          <button class="cat-badge-btn group flex flex-col items-center justify-center p-2.5 rounded-2xl bg-white border border-slate-100 hover:border-emerald-500/30 hover:shadow-md transition-all cursor-pointer focus:outline-none" data-category="Heart Care">
+            <div class="w-9 h-9 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center mb-1 group-hover:scale-110 transition-all shrink-0">
+              <i class="fa-solid fa-heart-pulse text-sm"></i>
+            </div>
+            <span class="text-[8px] font-black text-slate-700 uppercase tracking-tight text-center truncate w-full">Heart Care</span>
+          </button>
+
+          <!-- Category 3: Vitamins -->
+          <button class="cat-badge-btn group flex flex-col items-center justify-center p-2.5 rounded-2xl bg-white border border-slate-100 hover:border-emerald-500/30 hover:shadow-md transition-all cursor-pointer focus:outline-none" data-category="Wellness & Vitamins">
+            <div class="w-9 h-9 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center mb-1 group-hover:scale-110 transition-all shrink-0">
+              <i class="fa-solid fa-bottle-droplet text-sm"></i>
+            </div>
+            <span class="text-[8px] font-black text-slate-700 uppercase tracking-tight text-center truncate w-full">Vitamins</span>
+          </button>
+
+          <!-- Category 4: Baby Care -->
+          <button class="cat-badge-btn group flex flex-col items-center justify-center p-2.5 rounded-2xl bg-white border border-slate-100 hover:border-emerald-500/30 hover:shadow-md transition-all cursor-pointer focus:outline-none" data-category="Baby Care">
+            <div class="w-9 h-9 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center mb-1 group-hover:scale-110 transition-all shrink-0">
+              <i class="fa-solid fa-baby text-sm"></i>
+            </div>
+            <span class="text-[8px] font-black text-slate-700 uppercase tracking-tight text-center truncate w-full">Baby Care</span>
+          </button>
+
+          <!-- Category 5: Allergy -->
+          <button class="cat-badge-btn group flex flex-col items-center justify-center p-2.5 rounded-2xl bg-white border border-slate-100 hover:border-emerald-500/30 hover:shadow-md transition-all cursor-pointer focus:outline-none" data-category="Allergies">
+            <div class="w-9 h-9 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center mb-1 group-hover:scale-110 transition-all shrink-0">
+              <i class="fa-solid fa-capsules text-sm"></i>
+            </div>
+            <span class="text-[8px] font-black text-slate-700 uppercase tracking-tight text-center truncate w-full">Allergy</span>
+          </button>
+
+          <!-- Category 6: Pain Relief -->
+          <button class="cat-badge-btn group flex flex-col items-center justify-center p-2.5 rounded-2xl bg-white border border-slate-100 hover:border-emerald-500/30 hover:shadow-md transition-all cursor-pointer focus:outline-none" data-category="Fever & Cold">
+            <div class="w-9 h-9 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center mb-1 group-hover:scale-110 transition-all shrink-0">
+              <i class="fa-solid fa-bolt text-sm"></i>
+            </div>
+            <span class="text-[8px] font-black text-slate-700 uppercase tracking-tight text-center truncate w-full">Pain Relief</span>
+          </button>
+
+          <!-- Category 7: Personal Care -->
+          <button class="cat-badge-btn group flex flex-col items-center justify-center p-2.5 rounded-2xl bg-white border border-slate-100 hover:border-emerald-500/30 hover:shadow-md transition-all cursor-pointer focus:outline-none" data-category="Personal Care">
+            <div class="w-9 h-9 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center mb-1 group-hover:scale-110 transition-all shrink-0">
+              <i class="fa-solid fa-pump-soap text-sm"></i>
+            </div>
+            <span class="text-[8px] font-black text-slate-700 uppercase tracking-tight text-center truncate w-full block">Personal Care</span>
+          </button>
+
+          <!-- Category 8: Healthcare Devices -->
+          <button class="cat-badge-btn group flex flex-col items-center justify-center p-2.5 rounded-2xl bg-white border border-slate-100 hover:border-emerald-500/30 hover:shadow-md transition-all cursor-pointer focus:outline-none" data-category="Prescription">
+            <div class="w-9 h-9 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center mb-1 group-hover:scale-110 transition-all shrink-0">
+              <i class="fa-solid fa-stethoscope text-sm"></i>
+            </div>
+            <span class="text-[8px] font-black text-slate-700 uppercase tracking-tight text-center truncate w-full leading-none">Devices</span>
+          </button>
+
         </div>
-        <div class="flex gap-3 overflow-x-auto no-scrollbar scroll-smooth" id="user-store-slider">
-          <!-- Dynamic Stores selection buttons -->
-          <div class="w-48 bg-white border border-slate-100 p-3.5 rounded-2xl shadow-xs shrink-0 flex items-center gap-2">
-            <i class="fa-solid fa-circle-notch fa-spin text-teal-500"></i>
-            <span class="text-xs font-semibold text-slate-400">Loading stores...</span>
+      </div>
+
+      <!-- MEDICINE CARDS GRID (Sleek cards layout) -->
+      <div class="space-y-3">
+        <div class="flex justify-between items-center">
+          <h4 class="text-xs font-black text-slate-900 uppercase tracking-widest flex items-center gap-1.5 font-display">
+            <span class="w-1.5 h-3.5 bg-blue-600 rounded-full"></span> Medicine Cards
+          </h4>
+          <span class="text-[9px] bg-blue-50 text-blue-600 font-extrabold px-2 py-0.5 rounded shadow-xs" id="user-meds-cnt">0 Items</span>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-3" id="user-medicines-grid">
+          <!-- Dynamically populated card items -->
+          <div class="col-span-2 text-center py-8 text-slate-400">
+            <i class="fa-solid fa-circle-notch fa-spin text-2xl text-blue-500 mb-2"></i>
+            <p class="text-xs font-semibold">Synchronizing central apothecary...</p>
           </div>
         </div>
       </div>
 
-      <!-- MEDICINE GRID ITEMS -->
+      <!-- NEARBY PHARMACY STORES (Horizontal cards) -->
       <div class="space-y-3">
-        <div class="flex justify-between items-center">
-          <h4 class="text-xs font-black text-slate-800 uppercase tracking-wider">Featured Medicines</h4>
-          <span class="text-[10px] text-slate-400 font-bold" id="user-meds-cnt">0 Items</span>
+        <div class="flex items-center justify-between">
+          <h4 class="text-xs font-black text-slate-900 uppercase tracking-widest flex items-center gap-1.5 font-display">
+            <span class="w-1.5 h-3.5 bg-blue-600 rounded-full"></span> Nearby Stores
+          </h4>
+          <span class="text-[9px] text-slate-400 font-bold" id="user-store-cnt">0 Available</span>
         </div>
-        <div class="grid grid-cols-2 gap-3.5" id="user-medicines-grid">
-          <!-- Dynamically populated card items -->
-          <div class="col-span-2 text-center py-6 text-slate-400">
-            <i class="fa-solid fa-rotate fa-spin text-2xl text-teal-400 mb-2"></i>
-            <p class="text-xs font-semibold">Synchronizing central apothecary...</p>
+        <div class="flex gap-3 overflow-x-auto custom-scrollbar scroll-smooth py-1" id="user-store-slider">
+          <!-- Dynamic Stores selection landscape cards -->
+          <div class="w-48 bg-white border border-slate-100 p-3.5 rounded-2xl shadow-xs shrink-0 flex items-center gap-2">
+            <i class="fa-solid fa-location-crosshairs fa-spin text-blue-500"></i>
+            <span class="text-xs font-semibold text-slate-400">Locating coordinates...</span>
           </div>
         </div>
       </div>
 
     </section>
 
-    <!-- ACTIVE VIEW: ORDERS / LIVE TRACKING (Alternate screen tab view) -->
-    <section id="user-orders-view" class="hidden flex-1 overflow-y-auto px-4 py-4 space-y-5 pb-20 no-scrollbar">
+    <!-- ALTERNATE SECTION: ORDERS VIEW / LIVE MAP TRACKING -->
+    <section id="user-orders-view" class="hidden flex-1 overflow-y-auto px-4 py-4 space-y-4 pb-24 custom-scrollbar">
       
-      <!-- Section Title -->
+      <!-- Section Header -->
       <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-        <h3 class="text-sm font-extrabold text-slate-900"><i class="fa-solid fa-receipt text-teal-500 mr-2"></i>Your Order History</h3>
-        <span class="text-[10px] bg-teal-50 text-teal-600 font-black px-2 py-0.5 rounded shadow-xs" id="user-orders-cnt">0 Orders</span>
+        <h3 class="text-sm font-black text-slate-900 font-display uppercase tracking-wider"><i class="fa-solid fa-receipt text-blue-600 mr-1.5"></i>Your Order History</h3>
+        <span class="text-[9px] bg-blue-50 text-blue-605 text-blue-600 font-extrabold px-2.5 py-0.5 rounded shadow-xs" id="user-orders-cnt">0 Orders</span>
       </div>
 
-      <!-- LIVE TRACKING MODULE (If actively following an order) -->
-      <div id="user-live-tracking-panel" class="hidden bg-white rounded-3xl border border-slate-100 p-4 shadow-md space-y-4">
+      <!-- LIVE MAP TRACKING LAYER -->
+      <div id="user-live-tracking-panel" class="hidden bg-white rounded-3xl border border-slate-150 shadow-md p-4 space-y-4">
+        
         <div class="flex items-center justify-between border-b border-slate-50 pb-2">
-          <h4 class="text-xs font-black text-indigo-700 flex items-center gap-1.5 animate-pulse">
-            <span class="w-2 h-2 rounded-full bg-indigo-500"></span> Active Delivery Tracker
+          <h4 class="text-[11px] font-black text-indigo-700 flex items-center gap-1.5 uppercase animate-pulse">
+            <span class="w-2 h-2 rounded-full bg-indigo-500 shrink-0"></span> Active Delivery Tracker
           </h4>
-          <span id="tracker-eta" class="text-[10px] bg-slate-900 text-white font-extrabold px-2 py-0.5 rounded">Calculated ETA...</span>
+          <span id="tracker-eta" class="text-[9px] bg-slate-900 text-white font-extrabold px-2 py-0.5 rounded">Calculating ETA...</span>
         </div>
 
-        <!-- Geoapify Live Tracking MAP View -->
-        <div class="relative bg-slate-100 rounded-xl overflow-hidden h-44 border border-slate-150 flex items-center justify-center">
+        <!-- Static Route Map Representation -->
+        <div class="relative bg-slate-100 rounded-2xl overflow-hidden h-44 border border-slate-200 flex items-center justify-center">
           <img id="tracker-map-img" class="w-full h-full object-cover" src="" alt="Fulfillment Map Router">
-          <div class="absolute top-2 left-2 bg-slate-900/80 backdrop-blur-xs text-white text-[9px] font-black tracking-wide p-1.5 rounded uppercase flex items-center gap-1 shadow">
-            <i class="fa-solid fa-location-arrow animate-bounce"></i> Live GPS
+          <div class="absolute top-2 left-2 bg-slate-900/80 backdrop-blur-md text-white text-[8px] font-black tracking-widest p-1.5 rounded uppercase flex items-center gap-1 shadow">
+            <i class="fa-solid fa-location-arrow animate-bounce text-indigo-400"></i> Live GPS Map
           </div>
         </div>
 
-        <!-- Order Timeline Process Steps -->
+        <!-- Orders Process Timeline Checklist -->
         <div class="grid grid-cols-4 gap-1 text-center font-bold">
-          <div id="step-placed" class="p-1 px-2 border-b-4 border-emerald-500 text-emerald-600 flex flex-col items-center">
+          <div id="step-placed" class="p-1 border-b-4 border-emerald-500 text-emerald-600 flex flex-col items-center">
             <i class="fa-solid fa-basket-shopping text-xs"></i>
-            <span class="text-[8px] uppercase mt-1">Placed</span>
+            <span class="text-[7.5px] uppercase mt-1">Placed</span>
           </div>
-          <div id="step-accepted" class="p-1 px-2 border-b-4 border-slate-200 text-slate-400 flex flex-col items-center">
+          <div id="step-accepted" class="p-1 border-b-4 border-slate-200 text-slate-400 flex flex-col items-center">
             <i class="fa-solid fa-file-invoice text-xs"></i>
-            <span class="text-[8px] uppercase mt-1">Accept</span>
+            <span class="text-[7.5px] uppercase mt-1">Accept</span>
           </div>
-          <div id="step-packed" class="p-1 px-2 border-b-4 border-slate-200 text-slate-400 flex flex-col items-center">
+          <div id="step-packed" class="p-1 border-b-4 border-slate-200 text-slate-400 flex flex-col items-center">
             <i class="fa-solid fa-boxes-packing text-xs"></i>
-            <span class="text-[8px] uppercase mt-1">Packed</span>
+            <span class="text-[7.5px] uppercase mt-1">Packed</span>
           </div>
-          <div id="step-transit" class="p-1 p-x-2 border-b-4 border-slate-200 text-slate-400 flex flex-col items-center">
+          <div id="step-transit" class="p-1 border-b-4 border-slate-200 text-slate-400 flex flex-col items-center">
             <i class="fa-solid fa-truck-fast text-xs"></i>
-            <span class="text-[8px] uppercase mt-1">Transit</span>
+            <span class="text-[7.5px] uppercase mt-1">Transit</span>
           </div>
         </div>
 
-        <!-- Assigned Rider widget -->
+        <!-- Assigned Rider Block -->
         <div class="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-semibold">
           <div class="flex items-center gap-2">
-            <div class="w-8 h-8 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center font-bold">
+            <div class="w-8.5 h-8.5 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
               <i class="fa-solid fa-user-ninja"></i>
             </div>
             <div>
-              <p id="tracker-rider-name" class="font-extrabold text-slate-900">Awaiting partner assign...</p>
-              <span id="tracker-rider-phone" class="text-[10px] text-slate-450 text-slate-400 font-mono">Mobile Details</span>
+              <p id="tracker-rider-name" class="font-extrabold text-slate-900">Awaiting dispatch...</p>
+              <span id="tracker-rider-phone" class="text-[9px] text-slate-400 font-mono block">Queue standing line</span>
             </div>
           </div>
-          <a id="lnk-call-rider" href="tel:" class="text-teal-500 hover:text-teal-600 text-base"><i class="fa-solid fa-phone-volume"></i></a>
+          <a id="lnk-call-rider" href="tel:" class="text-blue-500 hover:text-blue-600 text-base"><i class="fa-solid fa-phone-volume"></i></a>
         </div>
       </div>
 
+      <!-- HISTORY INVOICES LOGS LIST -->
       <div class="space-y-4" id="user-orders-history-list">
         <!-- Render lists dynamically -->
         <p class="text-xs text-center text-slate-400 font-medium py-12">No purchases recorded.</p>
       </div>
     </section>
 
-    <!-- CHECKOUT DRAWER OVERLAY (Slides up/toggles) -->
+    <!-- CHECKOUT DRAWER OVERLAY -->
     <div id="checkout-drawer" class="hidden absolute inset-0 bg-slate-950/40 backdrop-blur-xs z-30 transition-all duration-300 flex flex-col justify-end">
-      <div class="bg-white rounded-t-[32px] max-h-[85vh] flex flex-col p-6 shadow-2xl relative border-t border-slate-100">
+      <div class="bg-white rounded-t-[32px] max-h-[85vh] flex flex-col p-5 shadow-2xl relative border-t border-slate-100">
         
-        <!-- Draggability marker style -->
-        <div class="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-4 shrink-0"></div>
+        <!-- Pull visual marker -->
+        <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-4 shrink-0"></div>
         <button id="btn-close-checkout" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 cursor-pointer">
-          <i class="fa-solid fa-circle-xmark text-2xl"></i>
+          <i class="fa-solid fa-circle-xmark text-xl"></i>
         </button>
 
-        <h3 class="text-sm font-extrabold text-slate-900 flex items-center gap-2 border-b border-slate-50 pb-2 mb-4 shrink-0">
-          <i class="fa-solid fa-cart-shopping text-teal-500"></i> Your Shopping Basket
+        <h3 class="text-xs font-black text-slate-900 uppercase tracking-widest flex items-center gap-2 border-b border-slate-100 pb-2 mb-4 shrink-0 font-display">
+          <i class="fa-solid fa-cart-shopping text-blue-600"></i> Your Shopping Basket
         </h3>
 
-        <!-- Scrollable items selection inside cart -->
-        <div class="flex-1 overflow-y-auto space-y-4 no-scrollbar pr-1 min-h-0" id="cart-items-container">
+        <!-- Scrollable items inside cart -->
+        <div class="flex-1 overflow-y-auto space-y-3.5 custom-scrollbar pr-1 min-h-0" id="cart-items-container">
           <!-- Populated dynamically via JS -->
           <div class="text-center py-8 text-slate-400">
             <i class="fa-solid fa-cart-plus text-3xl mb-2 text-slate-300"></i>
-            <p class="text-xs font-semibold">Your cart is entirely empty!</p>
+            <p class="text-xs font-semibold">Your cart is empty!</p>
           </div>
         </div>
 
-        <!-- ADDRESS SELECTION & GEOAPIFY SEARCH -->
-        <div class="mt-4 pt-3 border-t border-slate-100 space-y-3 shrink-0">
+        <!-- ADDRESS & COUPON SEGMENTS -->
+        <div class="mt-4 pt-3 border-t border-slate-100 space-y-3.5 shrink-0">
           <div>
-            <label class="block text-[10px] font-black text-slate-400 uppercase mb-1.5">Delivery Address & Destination</label>
+            <label class="block text-[8.5px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Fulfillment Address & GPS Node</label>
             
             <!-- Address Search with geoapify dropdown results -->
             <div class="relative">
-              <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
-                <i class="fa-solid fa-location-dot"></i>
+              <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 z-10">
+                <i class="fa-solid fa-location-dot text-rose-500"></i>
               </span>
-              <input type="text" id="checkout-address-input" placeholder="Enter address or search nearby..." class="w-full pl-9 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:bg-white focus:border-teal-500 transition-all">
-              <button id="btn-gps-checkout" class="absolute inset-y-0 right-0 pr-3 flex items-center text-teal-500 hover:text-teal-600 transition-all" title="Pin GPS Destination">
+              <input type="text" id="checkout-address-input" placeholder="Enter delivery address..." class="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:bg-white focus:border-blue-500 transition-all">
+              <button id="btn-gps-checkout" class="absolute inset-y-0 right-0 pr-3 flex items-center text-blue-500 hover:text-blue-600 transition-all" title="Pin GPS Destination">
                 <i class="fa-solid fa-location-crosshairs"></i>
               </button>
             </div>
             
-            <!-- Dropdown autocomplete results -->
-            <div id="address-suggestions" class="hidden absolute left-6 right-6 mt-1 bg-white border border-slate-150 rounded-xl shadow-lg z-50 max-h-40 overflow-y-auto divide-y divide-slate-100">
+            <!-- Autocomplete autocomplete matching list dropdown -->
+            <div id="address-suggestions" class="hidden absolute left-5 right-5 mt-1 bg-white border border-slate-150 rounded-xl shadow-lg z-50 max-h-40 overflow-y-auto divide-y divide-slate-50">
               <!-- Autocomplete matches -->
             </div>
           </div>
 
-          <!-- PROMOCODE COUPON BLOCK -->
+          <!-- COUPONS PROMOCODES SECTION -->
           <div class="flex gap-2">
-            <input type="text" id="cart-coupon-input" placeholder="Apply promocode (MEDS20)" class="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-extrabold uppercase outline-none focus:bg-white focus:border-teal-500">
-            <button id="btn-apply-coupon" class="bg-slate-900 text-white font-bold text-xs px-4 rounded-xl cursor-pointer hover:bg-slate-800 transition-all">Apply</button>
+            <input type="text" id="cart-coupon-input" placeholder=" coupon (example: MEDS20)" class="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-extrabold uppercase outline-none focus:bg-white focus:border-blue-500">
+            <button id="btn-apply-coupon" class="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-4 rounded-xl cursor-pointer transition-all">Apply</button>
           </div>
           <div id="coupon-alert-msg" class="hidden text-[10px] font-bold text-emerald-600 mt-1"></div>
 
-          <!-- PRICING LIST BREAKDOWN -->
-          <div class="space-y-1 text-xs pt-1" id="checkout-pricing-box">
+          <!-- PRICE LIST COMPONENT -->
+          <div class="space-y-1 text-[11px] pt-1" id="checkout-pricing-box">
             <div class="flex justify-between text-slate-500 font-semibold">
               <span>Subtotal:</span>
               <span class="font-mono">₹0</span>
             </div>
             <div class="flex justify-between text-slate-500 font-semibold">
-              <span>Taxes & GST (12%):</span>
+              <span>GST & Taxes (12%):</span>
               <span class="font-mono">₹0</span>
             </div>
-            <div class="flex justify-between text-slate-500 font-semibold mt-0.5">
-              <span>Delivery Charge / Platform:</span>
+            <div class="flex justify-between text-slate-500 font-semibold">
+              <span>Fulfillment & Delivery Fees:</span>
               <span class="font-mono">₹0</span>
             </div>
-            <div class="flex justify-between font-extrabold text-slate-800 pt-2 text-sm border-t border-slate-100 mt-2">
+            <div class="flex justify-between font-black text-slate-900 pt-2 text-xs border-t border-slate-100 mt-2">
               <span>Handovers Collected (C.O.D):</span>
-              <span class="font-mono text-teal-500 text-base" id="cart-final-total">₹0</span>
+              <span class="font-mono text-blue-600 text-sm" id="cart-final-total">₹0</span>
             </div>
           </div>
 
-          <!-- Checkout Final Trigger button -->
-          <button id="btn-confirm-order" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer mt-1">
+          <!-- Place Order COD Cta -->
+          <button id="btn-confirm-order" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer mt-1">
             <i class="fa-solid fa-basket-shopping"></i>
             <span>Confirm COD Order Handover</span>
           </button>
@@ -277,23 +415,41 @@
       </div>
     </div>
 
-    <!-- FLOATING BOTTOM NAVIGATION BAR -->
-    <nav class="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 shadow-lg px-6 py-2 flex items-center justify-between z-20 shrink-0">
-      <button id="navitem-home" class="flex flex-col items-center gap-1 text-teal-500 text-xs font-black flex-1 focus:outline-none transition-all cursor-pointer">
+    <!-- FLOATING BOTTOM NAVIGATION BAR (Mimicking screenshot - HOME, SEARCH, CART, ORDERS, PROFILE) -->
+    <nav class="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 shadow-lg px-4 py-2 flex items-center justify-between z-20 shrink-0 select-none">
+      
+      <!-- ITEM 1: HOME (Active by default) -->
+      <button id="navitem-home" class="flex flex-col items-center gap-1 text-blue-600 text-[9px] font-black flex-1 focus:outline-none transition-all cursor-pointer">
         <i class="fa-solid fa-house-chimney text-base"></i>
-        <span>Home</span>
+        <span>HOME</span>
       </button>
 
-      <button id="navitem-cart" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 text-xs font-bold flex-1 focus:outline-none relative transition-all cursor-pointer">
-        <i class="fa-solid fa-cart-shopping text-base"></i>
-        <span>Basket</span>
-        <!-- Floating cart counter badge -->
-        <span id="badge-cart-cnt" class="absolute -top-1 right-5 bg-rose-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center hidden border border-white">0</span>
+      <!-- ITEM 2: SEARCH -->
+      <button id="navitem-search" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 text-[9px] font-bold flex-1 focus:outline-none transition-all cursor-pointer">
+        <i class="fa-solid fa-magnifying-glass text-base"></i>
+        <span>SEARCH</span>
       </button>
 
-      <button id="navitem-orders" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 text-xs font-bold flex-1 focus:outline-none transition-all cursor-pointer">
+      <!-- ITEM 3: CART/BASKET (with 3-count badge style overlay matching screenshot) -->
+      <button id="navitem-cart" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 text-[9px] font-bold flex-1 focus:outline-none relative transition-all cursor-pointer">
+        <div class="relative">
+          <i class="fa-solid fa-cart-shopping text-base"></i>
+          <!-- Badge counter -->
+          <span id="badge-cart-cnt" class="absolute -top-1.5 -right-3 animate-bounce bg-blue-600 text-white text-[8px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center border-2 border-white hidden">0</span>
+        </div>
+        <span>CART</span>
+      </button>
+
+      <!-- ITEM 4: ORDERS HISTORY -->
+      <button id="navitem-orders" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 text-[9px] font-bold flex-1 focus:outline-none transition-all cursor-pointer">
         <i class="fa-solid fa-receipt text-base"></i>
-        <span>History</span>
+        <span>ORDERS</span>
+      </button>
+
+      <!-- ITEM 5: PROFILE LOGOUT CONTROL widget -->
+      <button id="navitem-profile" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-650 hover:text-slate-600 text-[9px] font-bold flex-1 focus:outline-none transition-all cursor-pointer">
+        <i class="fa-solid fa-user-circle text-base"></i>
+        <span>PROFILE</span>
       </button>
     </nav>
 

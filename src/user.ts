@@ -31,8 +31,10 @@ const userOrdersSection = document.getElementById("user-orders-view") as HTMLEle
 const checkoutDrawer = document.getElementById("checkout-drawer") as HTMLDivElement;
 
 const navHome = document.getElementById("navitem-home") as HTMLButtonElement;
+const navSearch = document.getElementById("navitem-search") as HTMLButtonElement;
 const navCart = document.getElementById("navitem-cart") as HTMLButtonElement;
 const navOrders = document.getElementById("navitem-orders") as HTMLButtonElement;
+const navProfile = document.getElementById("navitem-profile") as HTMLButtonElement;
 
 // Suggestions block
 const addrSuggestions = document.getElementById("address-suggestions") as HTMLDivElement;
@@ -107,6 +109,21 @@ async function bootstrapGeoLocation() {
 navHome.addEventListener("click", () => {
   toggleSections("home");
 });
+navSearch.addEventListener("click", () => {
+  toggleSections("home");
+  const searchBar = document.getElementById("search-medicine-input") as HTMLInputElement;
+  if (searchBar) {
+    searchBar.focus();
+    searchBar.scrollIntoView({ behavior: "smooth", block: "center" });
+    // Flash visually to highlight search bar
+    searchBar.classList.add("ring-2", "ring-blue-400");
+    setTimeout(() => {
+      searchBar.classList.remove("ring-2", "ring-blue-400");
+    }, 1500);
+  }
+  navHome.className = "flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 text-[9px] font-bold flex-1 focus:outline-none transition-all cursor-pointer";
+  navSearch.className = "flex flex-col items-center gap-1 text-blue-600 text-[9px] font-black flex-1 focus:outline-none transition-all cursor-pointer";
+});
 navCart.addEventListener("click", () => {
   checkoutDrawer.classList.remove("hidden");
   renderCartDrawer();
@@ -115,18 +132,32 @@ navOrders.addEventListener("click", () => {
   toggleSections("orders");
   syncOrdersHistory();
 });
+navProfile.addEventListener("click", () => {
+  if (confirm("Sign out from RS Meds Hub account?")) {
+    signOut(auth).then(() => {
+      window.location.href = "/index.html";
+    });
+  }
+});
 
 function toggleSections(view: "home" | "orders") {
+  const activeClass = "flex flex-col items-center gap-1 text-blue-600 text-[9px] font-black flex-1 focus:outline-none transition-all cursor-pointer";
+  const inactiveClass = "flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 text-[9px] font-bold flex-1 focus:outline-none transition-all cursor-pointer";
+
   if (view === "home") {
     userScrollSection.classList.remove("hidden");
     userOrdersSection.classList.add("hidden");
-    navHome.className = "flex flex-col items-center gap-1 text-teal-500 text-xs font-black flex-1 focus:outline-none transition-all cursor-pointer";
-    navOrders.className = "flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 text-xs font-bold flex-1 focus:outline-none transition-all cursor-pointer";
+    navHome.className = activeClass;
+    navOrders.className = inactiveClass;
+    navSearch.className = inactiveClass;
+    navProfile.className = inactiveClass;
   } else {
     userOrdersSection.classList.remove("hidden");
     userScrollSection.classList.add("hidden");
-    navOrders.className = "flex flex-col items-center gap-1 text-teal-500 text-xs font-black flex-1 focus:outline-none transition-all cursor-pointer";
-    navHome.className = "flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 text-xs font-bold flex-1 focus:outline-none transition-all cursor-pointer";
+    navOrders.className = activeClass;
+    navHome.className = inactiveClass;
+    navSearch.className = inactiveClass;
+    navProfile.className = inactiveClass;
   }
 }
 
@@ -210,8 +241,13 @@ document.querySelectorAll(".cat-badge-btn").forEach((btn) => {
     const target = e.currentTarget as HTMLButtonElement;
     activeCategory = target.getAttribute("data-category")!;
     
-    document.querySelectorAll(".cat-badge-btn").forEach((b) => b.className = "cat-badge-btn px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-white text-slate-600 border border-slate-100 hover:bg-teal-50 hover:text-teal-600 transition-all shadow-xs");
-    target.className = "cat-badge-btn px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-teal-500 text-white transition-all shadow-xs";
+    document.querySelectorAll(".cat-badge-btn").forEach((b) => {
+      b.classList.remove("border-emerald-500", "bg-emerald-50/20", "ring-2", "ring-emerald-500/20");
+      b.classList.add("border-slate-100", "bg-white");
+    });
+    
+    target.classList.remove("border-slate-100", "bg-white");
+    target.classList.add("border-emerald-500", "bg-emerald-50/20", "ring-2", "ring-emerald-500/20");
 
     renderMedicinesGrid();
     triggerAISuggestion();
@@ -238,17 +274,42 @@ function renderPharmacySlider() {
 
   container.innerHTML = `
     <!-- All toggle button -->
-    <button onclick="selectActiveStore('')" class="flex flex-col items-center justify-center p-3 w-28 bg-white border ${activeStoreId === "" ? "border-teal-500 bg-teal-50/10 text-teal-600" : "border-slate-100 text-slate-600"} rounded-2xl shadow-xs shrink-0 cursor-pointer text-center relative hover:scale-95 transition-all">
-      <i class="fa-solid fa-hospital-user text-xl mb-1 text-teal-500"></i>
-      <span class="text-[10px] font-black uppercase">All Bundled</span>
+    <button onclick="selectActiveStore('')" class="flex items-center gap-3 p-3 bg-white border ${activeStoreId === "" ? "border-blue-500 bg-blue-50/10 text-blue-600 ring-2 ring-blue-500/20" : "border-slate-100 text-slate-600"} rounded-2xl shadow-xs shrink-0 cursor-pointer min-w-[150px] hover:scale-98 transition-all relative">
+      <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-black">
+        <i class="fa-solid fa-house-medical text-base"></i>
+      </div>
+      <div class="text-left font-black text-xs leading-tight">
+        <h5 class="text-[10px] tracking-tight truncate uppercase font-display">ALL STORES</h5>
+        <span class="text-[8px] text-slate-400 block font-bold">Filter Reset</span>
+      </div>
     </button>
   ` + allStores.map((s) => {
     const isSelected = s.storeId === activeStoreId;
+    const isOpen = s.isOpen !== false;
+    const statusText = isOpen ? "OPEN" : "CLOSED";
+    const statusColorClass = isOpen ? "text-emerald-500 bg-emerald-50" : "text-rose-500 bg-rose-50";
+    
+    // Dynamic calculate distance
+    const dist = (s.location && currentCoordinates)
+      ? calculateDistance(currentCoordinates.lat, currentCoordinates.lng, s.location.lat, s.location.lng).toFixed(1)
+      : (Math.random() * 2 + 1).toFixed(1);
+
     return `
-      <button onclick="selectActiveStore('${s.storeId}')" class="flex flex-col items-center justify-center p-3 w-28 bg-white border ${isSelected ? "border-teal-500 bg-teal-50/10 text-teal-600" : "border-slate-100 text-slate-600"} rounded-2xl shadow-xs shrink-0 cursor-pointer text-center relative hover:scale-95 transition-all">
-        <i class="fa-solid fa-mortar-pestle text-xl text-teal-500 mb-1"></i>
-        <span class="text-[10px] font-black truncate w-full uppercase">${s.name}</span>
-        <span class="text-[8px] text-slate-400 font-bold tracking-wide">${s.city || "Bengaluru"}</span>
+      <button onclick="selectActiveStore('${s.storeId}')" class="flex items-center gap-3 p-3 bg-white border ${isSelected ? "border-blue-500 bg-blue-50/10 text-blue-600 ring-2 ring-blue-500/20" : "border-slate-100 text-slate-600"} rounded-2xl shadow-xs shrink-0 cursor-pointer min-w-[200px] hover:scale-98 transition-all text-left">
+        <!-- Logo Icon circular -->
+        <div class="w-10 h-10 rounded-full bg-rose-50 border border-rose-100 text-rose-500 flex items-center justify-center font-bold shrink-0 relative">
+          <i class="fa-solid fa-laptop-medical text-base"></i>
+          <span class="absolute top-0 right-0 w-2.5 h-2.5 rounded-full ${isOpen ? "bg-emerald-500" : "bg-rose-500"} border-2 border-white"></span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <h5 class="font-bold text-[10px] text-slate-900 truncate uppercase tracking-tight leading-snug font-display">${s.name}</h5>
+          
+          <div class="flex items-center gap-1.5 mt-1 font-semibold text-[8px] text-slate-500">
+            <span class="flex items-center gap-0.5"><i class="fa-solid fa-location-crosshairs text-[8px]"></i> ${dist} KM</span>
+            <span class="w-1 h-1 bg-slate-200 rounded-full"></span>
+            <span class="px-1.5 py-0.5 rounded font-black tracking-wide text-[7px] ${statusColorClass}">${statusText}</span>
+          </div>
+        </div>
       </button>
     `;
   }).join("");
@@ -276,7 +337,7 @@ function renderMedicinesGrid() {
 
   if (filtered.length === 0) {
     container.innerHTML = `
-      <div class="col-span-2 text-center py-12 text-slate-400 font-semibold text-xs">
+      <div class="col-span-2 text-center py-12 text-slate-400 font-semibold text-xs animate-fade-in">
         <i class="fa-solid fa-box-open text-2xl mb-2 text-slate-300"></i>
         <p>No medicines match your segment filters.</p>
       </div>
@@ -287,29 +348,29 @@ function renderMedicinesGrid() {
   container.innerHTML = filtered.map((m) => {
     const qtyInCart = cartItems[m.medicineId]?.qty || 0;
     return `
-      <div class="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-xs flex flex-col justify-between">
-        <img class="w-full h-28 object-cover" src="${m.image || "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300"}" alt="${m.name}">
+      <div class="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-xs flex flex-col justify-between hover:shadow-md transition-all">
+        <img class="w-full h-28 object-cover-no-referrer" src="${m.image || "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300"}" referrerpolicy="no-referrer" alt="${m.name}">
         <div class="p-3 space-y-2 flex-1 flex flex-col justify-between">
           <div>
-            <span class="text-[8px] uppercase font-black text-teal-500 bg-teal-50 px-1.5 py-0.5 rounded">${m.category || "General"}</span>
-            <h4 class="font-bold text-slate-900 text-xs mt-1.5 truncate leading-tight">${m.name}</h4>
+            <span class="text-[7.5px] uppercase font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full tracking-wide">${m.category || "General"}</span>
+            <h4 class="font-extrabold text-slate-900 text-[11px] mt-1.5 truncate leading-tight tracking-tight font-display">${m.name}</h4>
             <p class="text-[9px] text-slate-400 truncate mt-0.5 leading-normal" title="${m.description}">${m.description || "Certified secure pharmaceutical product"}</p>
           </div>
           
-          <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-50">
-            <span class="font-extrabold text-slate-900 text-xs">₹${m.price}</span>
+          <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 gap-1">
+            <span class="font-black text-slate-900 text-xs text-blue-600">₹${m.price}</span>
             
             ${qtyInCart > 0 ? `
               <!-- Quantities controller active border -->
-              <div class="flex items-center gap-1.5 bg-teal-500 text-white rounded-lg px-2 py-1 text-[10px] font-black">
-                <button onclick="updateCartItemQty('${m.medicineId}', -1)" class="cursor-pointer hover:opacity-80 px-1"><i class="fa-solid fa-minus"></i></button>
-                <span>${qtyInCart}</span>
-                <button onclick="updateCartItemQty('${m.medicineId}', 1)" class="cursor-pointer hover:opacity-80 px-1"><i class="fa-solid fa-plus"></i></button>
+              <div class="flex items-center gap-1.5 bg-blue-600 text-white rounded-full px-2.5 py-1 text-[9px] font-black shadow-xs">
+                <button onclick="updateCartItemQty('${m.medicineId}', -1)" class="cursor-pointer hover:opacity-85 px-0.5"><i class="fa-solid fa-minus text-[7px]"></i></button>
+                <span class="min-w-[10px] text-center">${qtyInCart}</span>
+                <button onclick="updateCartItemQty('${m.medicineId}', 1)" class="cursor-pointer hover:opacity-85 px-0.5"><i class="fa-solid fa-plus text-[7px]"></i></button>
               </div>
             ` : `
               <!-- Action add selection -->
-              <button onclick="addMedicineToCart('${m.medicineId}')" class="bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-bold py-1 px-3 rounded-lg hover:-translate-y-0.5 transition-all cursor-pointer">
-                ADD
+              <button onclick="addMedicineToCart('${m.medicineId}')" class="bg-blue-600 hover:bg-blue-700 text-white text-[8.5px] font-black py-1.5 px-3 rounded-full hover:shadow-xs transition-all cursor-pointer uppercase tracking-tight flex items-center gap-1">
+                Add <i class="fa-solid fa-plus text-[7px]"></i>
               </button>
             `}
           </div>
