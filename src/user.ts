@@ -51,8 +51,9 @@ onAuthStateChanged(auth, async (user) => {
   // Fetch profile detailed settings
   get(ref(db, `users/${user.uid}`)).then((snapshot) => {
     if (snapshot.exists() && snapshot.val().role !== "user") {
-      signOut(auth);
-      window.location.href = "/index.html";
+      signOut(auth).then(() => {
+        window.location.href = "/index.html";
+      });
     } else if (snapshot.exists()) {
       showToast(`Logged in safely!`, "success");
       bootstrapGeoLocation();

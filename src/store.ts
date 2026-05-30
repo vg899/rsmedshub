@@ -31,16 +31,18 @@ onAuthStateChanged(auth, (user) => {
     if (snapshot.exists()) {
       const data = snapshot.val();
       if (data.role !== "store") {
-        signOut(auth);
-        window.location.href = "/index.html";
+        signOut(auth).then(() => {
+          window.location.href = "/index.html";
+        });
       } else {
         // Safe access confirmed
         document.getElementById("store-profile-header-name")!.innerText = data.name || "Pharmacy Merchant Node";
         syncStoreDashboard();
       }
     } else {
-      signOut(auth);
-      window.location.href = "/index.html";
+      signOut(auth).then(() => {
+        window.location.href = "/index.html";
+      });
     }
   });
 });

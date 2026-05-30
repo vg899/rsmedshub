@@ -21,16 +21,18 @@ onAuthStateChanged(auth, (user) => {
       const data = snapshot.val();
       if (data.role !== "admin") {
         showToast("Access Denied: Admin account needed.", "error");
-        signOut(auth);
-        window.location.href = "/index.html";
+        signOut(auth).then(() => {
+          window.location.href = "/index.html";
+        });
       } else {
         document.getElementById("admin-name-txt")!.innerText = data.name || "Administrator";
         initDashboard();
       }
     } else {
       showToast("User details not found.", "error");
-      signOut(auth);
-      window.location.href = "/index.html";
+      signOut(auth).then(() => {
+        window.location.href = "/index.html";
+      });
     }
   });
 });

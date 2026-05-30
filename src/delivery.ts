@@ -38,16 +38,18 @@ onAuthStateChanged(auth, (user) => {
     if (snapshot.exists()) {
       const data = snapshot.val();
       if (data.role !== "delivery") {
-        signOut(auth);
-        window.location.href = "/index.html";
+        signOut(auth).then(() => {
+          window.location.href = "/index.html";
+        });
       } else {
         // Safe access confirmed
         document.getElementById("delivery-profile-rider-name")!.innerText = data.name || "Delivery Express Agent";
         syncRiderBase();
       }
     } else {
-      signOut(auth);
-      window.location.href = "/index.html";
+      signOut(auth).then(() => {
+        window.location.href = "/index.html";
+      });
     }
   });
 });
