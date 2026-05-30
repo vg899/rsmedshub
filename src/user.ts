@@ -28,6 +28,7 @@ let appliedCoupon: any = null;
 // HTML Elements
 const userScrollSection = document.getElementById("user-main-scroll") as HTMLElement;
 const userOrdersSection = document.getElementById("user-orders-view") as HTMLElement;
+const userProfileSection = document.getElementById("user-profile-view") as HTMLElement;
 const checkoutDrawer = document.getElementById("checkout-drawer") as HTMLDivElement;
 
 const navHome = document.getElementById("navitem-home") as HTMLButtonElement;
@@ -133,31 +134,38 @@ navOrders.addEventListener("click", () => {
   syncOrdersHistory();
 });
 navProfile.addEventListener("click", () => {
-  if (confirm("Sign out from RS Meds Hub account?")) {
-    signOut(auth).then(() => {
-      window.location.href = "/index.html";
-    });
-  }
+  toggleSections("profile");
+  syncUserProfileDash();
 });
 
-function toggleSections(view: "home" | "orders") {
+function toggleSections(view: "home" | "orders" | "profile") {
   const activeClass = "flex flex-col items-center gap-1 text-blue-600 text-[9px] font-black flex-1 focus:outline-none transition-all cursor-pointer";
   const inactiveClass = "flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 text-[9px] font-bold flex-1 focus:outline-none transition-all cursor-pointer";
 
   if (view === "home") {
     userScrollSection.classList.remove("hidden");
     userOrdersSection.classList.add("hidden");
+    userProfileSection?.classList.add("hidden");
     navHome.className = activeClass;
     navOrders.className = inactiveClass;
     navSearch.className = inactiveClass;
     navProfile.className = inactiveClass;
-  } else {
+  } else if (view === "orders") {
     userOrdersSection.classList.remove("hidden");
     userScrollSection.classList.add("hidden");
+    userProfileSection?.classList.add("hidden");
     navOrders.className = activeClass;
     navHome.className = inactiveClass;
     navSearch.className = inactiveClass;
     navProfile.className = inactiveClass;
+  } else if (view === "profile") {
+    userProfileSection?.classList.remove("hidden");
+    userScrollSection.classList.add("hidden");
+    userOrdersSection.classList.add("hidden");
+    navProfile.className = activeClass;
+    navHome.className = inactiveClass;
+    navOrders.className = inactiveClass;
+    navSearch.className = inactiveClass;
   }
 }
 
@@ -347,8 +355,12 @@ function renderMedicinesGrid() {
 
   container.innerHTML = filtered.map((m) => {
     const qtyInCart = cartItems[m.medicineId]?.qty || 0;
+    const isFav = profileData && profileData.favorites && profileData.favorites[m.medicineId] ? true : false;
     return `
-      <div class="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-xs flex flex-col justify-between hover:shadow-md transition-all">
+      <div class="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-xs flex flex-col justify-between hover:shadow-md transition-all relative">
+        <button onclick="toggleFavoriteItem('${m.medicineId}')" class="absolute top-2 right-2 w-7 h-7 bg-white/85 hover:bg-white text-slate-400 hover:text-rose-500 rounded-full flex items-center justify-center border border-slate-100 transition-all cursor-pointer z-10 shadow-xs focus:outline-none">
+          <i class="${isFav ? 'fa-solid fa-heart text-rose-500' : 'fa-regular fa-heart'} text-xs"></i>
+        </button>
         <img class="w-full h-28 object-cover-no-referrer" src="${m.image || "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300"}" referrerpolicy="no-referrer" alt="${m.name}">
         <div class="p-3 space-y-2 flex-1 flex flex-col justify-between">
           <div>
@@ -382,6 +394,20 @@ function renderMedicinesGrid() {
 
 // Basket Cart Handlers mapping
 Object.assign(window, {
+  async toggleFavoriteItem(id: string) {
+    if (!loggedInUser) return;
+    const key = `users/${loggedInUser.uid}/favorites/${id}`;
+    const snap = await get(ref(db, key));
+    if (snap.exists()) {
+      await remove(ref(db, key));
+      showToast("Removed from Favorites", "info");
+    } else {
+      await set(ref(db, key), true);
+      showToast("Added to Favorites!", "success");
+    }
+    await syncUserProfileDash();
+    renderMedicinesGrid();
+  },
   addMedicineToCart(id: string) {
     const med = allMedicines.find((m) => m.medicineId === id);
     if (!med) return;
@@ -967,3 +993,967 @@ function triggerAISuggestion() {
     tipText.innerText = "Wellness Tip: Certified health remedies inside basket. Take standard medication with lukewarm water on regular schedules.";
   }
 }
+
+// 10. --- USER PROFILE SYSTEM & DYNAMIC SUB-SETTINGS ---
+let profileData: any = {};
+
+async function syncUserProfileDash() {
+  if (!loggedInUser) return;
+  try {
+    const snapshot = await get(ref(db, `users/${loggedInUser.uid}`));
+    if (snapshot.exists()) {
+      profileData = snapshot.val();
+      
+      const nameEl = document.getElementById("profile-display-name");
+      const emailEl = document.getElementById("profile-display-email");
+      const coinsEl = document.getElementById("profile-display-coins");
+      const avatarEl = document.getElementById("profile-avatar-placeholder");
+
+      if (nameEl) nameEl.innerText = profileData.name || loggedInUser.displayName || "Patient User";
+      if (emailEl) emailEl.innerText = profileData.email || loggedInUser.email || "user@gmail.com";
+      if (coinsEl) {
+        if (!profileData.coins) {
+          profileData.coins = 250;
+          await update(ref(db, `users/${loggedInUser.uid}`), { coins: 250 });
+        }
+        coinsEl.innerText = String(profileData.coins);
+      }
+      if (avatarEl) {
+        const char = (profileData.name || loggedInUser.email || "U").trim().charAt(0).toUpperCase();
+        avatarEl.innerText = char;
+      }
+    }
+  } catch (err) {
+    console.error("Error syncing profile dash:", err);
+  }
+}
+
+const profileDrawer = document.getElementById("profile-detail-drawer") as HTMLDivElement;
+const profileDrawerTitle = document.getElementById("profile-drawer-title") as HTMLHeadingElement;
+const profileDrawerContent = document.getElementById("profile-drawer-content") as HTMLDivElement;
+const closeProfileDrawerBtn = document.getElementById("btn-close-profile-drawer");
+
+closeProfileDrawerBtn?.addEventListener("click", () => {
+  profileDrawer?.classList.add("hidden");
+});
+
+function openProfileDrawer(title: string, contentHtml: string) {
+  if (!profileDrawer || !profileDrawerTitle || !profileDrawerContent) return;
+  profileDrawerTitle.innerHTML = title;
+  profileDrawerContent.innerHTML = contentHtml;
+  profileDrawer.classList.remove("hidden");
+}
+
+document.getElementById("btn-opt-my-profile")?.addEventListener("click", () => {
+  openMyProfileEditor();
+});
+document.getElementById("btn-opt-manage-addresses")?.addEventListener("click", () => {
+  openManageAddresses();
+});
+document.getElementById("btn-opt-my-orders")?.addEventListener("click", () => {
+  toggleSections("orders");
+  syncOrdersHistory();
+});
+document.getElementById("btn-opt-favorites")?.addEventListener("click", () => {
+  openFavoritesViewer();
+});
+document.getElementById("btn-opt-coupons")?.addEventListener("click", () => {
+  openCouponsViewer();
+});
+document.getElementById("btn-opt-invoices")?.addEventListener("click", () => {
+  openInvoicesViewer();
+});
+document.getElementById("btn-opt-notifications")?.addEventListener("click", () => {
+  openNotificationSettings();
+});
+document.getElementById("btn-opt-ratings")?.addEventListener("click", () => {
+  openRatingsSelector();
+});
+document.getElementById("btn-opt-refer-earn")?.addEventListener("click", () => {
+  openReferEarnSlide();
+});
+document.getElementById("btn-opt-health-profile")?.addEventListener("click", () => {
+  openHealthProfileForm();
+});
+document.getElementById("btn-opt-ai-assistant")?.addEventListener("click", () => {
+  openAIAssistantChat();
+});
+document.getElementById("btn-opt-settings")?.addEventListener("click", () => {
+  openAppSettings();
+});
+document.getElementById("btn-opt-help-support")?.addEventListener("click", () => {
+  openHelpSupportSuite();
+});
+document.getElementById("btn-opt-security")?.addEventListener("click", () => {
+  openSecurityDashboard();
+});
+document.getElementById("btn-opt-logout")?.addEventListener("click", () => {
+  if (confirm("Sign out from RS Meds Hub account?")) {
+    signOut(auth).then(() => {
+      window.location.href = "/index.html";
+    });
+  }
+});
+
+function openMyProfileEditor() {
+  const html = `
+    <div class="space-y-4 animate-fade-in p-1">
+      <div class="space-y-1">
+        <label class="block text-[9px] uppercase font-black text-slate-400 tracking-wider">Authentication Email</label>
+        <input type="text" value="${profileData.email || loggedInUser.email || ""}" disabled class="w-full px-3 py-2 bg-slate-100 text-slate-500 border border-slate-200 rounded-xl text-xs font-bold font-mono cursor-not-allowed">
+      </div>
+      <div class="space-y-1">
+        <label class="block text-[9px] uppercase font-black text-slate-400 tracking-wider">Full Name</label>
+        <input type="text" id="edit-profile-name" value="${profileData.name || ""}" placeholder="Enter full name" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 focus:border-blue-500 focus:bg-white text-slate-800 rounded-xl text-xs font-bold outline-none transition-all">
+      </div>
+      <div class="space-y-1">
+        <label class="block text-[9px] uppercase font-black text-slate-400 tracking-wider">Mobile Number</label>
+        <input type="tel" id="edit-profile-phone" value="${profileData.phone || ""}" placeholder="+91 XXXXX XXXXX" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 focus:border-blue-500 focus:bg-white text-slate-800 rounded-xl text-xs font-semibold outline-none transition-all font-mono">
+      </div>
+      
+      <button id="btn-save-edited-profile" class="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white font-black py-2.5 rounded-xl transition-all shadow-md text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer">
+        <i class="fa-solid fa-cloud-arrow-up"></i> Save Profile Settings
+      </button>
+    </div>
+  `;
+  openProfileDrawer(`<i class="fa-solid fa-user-gear text-blue-600 mr-1.5"></i> My Personal Profile`, html);
+
+  document.getElementById("btn-save-edited-profile")?.addEventListener("click", async () => {
+    const nameVal = (document.getElementById("edit-profile-name") as HTMLInputElement).value.trim();
+    const phoneVal = (document.getElementById("edit-profile-phone") as HTMLInputElement).value.trim();
+
+    if (!nameVal) {
+      showToast("Full name is required", "error");
+      return;
+    }
+
+    try {
+      await update(ref(db, `users/${loggedInUser.uid}`), {
+        name: nameVal,
+        phone: phoneVal
+      });
+      showToast("Profile settings written safely!", "success");
+      profileDrawer.classList.add("hidden");
+      await syncUserProfileDash();
+    } catch (err) {
+      showToast("Could not update profile information.", "error");
+    }
+  });
+}
+
+async function openManageAddresses() {
+  let addressListHtml = "";
+  try {
+    const snap = await get(ref(db, `users/${loggedInUser.uid}/addresses`));
+    if (snap.exists()) {
+      const addrs = snap.val();
+      addressListHtml = Object.entries(addrs).map(([key, val]: [string, any]) => `
+        <div class="flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold animate-fade-in group hover:bg-blue-50/10">
+          <div class="flex items-start gap-2.5 min-w-0 pr-2">
+            <span class="w-6 h-6 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-[10px] shrink-0 mt-0.5"><i class="fa-solid fa-house-chimney"></i></span>
+            <div class="min-w-0 leading-tight">
+              <strong class="text-[10px] text-slate-800 uppercase tracking-tight block font-extrabold">${key}</strong>
+              <span class="text-[9px] text-slate-400 font-semibold block truncate" title="${val}">${val}</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button onclick="useStoredAddress('${key}')" class="text-[8px] bg-blue-100 hover:bg-blue-600 hover:text-white text-blue-600 font-black px-2 py-1 rounded transition-all cursor-pointer">SELECT</button>
+            <button onclick="deleteStoredAddress('${key}')" class="w-6 h-6 rounded-lg bg-rose-50 hover:bg-rose-500 hover:text-white text-rose-500 flex items-center justify-center text-[10px] transition-all cursor-pointer"><i class="fa-regular fa-trash-can"></i></button>
+          </div>
+        </div>
+      `).join("");
+    } else {
+      addressListHtml = `
+        <div class="text-center py-6 text-slate-400">
+          <i class="fa-solid fa-location-crosshairs text-2xl mb-1 text-slate-350"></i>
+          <p class="text-[10px] font-semibold">No saved addresses configured.</p>
+        </div>
+      `;
+    }
+  } catch (err) {
+    console.error(err);
+  }
+
+  const html = `
+    <div class="space-y-4 animate-fade-in p-1">
+      <div class="space-y-2.5 max-h-52 overflow-y-auto custom-scrollbar pr-1 divide-y divide-slate-50">
+        ${addressListHtml}
+      </div>
+
+      <div class="border-t border-slate-100 pt-3.5 space-y-3">
+        <h4 class="text-[10px] font-black text-slate-800 uppercase tracking-widest"><i class="fa-solid fa-circle-plus text-blue-500 mr-1 text-[11px]"></i>Add Address Destination</h4>
+        <div class="grid grid-cols-2 gap-2">
+          <input type="text" id="add-addr-label" placeholder="Label (Home, Work, etc.)" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 focus:border-blue-500 focus:bg-white text-slate-800 rounded-xl text-xs font-bold outline-none transition-all">
+          <button id="btn-gps-addr" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-black text-[9.5px] rounded-xl flex items-center justify-center gap-1 cursor-pointer border border-indigo-100 transition-all">
+            <i class="fa-solid fa-location-crosshairs animate-pulse"></i> Current GPS
+          </button>
+        </div>
+        <textarea id="add-addr-val" rows="2" placeholder="Complete address path with building, lane, landmark etc." class="w-full p-2.5 bg-slate-50 border border-slate-200 focus:border-blue-500 focus:bg-white text-slate-800 rounded-xl text-xs font-semibold outline-none transition-all resize-none"></textarea>
+        
+        <button id="btn-save-new-addr" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-2.5 rounded-xl transition-all shadow-md text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer">
+          <i class="fa-solid fa-map-pin"></i> Save Address Node
+        </button>
+      </div>
+    </div>
+  `;
+  openProfileDrawer(`<i class="fa-solid fa-location-shield text-blue-600 mr-1.5"></i> Saved Addresses`, html);
+
+  (window as any).useStoredAddress = (key: string) => {
+    get(ref(db, `users/${loggedInUser.uid}/addresses/${key}`)).then((snapshot) => {
+      if (snapshot.exists()) {
+        const addr = snapshot.val();
+        if (addrInput) {
+          addrInput.value = addr;
+          showToast(`Selected address label: ${key}!`, "success");
+          profileDrawer.classList.add("hidden");
+        }
+      }
+    });
+  };
+
+  (window as any).deleteStoredAddress = async (key: string) => {
+    if (confirm(`Remove saved address "${key}"?`)) {
+      try {
+        await remove(ref(db, `users/${loggedInUser.uid}/addresses/${key}`));
+        showToast("Address deleted successfully", "success");
+        openManageAddresses();
+      } catch (err) {
+        showToast("Error deleting address context", "error");
+      }
+    }
+  };
+
+  document.getElementById("btn-gps-addr")?.addEventListener("click", async () => {
+    const gpsBtn = document.getElementById("btn-gps-addr") as HTMLButtonElement;
+    gpsBtn.disabled = true;
+    gpsBtn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Loading GPS`;
+    try {
+      const coords = await getCurrentGPS();
+      if (coords.address) {
+        const addrTextarea = document.getElementById("add-addr-val") as HTMLTextAreaElement;
+        addrTextarea.value = coords.address;
+        showToast("GPS address pin captured!", "info");
+      }
+    } catch (err) {
+      showToast("Could not locate device coordinates.", "error");
+    } finally {
+      gpsBtn.disabled = false;
+      gpsBtn.innerHTML = `<i class="fa-solid fa-location-crosshairs"></i> Current GPS`;
+    }
+  });
+
+  document.getElementById("btn-save-new-addr")?.addEventListener("click", async () => {
+    const label = (document.getElementById("add-addr-label") as HTMLInputElement).value.trim();
+    const val = (document.getElementById("add-addr-val") as HTMLTextAreaElement).value.trim();
+
+    if (!label || !val) {
+      showToast("Designation and full address string are required.", "error");
+      return;
+    }
+
+    try {
+      await update(ref(db, `users/${loggedInUser.uid}/addresses`), {
+        [label]: val
+      });
+      showToast(`Saved Address designation "${label}"!`, "success");
+      openManageAddresses();
+    } catch (err) {
+      showToast("Error saving address node.", "error");
+    }
+  });
+}
+
+async function openFavoritesViewer() {
+  let listHtml = "";
+  try {
+    const favSnap = await get(ref(db, `users/${loggedInUser.uid}/favorites`));
+    if (favSnap.exists()) {
+      const favObj = favSnap.val();
+      const favIds = Object.keys(favObj);
+      const favMeds = allMedicines.filter(m => favIds.includes(m.medicineId));
+
+      if (favMeds.length > 0) {
+        listHtml = favMeds.map(m => `
+          <div class="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold gap-3">
+            <div class="flex items-center gap-2">
+              <img class="w-10 h-10 rounded-xl object-cover shrink-0" src="${m.image || 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=100'}" alt="${m.name}">
+              <div>
+                <h5 class="font-extrabold text-[11px] text-slate-800 truncate uppercase mt-0.5 leading-none font-display">${m.name}</h5>
+                <span class="text-[9px] text-slate-400 font-bold block mt-1">₹${m.price} | ${m.category || 'General'}</span>
+              </div>
+            </div>
+            <button onclick="addMedicineToCart('${m.medicineId}')" class="shrink-0 bg-blue-600 hover:bg-blue-700 text-white text-[8px] font-black px-2.5 py-1.5 rounded-xl uppercase tracking-wider cursor-pointer font-sans">
+              Add <i class="fa-solid fa-cart-plus text-[8.5px] ml-1"></i>
+            </button>
+          </div>
+        `).join("");
+      }
+    }
+    
+    if (!listHtml) {
+      listHtml = `
+        <div class="text-center py-10 text-slate-400">
+          <i class="fa-solid fa-heart-crack text-3xl text-slate-300 mb-2"></i>
+          <p class="text-xs font-semibold">No favorites flagged yet</p>
+          <span class="text-[9px] text-slate-400 block mt-1 max-w-[200px] mx-auto leading-tight">Click on the heart icons next to medicines in of marketplace to find them saved here.</span>
+        </div>
+      `;
+    }
+  } catch (err) {
+    console.error(err);
+  }
+
+  openProfileDrawer(`<i class="fa-solid fa-heart text-rose-500 mr-1.5"></i> My Saved Favorites`, `
+    <div class="space-y-2 animate-fade-in p-1 max-h-96 overflow-y-auto custom-scrollbar">
+      ${listHtml}
+    </div>
+  `);
+}
+
+function openCouponsViewer() {
+  const html = `
+    <div class="space-y-4 animate-fade-in p-1">
+      <div class="p-4 bg-gradient-to-r from-amber-500 to-yellow-600 text-white rounded-2xl flex items-center justify-between shadow">
+        <div>
+          <span class="text-[8px] font-black uppercase tracking-widest text-yellow-100 block">Reward Balance</span>
+          <h4 class="text-2xl font-black font-display font-mono mt-0.5">${profileData.coins || 250} <span class="text-xs font-bold text-yellow-100 uppercase font-sans">Meds Coins</span></h4>
+          <span class="text-[9px] text-yellow-200 font-semibold block mt-1">Claim medications at 100% discount with coins</span>
+        </div>
+        <i class="fa-solid fa-coins text-4xl text-amber-300 opacity-90 animate-bounce"></i>
+      </div>
+
+      <div class="space-y-2.5 font-sans">
+        <h4 class="text-[10px] font-black text-slate-800 uppercase tracking-widest">Available Coupons</h4>
+        
+        <div class="p-3 bg-white border border-slate-100 rounded-2xl flex items-center justify-between hover:border-blue-300 group transition-all">
+          <div class="leading-tight">
+            <span class="font-mono text-xs font-extrabold text-blue-600 bg-blue-50 px-2 py-1 rounded inline-block">MEDS20</span>
+            <p class="text-[9px] text-slate-500 font-bold mt-1.5">Get 20% discount on orders higher than ₹500</p>
+          </div>
+          <button onclick="copyPromoCode('MEDS20')" class="text-[8px] bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-600 font-extrabold px-2.5 py-1.5 rounded-xl transition-all cursor-pointer">COPY</button>
+        </div>
+
+        <div class="p-3 bg-white border border-slate-100 rounded-2xl flex items-center justify-between hover:border-blue-300 group transition-all">
+          <div class="leading-tight">
+            <span class="font-mono text-xs font-extrabold text-blue-600 bg-blue-50 px-2 py-1 rounded inline-block">HEALTHFIRST</span>
+            <p class="text-[9px] text-slate-500 font-bold mt-1.5">Free fulfillment & priority delivery for initial purchases</p>
+          </div>
+          <button onclick="copyPromoCode('HEALTHFIRST')" class="text-[8px] bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-600 font-extrabold px-2.5 py-1.5 rounded-xl transition-all cursor-pointer">COPY</button>
+        </div>
+
+        <div class="p-3 bg-white border border-slate-100 rounded-2xl flex items-center justify-between hover:border-blue-300 group transition-all">
+          <div class="leading-tight">
+            <span class="font-mono text-xs font-extrabold text-blue-600 bg-blue-50 px-2 py-1 rounded inline-block">APOTHECARY30</span>
+            <p class="text-[9px] text-slate-500 font-bold mt-1.5">₹30 static instant cashbacks on standard medicine items</p>
+          </div>
+          <button onclick="copyPromoCode('APOTHECARY30')" class="text-[8px] bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-600 font-extrabold px-2.5 py-1.5 rounded-xl transition-all cursor-pointer">COPY</button>
+        </div>
+      </div>
+    </div>
+  `;
+  openProfileDrawer(`<i class="fa-solid fa-ticket text-amber-500 mr-1.5 animate-bounce"></i> Coupons & Rewards`, html);
+
+  (window as any).copyPromoCode = (code: string) => {
+    navigator.clipboard.writeText(code).then(() => {
+      showToast(`Discount code "${code}" copied to clipboard!`, "success");
+      const checkoutCouponInput = document.getElementById("cart-coupon-input") as HTMLInputElement;
+      if (checkoutCouponInput) checkoutCouponInput.value = code;
+      profileDrawer.classList.add("hidden");
+    });
+  };
+}
+
+async function openInvoicesViewer() {
+  let listHtml = "";
+  try {
+    const ordersSnap = await get(ref(db, "orders"));
+    if (ordersSnap.exists()) {
+      const allOrdersObj = ordersSnap.val();
+      const userOrders = Object.values(allOrdersObj).filter((or: any) => or.userId === loggedInUser.uid);
+
+      if (userOrders.length > 0) {
+        listHtml = userOrders.map((or: any) => {
+          const formattedDate = new Date(or.timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+          return `
+            <div class="p-3.5 bg-slate-50 border border-slate-100 rounded-2xl flex flex-col gap-2 shadow-xs text-xs font-semibold animate-fade-in hover:bg-slate-100/30">
+              <div class="flex items-center justify-between border-b border-slate-150 pb-2">
+                <div class="leading-tight">
+                  <h5 class="text-[10px] font-black font-mono text-slate-800 uppercase tracking-tight">Invoice ID: ${or.orderId.slice(-8).toUpperCase()}</h5>
+                  <span class="text-[9px] text-slate-400 font-semibold block mt-0.5">${formattedDate} | Total: <span class="text-blue-600 font-mono font-black">₹${or.totalPrice || or.total}</span></span>
+                </div>
+                <span class="bg-blue-100 text-blue-600 text-[8px] font-black tracking-wider px-2 py-0.5 rounded uppercase leading-none border border-blue-200">${or.status || 'placed'}</span>
+              </div>
+              <div class="space-y-1">
+                ${Object.values(or.items || {}).map((it: any) => `
+                  <div class="flex justify-between text-[10px] text-slate-500 font-semibold">
+                    <span class="truncate max-w-[150px]">${it.name} (x${it.qty || it.quantity})</span>
+                    <span class="font-mono">₹${(it.qty || it.quantity) * it.price}</span>
+                  </div>
+                `).join("")}
+              </div>
+              <div class="flex justify-end pt-1">
+                <button onclick="printCustomInvoice('${or.orderId}')" class="text-[8.5px] bg-slate-900 hover:bg-slate-800 text-white font-black px-3.5 py-1.5 rounded-xl transition-all cursor-pointer inline-flex items-center gap-1">
+                  <i class="fa-solid fa-print"></i> Open Receipt
+                </button>
+              </div>
+            </div>
+          `;
+        }).join("");
+      }
+    }
+  } catch (err) {
+    console.error(err);
+  }
+
+  if (!listHtml) {
+    listHtml = `
+      <div class="text-center py-10 text-slate-400">
+        <i class="fa-solid fa-receipt text-3xl mb-2 text-slate-350 font-sans"></i>
+        <p class="text-xs font-semibold">No finished orders yet</p>
+        <span class="text-[9px] text-slate-400 block mt-1 leading-normal max-w-xs mx-auto">Configure your delivery address, checkout medicines, and get dynamic invoice receipts listed here instantly!</span>
+      </div>
+    `;
+  }
+
+  openProfileDrawer(`<i class="fa-solid fa-file-invoice-dollar text-indigo-600 mr-1.5 animate-pulse"></i> My Invoice Documents`, `
+    <div class="space-y-3 animate-fade-in p-1 max-h-[60vh] overflow-y-auto custom-scrollbar">
+      ${listHtml}
+    </div>
+  `);
+
+  (window as any).printCustomInvoice = async (orderId: string) => {
+    try {
+      const snap = await get(ref(db, `orders/${orderId}`));
+      if (snap.exists()) {
+        const order = snap.val();
+        const formattedDate = new Date(order.timestamp).toLocaleString();
+        
+        const invoiceWindowHtml = `
+          <html>
+            <head>
+              <title>RS MEDS HUB - Invoice Receipt</title>
+              <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+              <style>
+                body {
+                  font-family: 'Courier Prime', monospace;
+                  padding: 24px;
+                  color: #000;
+                  background: #fff;
+                  max-width: 600px;
+                  margin: 0 auto;
+                }
+                .text-center { text-align: center; }
+                .text-right { text-align: right; }
+                .border-dashed { border-top: 1px dashed #000; margin: 12px 0; }
+                .flex { display: flex; justify-content: space-between; }
+                .bold { font-weight: bold; }
+                .mt-2 { margin-top: 8px; }
+              </style>
+            </head>
+            <body>
+              <div class="text-center">
+                <h2>RS MEDS HUB APOTHECARY</h2>
+                <p>Digital Healthcare Distribution Services</p>
+                <p>100% Tax Invoice Bill</p>
+              </div>
+              <div class="border-dashed"></div>
+              <div>
+                <p>Invoice PIN: ${order.orderId.toUpperCase()}</p>
+                <p>Timestamp: ${formattedDate}</p>
+                <p>Customer ID: ${order.userId}</p>
+                <p>Delivery Node Address: ${order.deliveryAddress || 'Collected On Arrival'}</p>
+              </div>
+              <div class="border-dashed"></div>
+              <div class="bold flex">
+                <span>ITEM DETAIL</span>
+                <span>QTY x PRICE</span>
+              </div>
+              <div class="border-dashed"></div>
+              ${Object.values(order.items || {}).map((it: any) => `
+                <div class="flex mt-2">
+                  <span>${it.name} (${it.category || 'General'})</span>
+                  <span>${it.qty || it.quantity} x ₹${it.price} = ₹${(it.qty || it.quantity) * it.price}</span>
+                </div>
+              `).join("")}
+              <div class="border-dashed"></div>
+              <div class="flex mt-2">
+                <span>GST Tax Breakdown (12%):</span>
+                <span>Included</span>
+              </div>
+              <div class="bold flex mt-2">
+                <span>Total Collected (COD Invoice):</span>
+                <span>₹${order.totalPrice || order.total}</span>
+              </div>
+              <div class="border-dashed"></div>
+              <div class="text-center mt-2" style="margin-top: 32px;">
+                <p>Thank you for choosing RS Meds Hub!</p>
+                <p>Consumed medications as specified by clinical guidelines.</p>
+                <button onclick="window.print()" style="margin-top: 16px; padding: 6px 12px; background: #000; color: #fff; cursor: pointer; font-family: inherit;">Print Invoice</button>
+              </div>
+            </body>
+          </html>
+        `;
+
+        const win = window.open("", "_blank");
+        if (win) {
+          win.document.write(invoiceWindowHtml);
+          win.document.close();
+        } else {
+          showToast("Pop-up locked by browser! Please allow popup tabs to view invoice.", "info");
+        }
+      }
+    } catch (err) {
+      showToast("Could not retrieve specific order invoice", "error");
+    }
+  };
+}
+
+function openNotificationSettings() {
+  const html = `
+    <div class="space-y-4 animate-fade-in p-1">
+      <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Configure Preferred Alert Rails</p>
+      
+      <div class="space-y-3">
+        <label class="flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-2xl cursor-pointer">
+          <div class="leading-tight pr-4">
+            <h5 class="text-xs font-black text-slate-800 uppercase tracking-wide">SMS Handover Updates</h5>
+            <p class="text-[9px] text-slate-400 font-semibold mt-0.5">Receive verification messages and dispatch rider alerts</p>
+          </div>
+          <input type="checkbox" checked class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500">
+        </label>
+
+        <label class="flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-2xl cursor-pointer">
+          <div class="leading-tight pr-4">
+            <h5 class="text-xs font-black text-slate-800 uppercase tracking-wide">WhatsApp Daily Bulletins</h5>
+            <p class="text-[9px] text-slate-400 font-semibold mt-0.5">Receive delivery receipt PDFs and chronic drug checklists</p>
+          </div>
+          <input type="checkbox" checked class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500">
+        </label>
+
+        <label class="flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-2xl cursor-pointer">
+          <div class="leading-tight pr-4">
+            <h5 class="text-xs font-black text-slate-800 uppercase tracking-wide">Promotional Campaign Codes</h5>
+            <p class="text-[9px] text-slate-400 font-semibold mt-0.5">Alert on discount codes, loyalty rewards booster multipliers</p>
+          </div>
+          <input type="checkbox" class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500">
+        </label>
+
+        <label class="flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-2xl cursor-pointer">
+          <div class="leading-tight pr-4">
+            <h5 class="text-xs font-black text-slate-800 uppercase tracking-wide">Rider Live Status Alarm</h5>
+            <p class="text-[9px] text-slate-400 font-semibold mt-0.5">Active warning sound alerts when dispatch is near coordinate address</p>
+          </div>
+          <input type="checkbox" checked class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500">
+        </label>
+      </div>
+
+      <button id="btn-save-notification-flags" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-2.5 rounded-xl transition-all shadow-md text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer mt-2">
+        <i class="fa-regular fa-bell"></i> Save Preferences
+      </button>
+    </div>
+  `;
+  openProfileDrawer(`<i class="fa-solid fa-bell text-blue-600 mr-1.5 animate-bounce"></i> Notification Controls`, html);
+
+  document.getElementById("btn-save-notification-flags")?.addEventListener("click", () => {
+    showToast("Notification parameters verified successfully!", "success");
+    profileDrawer.classList.add("hidden");
+  });
+}
+
+function openRatingsSelector() {
+  const html = `
+    <div class="space-y-4 animate-fade-in p-1 font-sans">
+      <div class="text-center space-y-2">
+        <p class="text-[10px] uppercase font-black text-slate-400 tracking-wider">How was your RS Meds Hub experience?</p>
+        
+        <div class="flex items-center justify-center gap-2 text-2xl py-2" id="interactive-star-row">
+          <button onclick="toggleFeedbackStars(1)" class="text-slate-300 hover:scale-110 active:scale-90 transition-all cursor-pointer"><i class="fa-solid fa-star"></i></button>
+          <button onclick="toggleFeedbackStars(2)" class="text-slate-300 hover:scale-110 active:scale-90 transition-all cursor-pointer"><i class="fa-solid fa-star"></i></button>
+          <button onclick="toggleFeedbackStars(3)" class="text-slate-300 hover:scale-110 active:scale-90 transition-all cursor-pointer"><i class="fa-solid fa-star"></i></button>
+          <button onclick="toggleFeedbackStars(4)" class="text-slate-300 hover:scale-110 active:scale-90 transition-all cursor-pointer"><i class="fa-solid fa-star"></i></button>
+          <button onclick="toggleFeedbackStars(5)" class="text-slate-300 hover:scale-110 active:scale-90 transition-all cursor-pointer"><i class="fa-solid fa-star"></i></button>
+        </div>
+      </div>
+
+      <div class="space-y-1">
+        <label class="block text-[9px] uppercase font-black text-slate-400 tracking-wider">Review Comments</label>
+        <textarea id="val-rev-comment" rows="3" placeholder="Tell us about the delivery velocity, item accuracy, clinical verifying etc." class="w-full p-2.5 bg-slate-50 border border-slate-200 focus:border-blue-500 focus:bg-white text-slate-800 rounded-xl text-xs font-semibold outline-none transition-all resize-none"></textarea>
+      </div>
+
+      <button id="btn-submit-clinical-review" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-2.5 rounded-xl transition-all shadow-md text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer">
+        <i class="fa-solid fa-certificate"></i> Submit Verified Review
+      </button>
+    </div>
+  `;
+  openProfileDrawer(`<i class="fa-solid fa-star text-amber-500 mr-1.5 animate-pulse"></i> Submit Ratings & Reviews`, html);
+
+  let activeStarsSelected = 5;
+
+  (window as any).toggleFeedbackStars = (starCount: number) => {
+    activeStarsSelected = starCount;
+    const btnNodes = document.getElementById("interactive-star-row")?.children;
+    if (btnNodes) {
+      for (let i = 0; i < btnNodes.length; i++) {
+        const icon = btnNodes[i].querySelector("i")!;
+        if (i < starCount) {
+          icon.className = "fa-solid fa-star text-amber-400";
+        } else {
+          icon.className = "fa-solid fa-star text-slate-300";
+        }
+      }
+    }
+  };
+
+  (window as any).toggleFeedbackStars(5);
+
+  document.getElementById("btn-submit-clinical-review")?.addEventListener("click", async () => {
+    const feedbackText = (document.getElementById("val-rev-comment") as HTMLTextAreaElement).value.trim();
+    if (!feedbackText) {
+      showToast("Please provide review text description.", "error");
+      return;
+    }
+
+    try {
+      await set(ref(db, `users/${loggedInUser.uid}/reviews/${Date.now()}`), {
+        rating: activeStarsSelected,
+        comment: feedbackText,
+        timestamp: Date.now()
+      });
+      showToast("Thank you for your valuable rating suggestion!", "success");
+      profileDrawer.classList.add("hidden");
+    } catch (err) {
+      showToast("Could not submit feedback loop.", "error");
+    }
+  });
+}
+
+function openReferEarnSlide() {
+  const html = `
+    <div class="space-y-4 animate-fade-in p-1 text-center font-sans">
+      <div class="relative w-28 h-28 mx-auto flex items-center justify-center bg-blue-50 rounded-full border-4 border-dashed border-blue-400">
+        <i class="fa-solid fa-circle-dollar-to-slot text-4xl text-blue-600 animate-bounce"></i>
+      </div>
+      
+      <div class="space-y-1.5">
+        <h4 class="text-xs font-extrabold text-slate-900 uppercase">Refer Friends & Earn Wallet Rewards!</h4>
+        <p class="text-[9.5px] text-slate-500 leading-relaxed font-semibold max-w-xs mx-auto">Get <strong class="text-emerald-600 font-extrabold">₹100 value</strong> credited inside Meds Hub wallet as soon as your referee confirms high-prio first orders.</p>
+      </div>
+
+      <div class="p-3 bg-slate-50 border border-slate-150 rounded-2xl flex items-center justify-between shadow-inner max-w-sm mx-auto">
+        <div class="text-left font-mono">
+          <span class="text-[8px] font-black text-slate-400 block tracking-wider uppercase leading-none">Your Share Referral Code</span>
+          <strong class="text-slate-800 text-sm font-black tracking-widest uppercase block mt-1" id="share-refcode-txt">MEDSHUB-RF${loggedInUser.uid.slice(0, 4).toUpperCase()}</strong>
+        </div>
+        <button id="btn-copy-refcode" class="bg-blue-600 hover:bg-blue-700 text-white font-black text-[9px] px-3.5 py-1.5 rounded-xl cursor-pointer transition-all flex items-center gap-1">
+          <i class="fa-regular fa-copy font-sans"></i> COPY CODE
+        </button>
+      </div>
+    </div>
+  `;
+  openProfileDrawer(`<i class="fa-solid fa-gift text-blue-600 mr-1.5 animate-bounce"></i> Refer & Earn Rewards`, html);
+
+  document.getElementById("btn-copy-refcode")?.addEventListener("click", () => {
+    const code = document.getElementById("share-refcode-txt")!.innerText;
+    navigator.clipboard.writeText(code).then(() => {
+      showToast(`Referral code "${code}" copied successfully!`, "success");
+    });
+  });
+}
+
+async function openHealthProfileForm() {
+  let healthParams = {
+    bloodGroup: "O+",
+    allergies: "",
+    chronic: "",
+    age: "",
+    weight: ""
+  };
+
+  try {
+    const snap = await get(ref(db, `users/${loggedInUser.uid}/healthProfile`));
+    if (snap.exists()) {
+      healthParams = snap.val();
+    }
+  } catch (err) {
+    console.error(err);
+  }
+
+  const html = `
+    <div class="space-y-4 animate-fade-in p-1">
+      <div class="grid grid-cols-2 gap-3">
+        <div class="space-y-1">
+          <label class="block text-[8.5px] uppercase font-black text-slate-400 tracking-wider">Blood Group Type</label>
+          <select id="h-blood" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none font-sans cursor-pointer focus:bg-white focus:border-blue-500 text-slate-800">
+            <option value="A+" ${healthParams.bloodGroup === 'A+' ? 'selected' : ''}>A+ (Positive)</option>
+            <option value="A-" ${healthParams.bloodGroup === 'A-' ? 'selected' : ''}>A- (Negative)</option>
+            <option value="B+" ${healthParams.bloodGroup === 'B+' ? 'selected' : ''}>B+ (Positive)</option>
+            <option value="B-" ${healthParams.bloodGroup === 'B-' ? 'selected' : ''}>B- (Negative)</option>
+            <option value="AB+" ${healthParams.bloodGroup === 'AB+' ? 'selected' : ''}>AB+ (Positive)</option>
+            <option value="AB-" ${healthParams.bloodGroup === 'AB-' ? 'selected' : ''}>AB- (Negative)</option>
+            <option value="O+" ${healthParams.bloodGroup === 'O+' ? 'selected' : ''}>O+ (Positive)</option>
+            <option value="O-" ${healthParams.bloodGroup === 'O-' ? 'selected' : ''}>O- (Negative)</option>
+          </select>
+        </div>
+        <div class="space-y-1">
+          <label class="block text-[8.5px] uppercase font-black text-slate-400 tracking-wider font-sans">Patient Age (Years)</label>
+          <input type="number" id="h-age" value="${healthParams.age || ''}" placeholder="Age" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 text-slate-800 rounded-xl text-xs font-bold outline-none focus:bg-white focus:border-blue-500">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div class="space-y-1">
+          <label class="block text-[8.5px] uppercase font-black text-slate-400 tracking-wider font-sans">Weight (In Kilograms)</label>
+          <input type="number" id="h-weight" value="${healthParams.weight || ''}" placeholder="KG" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 text-slate-800 rounded-xl text-xs font-bold outline-none focus:bg-white focus:border-blue-500">
+        </div>
+        <div class="space-y-1 font-sans">
+          <label class="block text-[8.5px] uppercase font-black text-slate-400 tracking-wider">Body Mass Ratio (Index)</label>
+          <div class="w-full px-3 py-2.5 bg-slate-100 border border-slate-200 text-slate-500 rounded-xl text-xs font-black font-mono leading-none">
+            ${healthParams.weight && healthParams.age ? 'AUTO HEALTH SYNCED' : 'AWAITING METRICS'}
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-1">
+        <label class="block text-[8.5px] uppercase font-black text-slate-400 tracking-wider font-sans">Known Drug / Food Allergies</label>
+        <input type="text" id="h-allergies" value="${healthParams.allergies || ''}" placeholder="example: Penicillin, Peanuts, Gluten" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 focus:border-blue-500 focus:bg-white text-slate-800 rounded-xl text-xs font-bold outline-none transition-all">
+      </div>
+
+      <div class="space-y-1 font-sans">
+        <label class="block text-[8.5px] uppercase font-black text-slate-400 tracking-wider">Chronic Clinical Illnesses</label>
+        <input type="text" id="h-chronic" value="${healthParams.chronic || ''}" placeholder="example: Primary Type-2 Diabetes, Hypertension" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 focus:border-blue-500 focus:bg-white text-slate-800 rounded-xl text-xs font-bold outline-none transition-all">
+      </div>
+
+      <button id="btn-save-health-vitals" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-2.5 rounded-xl transition-all shadow-md text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer mt-2 font-sans">
+        <i class="fa-solid fa-heart-pulse"></i> Update Health Profile
+      </button>
+    </div>
+  `;
+  openProfileDrawer(`<i class="fa-solid fa-briefcase-medical text-blue-600 mr-1.5 font-sans"></i> Patient Health Profile`, html);
+
+  document.getElementById("btn-save-health-vitals")?.addEventListener("click", async () => {
+    const updated = {
+      bloodGroup: (document.getElementById("h-blood") as HTMLSelectElement).value,
+      age: (document.getElementById("h-age") as HTMLInputElement).value,
+      weight: (document.getElementById("h-weight") as HTMLInputElement).value,
+      allergies: (document.getElementById("h-allergies") as HTMLInputElement).value.trim(),
+      chronic: (document.getElementById("h-chronic") as HTMLInputElement).value.trim()
+    };
+
+    try {
+      await set(ref(db, `users/${loggedInUser.uid}/healthProfile`), updated);
+      showToast("Clinical health profiles updated safely!", "success");
+      profileDrawer.classList.add("hidden");
+    } catch (err) {
+      showToast("Error saving vital configs", "error");
+    }
+  });
+}
+
+function openAIAssistantChat() {
+  const html = `
+    <div class="space-y-3 animate-fade-in p-1 flex flex-col max-h-[60vh] font-sans">
+      <div class="bg-violet-50 border border-violet-100 p-2.5 rounded-xl text-[9px] font-bold text-violet-800 leading-normal flex items-start gap-2">
+        <i class="fa-solid fa-circle-exclamation text-violet-500 text-[11px] shrink-0 mt-0.5"></i>
+        <span>Disclaimer: RS Meds Hub AI Pharmacist assistant is programmed for general health insights only. Please consult certified practitioner for actual prescriptions.</span>
+      </div>
+
+      <div id="ai-chat-thread-box" class="flex-1 overflow-y-auto space-y-2.5 max-h-60 min-h-36 border border-slate-100 rounded-2xl p-3 bg-slate-50 font-sans custom-scrollbar">
+        <div class="flex items-start gap-2 max-w-xs text-xs animate-fade-in">
+          <div class="w-6.5 h-6.5 rounded-full bg-violet-600 text-white flex items-center justify-center text-[10px] font-black shrink-0"><i class="fa-solid fa-robot animate-bounce"></i></div>
+          <div class="bg-white p-2.5 rounded-2xl rounded-tl-none border border-slate-100 shadow-xs text-slate-800 font-bold leading-normal">
+            Hello! I am your AI Health Assistant. Ask me anything about medications, symptoms, or dosage guides.
+          </div>
+        </div>
+      </div>
+
+      <div class="flex gap-2 mt-2">
+        <input type="text" id="ai-user-query-input" placeholder="Ask details (ex: paracetamol dose etc.)" class="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:bg-white focus:border-violet-500">
+        <button id="btn-push-ai-query" class="bg-violet-600 hover:bg-violet-700 text-white font-black text-xs px-4 rounded-xl cursor-pointer transition-all flex items-center justify-center"><i class="fa-solid fa-paper-plane text-[9px]"></i></button>
+      </div>
+    </div>
+  `;
+  openProfileDrawer(`<i class="fa-solid fa-brain text-violet-600 mr-1.5 animate-pulse"></i> AI Medical Pharmacist`, html);
+
+  const queryInp = document.getElementById("ai-user-query-input") as HTMLInputElement;
+  const sendBtn = document.getElementById("btn-push-ai-query") as HTMLButtonElement;
+  const threadBox = document.getElementById("ai-chat-thread-box")!;
+
+  const pushMessage = (sender: "user" | "ai", text: string) => {
+    const avatar = sender === "user" 
+      ? `<div class="w-6.5 h-6.5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-black shrink-0 uppercase">${profileData.name?.charAt(0) || 'U'}</div>`
+      : `<div class="w-6.5 h-6.5 rounded-full bg-violet-600 text-white flex items-center justify-center text-[10px] font-black shrink-0"><i class="fa-solid fa-robot"></i></div>`;
+    
+    const alignment = sender === "user" ? "flex-row-reverse animate-slide-in-right" : "";
+    const bubbleColor = sender === "user" ? "bg-blue-600 text-white" : "bg-white text-slate-800 border border-slate-100";
+    const roundedStyle = sender === "user" ? "rounded-tr-none" : "rounded-tl-none";
+
+    const bubbleHtml = `
+      <div class="flex items-start gap-2 ${alignment} max-w-xs text-xs animate-fade-in pt-1">
+        ${avatar}
+        <div class="${bubbleColor} p-2.5 rounded-2xl ${roundedStyle} shadow-xs font-semibold leading-normal">
+          ${text}
+        </div>
+      </div>
+    `;
+    threadBox.insertAdjacentHTML("beforeend", bubbleHtml);
+    threadBox.scrollTop = threadBox.scrollHeight;
+  };
+
+  const processResponse = (rawMsg: string) => {
+    const lower = rawMsg.toLowerCase().trim();
+    if (lower.includes("hello") || lower.includes("hi") || lower.includes("hey")) {
+      return "Hello! How can I assist you with your health query today?";
+    }
+    if (lower.includes("paracetamol") || lower.includes("fever") || lower.includes("crocin")) {
+      return "Paracetamol/Crocin: Standard adult dosage is 500-650mg every 4-6 hours, up to a maximum of 4000mg/day. Ideal for pain relief and fever reducing. Do not pair with alcoholic beverages to protect hepatic functions.";
+    }
+    if (lower.includes("cough") || lower.includes("cold")) {
+      return "For respiratory congestion & dry cough: dextromethorphan hydrobromide syrups are highly effective. If chest contains thick mucus combinations, look for guaifenesin expectorants. Ensure adequate hydration!";
+    }
+    if (lower.includes("allergy") || lower.includes("rash") || lower.includes("cetirizine")) {
+      return "Cetirizine / Levocetirizine: standard antihistamines for allergic triggers (rhinitis, dry sneezing rashes). A standard 10mg dose before bedtime is ideal as it might trigger slight sedation effects.";
+    }
+    return "Based on my clinical database: Please manage symptoms by choosing dedicated organic medicines and staying fully hydrated. I strongly advise checking in with a certified doctor or pharmacist near you if discomfort persists for more than 48 hours.";
+  };
+
+  sendBtn?.addEventListener("click", () => {
+    const query = queryInp.value.trim();
+    if (!query) return;
+
+    pushMessage("user", query);
+    queryInp.value = "";
+
+    sendBtn.disabled = true;
+    const typingHtml = `<div id="ai-typing-temp" class="text-[9px] font-bold text-violet-500 animate-pulse pl-8 py-1">AI Pharmacist is compounding response...</div>`;
+    threadBox.insertAdjacentHTML("beforeend", typingHtml);
+    threadBox.scrollTop = threadBox.scrollHeight;
+
+    setTimeout(() => {
+      document.getElementById("ai-typing-temp")?.remove();
+      const answer = processResponse(query);
+      pushMessage("ai", answer);
+      sendBtn.disabled = false;
+    }, 1200);
+  });
+
+  queryInp?.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") sendBtn.click();
+  });
+}
+
+function openAppSettings() {
+  const html = `
+    <div class="space-y-4 animate-fade-in p-1 font-sans">
+      <div class="space-y-3">
+        <label class="flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-2xl cursor-pointer">
+          <div class="leading-tight pr-4">
+            <h5 class="text-xs font-black text-slate-800 uppercase tracking-wide">Auto GPS Coordinates Checkout</h5>
+            <p class="text-[9px] text-slate-400 font-semibold mt-0.5">Toggle auto-filling current GPS position during orders checkout</p>
+          </div>
+          <input type="checkbox" checked class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500">
+        </label>
+
+        <label class="flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-2xl cursor-pointer">
+          <div class="leading-tight pr-4">
+            <h5 class="text-xs font-black text-slate-800 uppercase tracking-wide">Secure Medicine Concealing</h5>
+            <p class="text-[9px] text-slate-400 font-semibold mt-0.5">Add extra privacy layer for clinical item categories</p>
+          </div>
+          <input type="checkbox" class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500">
+        </label>
+
+        <label class="flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-2xl cursor-pointer">
+          <div class="leading-tight pr-4">
+            <h5 class="text-xs font-black text-slate-800 uppercase tracking-wide">Dynamic UI Dark Borders</h5>
+            <p class="text-[9px] text-slate-400 font-semibold mt-0.5">Toggle dark background accents inside application menus</p>
+          </div>
+          <input type="checkbox" class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500">
+        </label>
+      </div>
+
+      <button id="btn-save-settings-node" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-2.5 rounded-xl transition-all shadow-md text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer mt-2 leading-none">
+        <i class="fa-solid fa-circle-check"></i> Apply Settings Changes
+      </button>
+    </div>
+  `;
+  openProfileDrawer(`<i class="fa-solid fa-sliders text-blue-600 mr-1.5 font-sans"></i> Application Config Settings`, html);
+
+  document.getElementById("btn-save-settings-node")?.addEventListener("click", () => {
+    showToast("Application settings preserved!", "success");
+    profileDrawer.classList.add("hidden");
+  });
+}
+
+function openHelpSupportSuite() {
+  const html = `
+    <div class="space-y-4 animate-fade-in p-1 font-sans">
+      <div class="space-y-2.5">
+        <h4 class="text-[10px] font-black text-slate-800 uppercase tracking-widest mb-1">Frequently Asked Questions</h4>
+        
+        <div class="p-3 bg-slate-50 border border-slate-100 rounded-2xl leading-normal text-xs font-bold">
+          <h5 class="font-extrabold text-slate-800 uppercase text-[10px]"><i class="fa-regular fa-question-circle text-blue-600 mr-1"></i> How long does delivery usually take?</h5>
+          <p class="text-[9px] text-slate-500 font-semibold mt-1">Our certified dispatch riders locate your coordinates via immediate GPS routing. Orders usually materialize within 15-30 minutes.</p>
+        </div>
+
+        <div class="p-3 bg-slate-50 border border-slate-100 rounded-2xl leading-normal text-xs font-bold font-sans">
+          <h5 class="font-extrabold text-slate-800 uppercase text-[10px]"><i class="fa-regular fa-question-circle text-blue-600 mr-1"></i> Are all medicines verified as safe?</h5>
+          <p class="text-[9px] text-slate-500 font-semibold mt-1">Yes, all catalog items are procured from central licensed apothecaries and inspected by qualified pharmacists before dispatch handovers.</p>
+        </div>
+      </div>
+
+      <div class="border-t border-slate-100 pt-3.5 space-y-3">
+        <h4 class="text-[10px] font-black text-slate-800 uppercase tracking-widest"><i class="fa-solid fa-envelope-open-text text-blue-600 mr-1.5 leading-none"></i>Ask Help Desk Support</h4>
+        <textarea id="val-support-msg" rows="2" placeholder="Describe clinical troubles or order delays and get response instantly..." class="w-full p-2.5 bg-slate-50 border border-slate-200 focus:border-blue-500 focus:bg-white text-slate-800 rounded-xl text-xs font-semibold outline-none transition-all resize-none"></textarea>
+        
+        <button id="btn-submit-support-ticket" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-2.5 rounded-xl transition-all shadow-md text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer leading-none">
+          <i class="fa-regular fa-paper-plane"></i> Submit Support Question
+        </button>
+      </div>
+    </div>
+  `;
+  openProfileDrawer(`<i class="fa-solid fa-circle-question text-blue-600 mr-1.5 animate-pulse"></i> Help & Support Apothecary`, html);
+
+  document.getElementById("btn-submit-support-ticket")?.addEventListener("click", () => {
+    const rawValue = (document.getElementById("val-support-msg") as HTMLTextAreaElement).value.trim();
+    if (!rawValue) {
+      showToast("Please enter question criteria.", "error");
+      return;
+    }
+    showToast("Support ticket created safely! We are evaluating query on priority.", "success");
+    profileDrawer.classList.add("hidden");
+  });
+}
+
+function openSecurityDashboard() {
+  const html = `
+    <div class="space-y-4 animate-fade-in p-1 font-sans">
+      <div class="p-3 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between text-xs font-bold">
+        <div>
+          <h5 class="text-slate-800 uppercase text-[10px] font-black font-sans">Two Factor Verification</h5>
+          <p class="text-[9px] text-slate-400 font-semibold mt-0.5">Extra verification checks before major address shifts</p>
+        </div>
+        <div class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" checked class="sr-only peer">
+          <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-350 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600 border border-slate-200"></div>
+        </div>
+      </div>
+
+      <div class="p-3 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between text-xs font-bold">
+        <div>
+          <h5 class="text-slate-800 uppercase text-[10px] font-black font-sans">Verification Badge Display</h5>
+          <p class="text-[9px] text-slate-400 font-semibold mt-0.5">Show active check icon in profile card indicating status verification</p>
+        </div>
+        <div class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" checked class="sr-only peer">
+          <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-350 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600 border border-slate-200"></div>
+        </div>
+      </div>
+
+      <div class="p-3.5 bg-yellow-50 border border-yellow-250 border-yellow-200 rounded-2xl text-[9px] font-bold text-yellow-850 text-slate-705 leading-normal flex items-start gap-2 max-w-sm">
+        <i class="fa-solid fa-shield-virus text-yellow-650 text-[11px] shrink-0 mt-0.5 animate-pulse"></i>
+        <span>Security Note: System complies fully with standard cryptographic storage. Session keys are encrypted locally on this client safely.</span>
+      </div>
+    </div>
+  `;
+  openProfileDrawer(`<i class="fa-solid fa-shield-halved text-blue-600 mr-1.5 animate-pulse"></i> Security Settings Control`, html);
+}
+

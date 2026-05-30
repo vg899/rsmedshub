@@ -333,6 +333,249 @@
       </div>
     </section>
 
+    <!-- PROFILE SECTION WITH SUB-DRAWER ACTIONS AND CONTROLS -->
+    <section id="user-profile-view" class="hidden flex-1 overflow-y-auto px-4 py-4 space-y-5 pb-24 custom-scrollbar">
+      
+      <!-- Premium Hero ID Card representing active user profile -->
+      <div class="bg-gradient-to-tr from-slate-900 via-slate-800 to-slate-950 text-white rounded-3xl p-5 shadow-lg relative overflow-hidden border border-slate-705 border-slate-700 animate-fade-in">
+        <div class="absolute -right-10 -bottom-10 w-32 h-32 bg-blue-600/10 rounded-full blur-2xl"></div>
+        <div class="absolute -left-10 -top-10 w-24 h-24 bg-teal-500/15 rounded-full blur-xl"></div>
+        
+        <div class="flex items-center gap-4 relative z-10">
+          <div class="relative">
+            <div id="profile-avatar-placeholder" class="w-14 h-14 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-full flex items-center justify-center font-black text-xl font-display shadow-inner border-2 border-slate-700 uppercase">
+              U
+            </div>
+            <span class="absolute -bottom-1 -right-1 bg-emerald-500 text-white rounded-full p-1 border-2 border-slate-900 flex items-center justify-center w-5 h-5 animate-pulse" title="Verified Account">
+              <i class="fa-solid fa-check text-[8px] font-black"></i>
+            </span>
+          </div>
+
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-1.5">
+              <h3 id="profile-display-name" class="font-extrabold text-sm tracking-tight font-display truncate">Patient User</h3>
+              <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-black text-[7.5px] uppercase tracking-wider px-1.5 py-0.5 rounded leading-none shrink-0">GOLD MEMBER</span>
+            </div>
+            <p id="profile-display-email" class="text-[10px] text-slate-400 font-mono tracking-tight mt-0.5 truncate">user@gmail.com</p>
+            <div class="flex items-center gap-2 mt-2">
+              <span class="text-[9px] text-slate-300 font-bold bg-slate-800 border border-slate-700 rounded px-2 py-1">Coins: <span id="profile-display-coins" class="text-amber-400 font-extrabold text-[10px] font-mono">250</span></span>
+              <span class="text-[9px] text-slate-300 font-bold bg-slate-800 border border-slate-700 rounded px-2 py-1"><i class="fa-solid fa-shield-virus text-teal-400 text-[8px] mr-1"></i>Health Index: <span class="text-teal-400 font-extrabold">98%</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- INTERACTIVE CONTAINER SLIDERS AND ACTIONS -->
+      <div id="profile-action-menu-list" class="space-y-2">
+        
+        <!-- Menu Option 1: My Profile -->
+        <button id="btn-opt-my-profile" class="w-full flex items-center justify-between p-3.5 bg-white border border-slate-100 rounded-2xl hover:bg-blue-50/20 hover:border-blue-400/20 hover:shadow-xs transition-all text-left cursor-pointer">
+          <div class="flex items-center gap-3">
+            <span class="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-user"></i></span>
+            <div>
+              <h5 class="text-xs font-black text-slate-800 uppercase tracking-wide">My Profile</h5>
+              <p class="text-[9px] text-slate-400 font-semibold leading-tight mt-0.5">Edit personal info, setup name & mobile details</p>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-slate-300 text-[10px]"></i>
+        </button>
+
+        <!-- Menu Option 2: Manage Addresses -->
+        <button id="btn-opt-manage-addresses" class="w-full flex items-center justify-between p-3.5 bg-white border border-slate-100 rounded-2xl hover:bg-blue-50/20 hover:border-blue-400/20 hover:shadow-xs transition-all text-left cursor-pointer">
+          <div class="flex items-center gap-3">
+            <span class="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-location-dot"></i></span>
+            <div>
+              <h5 class="text-xs font-black text-slate-800 uppercase tracking-wide">Manage Addresses</h5>
+              <p class="text-[9px] text-slate-400 font-semibold leading-tight mt-0.5">Add, edit, remove standard or GPS-pushed addresses</p>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-slate-300 text-[10px]"></i>
+        </button>
+
+        <!-- Menu Option 3: My Orders -->
+        <button id="btn-opt-my-orders" class="w-full flex items-center justify-between p-3.5 bg-white border border-slate-100 rounded-2xl hover:bg-blue-50/20 hover:border-blue-400/20 hover:shadow-xs transition-all text-left cursor-pointer">
+          <div class="flex items-center gap-3">
+            <span class="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-box"></i></span>
+            <div>
+              <h5 class="text-xs font-black text-slate-800 uppercase tracking-wide">My Orders</h5>
+              <p class="text-[9px] text-slate-400 font-semibold leading-tight mt-0.5">Check ongoing delivery, trace updates & history</p>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-slate-300 text-[10px]"></i>
+        </button>
+
+        <!-- Menu Option 4: Favorites -->
+        <button id="btn-opt-favorites" class="w-full flex items-center justify-between p-3.5 bg-white border border-slate-100 rounded-2xl hover:bg-blue-50/20 hover:border-blue-400/20 hover:shadow-xs transition-all text-left cursor-pointer">
+          <div class="flex items-center gap-3">
+            <span class="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-heart"></i></span>
+            <div>
+              <h5 class="text-xs font-black text-slate-800 uppercase tracking-wide">Favorites</h5>
+              <p class="text-[9px] text-slate-400 font-semibold leading-tight mt-0.5">List of saved medications for quick basket add</p>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-slate-300 text-[10px]"></i>
+        </button>
+
+        <!-- Menu Option 5: Coupons & Rewards -->
+        <button id="btn-opt-coupons" class="w-full flex items-center justify-between p-3.5 bg-white border border-slate-100 rounded-2xl hover:bg-blue-50/20 hover:border-blue-400/20 hover:shadow-xs transition-all text-left cursor-pointer">
+          <div class="flex items-center gap-3">
+            <span class="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-ticket"></i></span>
+            <div>
+              <h5 class="text-xs font-black text-slate-800 uppercase tracking-wide">Coupons & Rewards</h5>
+              <p class="text-[9px] text-slate-400 font-semibold leading-tight mt-0.5">Redeem promo keys, earn cashbacks or loyalty coins</p>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-slate-300 text-[10px]"></i>
+        </button>
+
+        <!-- Menu Option 6: Invoices -->
+        <button id="btn-opt-invoices" class="w-full flex items-center justify-between p-3.5 bg-white border border-slate-100 rounded-2xl hover:bg-blue-50/20 hover:border-blue-400/20 hover:shadow-xs transition-all text-left cursor-pointer">
+          <div class="flex items-center gap-3">
+            <span class="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-receipt text-xs font-black"></i></span>
+            <div>
+              <h5 class="text-xs font-black text-slate-800 uppercase tracking-wide">Invoices</h5>
+              <p class="text-[9px] text-slate-400 font-semibold leading-tight mt-0.5">Read tax breakdowns, print receipt invoices</p>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-slate-300 text-[10px]"></i>
+        </button>
+
+        <!-- Menu Option 7: Notifications -->
+        <button id="btn-opt-notifications" class="w-full flex items-center justify-between p-3.5 bg-white border border-slate-100 rounded-2xl hover:bg-blue-50/20 hover:border-blue-400/20 hover:shadow-xs transition-all text-left cursor-pointer">
+          <div class="flex items-center gap-3">
+            <span class="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-bell"></i></span>
+            <div>
+              <h5 class="text-xs font-black text-slate-800 uppercase tracking-wide">Notifications</h5>
+              <p class="text-[9px] text-slate-400 font-semibold leading-tight mt-0.5">Configure SMS updates, WhatsApp and promotional alerts</p>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-slate-300 text-[10px]"></i>
+        </button>
+
+        <!-- Menu Option 8: Ratings & Reviews -->
+        <button id="btn-opt-ratings" class="w-full flex items-center justify-between p-3.5 bg-white border border-slate-100 rounded-2xl hover:bg-blue-50/20 hover:border-blue-400/20 hover:shadow-xs transition-all text-left cursor-pointer">
+          <div class="flex items-center gap-3">
+            <span class="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-star"></i></span>
+            <div>
+              <h5 class="text-xs font-black text-slate-800 uppercase tracking-wide">Ratings & Reviews</h5>
+              <p class="text-[9px] text-slate-400 font-semibold leading-tight mt-0.5">Leave feedback for delivery, medicines & pharmacy shops</p>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-slate-300 text-[10px]"></i>
+        </button>
+
+        <!-- Menu Option 9: Refer & Earn -->
+        <button id="btn-opt-refer-earn" class="w-full flex items-center justify-between p-3.5 bg-white border border-slate-100 rounded-2xl hover:bg-blue-50/20 hover:border-blue-400/20 hover:shadow-xs transition-all text-left cursor-pointer">
+          <div class="flex items-center gap-3">
+            <span class="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-gift"></i></span>
+            <div>
+              <h5 class="text-xs font-black text-slate-800 uppercase tracking-wide">Refer & Earn</h5>
+              <p class="text-[9px] text-slate-400 font-semibold leading-tight mt-0.5">Share referral keys and get ₹100 inside wallet</p>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-slate-300 text-[10px]"></i>
+        </button>
+
+        <!-- Menu Option 10: Health Profile -->
+        <button id="btn-opt-health-profile" class="w-full flex items-center justify-between p-3.5 bg-white border border-slate-100 rounded-2xl hover:bg-blue-50/20 hover:border-blue-400/20 hover:shadow-xs transition-all text-left cursor-pointer">
+          <div class="flex items-center gap-3">
+            <span class="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-id-card-clip"></i></span>
+            <div>
+              <h5 class="text-xs font-black text-slate-800 uppercase tracking-wide">Health Profile</h5>
+              <p class="text-[9px] text-slate-400 font-semibold leading-tight mt-0.5">Store Blood group, height, weight, allergies info</p>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-slate-300 text-[10px]"></i>
+        </button>
+
+        <!-- Menu Option 11: AI Health Assistant -->
+        <button id="btn-opt-ai-assistant" class="w-full flex items-center justify-between p-3.5 bg-violet-50 border border-violet-100 rounded-2xl hover:bg-violet-100/50 hover:border-violet-300/40 transition-all text-left cursor-pointer">
+          <div class="flex items-center gap-3">
+            <span class="w-9 h-9 rounded-full bg-violet-600 text-white flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-brain animate-pulse"></i></span>
+            <div>
+              <h5 class="text-xs font-black text-violet-900 uppercase tracking-wide flex items-center gap-1.5 font-display">
+                <span>AI Health Assistant</span>
+                <span class="bg-violet-600 text-white text-[7px] font-black px-1 py-0.5 rounded leading-none">AI Smart</span>
+              </h5>
+              <p class="text-[9px] text-violet-750 text-violet-700 font-semibold leading-tight mt-0.5">Interact with dynamic certified AI pharmacist buddy</p>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-violet-400 text-[10px]"></i>
+        </button>
+
+        <!-- Menu Option 12: Settings -->
+        <button id="btn-opt-settings" class="w-full flex items-center justify-between p-3.5 bg-white border border-slate-100 rounded-2xl hover:bg-blue-50/20 hover:border-blue-400/20 hover:shadow-xs transition-all text-left cursor-pointer">
+          <div class="flex items-center gap-3">
+            <span class="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-sliders"></i></span>
+            <div>
+              <h5 class="text-xs font-black text-slate-800 uppercase tracking-wide">Settings</h5>
+              <p class="text-[9px] text-slate-400 font-semibold leading-tight mt-0.5">Toggle auto OTP confirmation, custom theme borders</p>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-slate-300 text-[10px]"></i>
+        </button>
+
+        <!-- Menu Option 13: Help & Support -->
+        <button id="btn-opt-help-support" class="w-full flex items-center justify-between p-3.5 bg-white border border-slate-100 rounded-2xl hover:bg-blue-50/20 hover:border-blue-400/20 hover:shadow-xs transition-all text-left cursor-pointer">
+          <div class="flex items-center gap-3">
+            <span class="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-circle-question"></i></span>
+            <div>
+              <h5 class="text-xs font-black text-slate-800 uppercase tracking-wide">Help & Support</h5>
+              <p class="text-[9px] text-slate-400 font-semibold leading-tight mt-0.5">Access support FAQs, contact apothecary agent</p>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-slate-300 text-[10px]"></i>
+        </button>
+
+        <!-- Menu Option 14: Security -->
+        <button id="btn-opt-security" class="w-full flex items-center justify-between p-3.5 bg-white border border-slate-100 rounded-2xl hover:bg-blue-50/20 hover:border-blue-400/20 hover:shadow-xs transition-all text-left cursor-pointer">
+          <div class="flex items-center gap-3">
+            <span class="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-shield-halved"></i></span>
+            <div>
+              <h5 class="text-xs font-black text-slate-800 uppercase tracking-wide">Security</h5>
+              <p class="text-[9px] text-slate-400 font-semibold leading-tight mt-0.5">Configure authentication flags, biometrics, logs</p>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-slate-300 text-[10px]"></i>
+        </button>
+
+        <!-- Menu Option 15: Logout -->
+        <button id="btn-opt-logout" class="w-full flex items-center justify-between p-3.5 bg-rose-50 border border-rose-100 rounded-2xl hover:bg-rose-100/50 hover:border-rose-300 transition-all text-left cursor-pointer">
+          <div class="flex items-center gap-3">
+            <span class="w-9 h-9 rounded-full bg-rose-500 text-white flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-arrow-right-from-bracket text-[10px]"></i></span>
+            <div>
+              <h5 class="text-xs font-black text-rose-900 uppercase tracking-wide">Logout Account</h5>
+              <p class="text-[9px] text-rose-400 font-semibold leading-tight mt-0.5">Exit application safely, terminate session logs</p>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-rose-400 text-[10px]"></i>
+        </button>
+
+      </div>
+    </section>
+
+    <!-- GENERIC DETAILED PROFILE DETAIL OVERLAY DRAWER -->
+    <div id="profile-detail-drawer" class="hidden absolute inset-0 bg-slate-950/45 backdrop-blur-xs z-35 transition-all duration-300 flex flex-col justify-end">
+      <div class="bg-white rounded-t-[32px] max-h-[85vh] flex flex-col p-5 shadow-2xl relative border-t border-slate-150">
+        
+        <!-- Pull visual marker -->
+        <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-4 shrink-0"></div>
+        <button id="btn-close-profile-drawer" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 cursor-pointer">
+          <i class="fa-solid fa-circle-xmark text-xl"></i>
+        </button>
+
+        <h3 id="profile-drawer-title" class="text-xs font-black text-slate-900 uppercase tracking-widest flex items-center gap-2 border-b border-slate-100 pb-2 mb-4 shrink-0 font-display">
+          <!-- Populated dynamically via JS -->
+          <i class="fa-solid fa-pencil text-blue-605 text-blue-600"></i> Profile Setting
+        </h3>
+
+        <!-- Scrollable content box inside drawer -->
+        <div class="flex-1 overflow-y-auto space-y-4 custom-scrollbar pr-1 min-h-0 text-slate-700" id="profile-drawer-content">
+          <!-- Populated dynamically based on clicked item -->
+        </div>
+      </div>
+    </div>
+
     <!-- CHECKOUT DRAWER OVERLAY -->
     <div id="checkout-drawer" class="hidden absolute inset-0 bg-slate-950/40 backdrop-blur-xs z-30 transition-all duration-300 flex flex-col justify-end">
       <div class="bg-white rounded-t-[32px] max-h-[85vh] flex flex-col p-5 shadow-2xl relative border-t border-slate-100">
@@ -455,6 +698,6 @@
 
   </div>
 
-  <script type="module" src="/src/user.ts"></script>
+  <script type="module" src="/src/user.ts?v=meds-profile-v5"></script>
 </body>
 </html>
