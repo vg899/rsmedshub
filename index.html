@@ -73,10 +73,9 @@
 
         <!-- REGISTER FORM -->
         <form id="form-register" class="hidden space-y-4">
-          <div id="role-selector-container" class="hidden p-3.5 bg-teal-50/25 rounded-2xl border border-dashed border-teal-200 shadow-sm">
+          <div id="role-selector-container" class="p-3.5 bg-teal-50/25 rounded-2xl border border-dashed border-teal-200 shadow-sm">
             <div class="flex justify-between items-center mb-2">
               <label class="block text-xs font-bold uppercase tracking-wider text-teal-700">Are you joining as?</label>
-              <span class="inline-flex items-center gap-1 bg-teal-600 text-white text-[9px] px-1.5 py-0.5 rounded-md font-extrabold tracking-wider uppercase"><i class="fa-solid fa-unlock text-[8px]"></i> Unlocked</span>
             </div>
             <div class="grid grid-cols-3 gap-2">
               <label class="flex flex-col items-center justify-center p-3 rounded-xl border-2 border-teal-500 bg-teal-50/40 text-teal-700 cursor-pointer transition-all hover:bg-teal-50/20 text-center relative" id="lbl-role-user">
@@ -103,7 +102,7 @@
               <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
                 <i class="fa-regular fa-user"></i>
               </span>
-              <input type="text" id="reg-name" required placeholder="John Doe" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all">
+              <input type="text" id="reg-name" required value="Harshvardhan Tiwari" placeholder="Harshvardhan Tiwari" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all">
             </div>
           </div>
 
@@ -113,7 +112,7 @@
               <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
                 <i class="fa-regular fa-envelope"></i>
               </span>
-              <input type="email" id="reg-email" required placeholder="name@example.com" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all">
+              <input type="email" id="reg-email" required value="harsh@example.com" placeholder="harsh@example.com" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all">
             </div>
           </div>
 
@@ -123,7 +122,7 @@
               <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
                 <i class="fa-solid fa-phone"></i>
               </span>
-              <input type="tel" id="reg-mobile" required placeholder="9123456789" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all">
+              <input type="tel" id="reg-mobile" required value="9123456789" placeholder="9123456789" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all">
             </div>
           </div>
 
@@ -133,7 +132,7 @@
               <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
                 <i class="fa-solid fa-lock"></i>
               </span>
-              <input type="password" id="reg-password" required minlength="6" placeholder="At least 6 characters" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all">
+              <input type="password" id="reg-password" required minlength="6" value="123456" placeholder="Enter password" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all">
             </div>
           </div>
 

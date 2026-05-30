@@ -38,9 +38,18 @@ onAuthStateChanged(auth, (user) => {
     if (snapshot.exists()) {
       const data = snapshot.val();
       if (data.role !== "delivery") {
-        signOut(auth).then(() => {
-          window.location.href = "/index.html";
-        });
+        showToast("Access Denied: Redirecting to your panel...", "info");
+        if (data.role === "admin") {
+          window.location.href = "/admin.html";
+        } else if (data.role === "user") {
+          window.location.href = "/user.html";
+        } else if (data.role === "store") {
+          window.location.href = "/store.html";
+        } else {
+          signOut(auth).then(() => {
+            window.location.href = "/index.html";
+          });
+        }
       } else {
         // Safe access confirmed
         document.getElementById("delivery-profile-rider-name")!.innerText = data.name || "Delivery Express Agent";

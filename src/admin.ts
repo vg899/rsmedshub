@@ -20,10 +20,18 @@ onAuthStateChanged(auth, (user) => {
     if (snapshot.exists()) {
       const data = snapshot.val();
       if (data.role !== "admin") {
-        showToast("Access Denied: Admin account needed.", "error");
-        signOut(auth).then(() => {
-          window.location.href = "/index.html";
-        });
+        showToast("Access Denied: Redirecting to your panel...", "info");
+        if (data.role === "user") {
+          window.location.href = "/user.html";
+        } else if (data.role === "store") {
+          window.location.href = "/store.html";
+        } else if (data.role === "delivery") {
+          window.location.href = "/delivery.html";
+        } else {
+          signOut(auth).then(() => {
+            window.location.href = "/index.html";
+          });
+        }
       } else {
         document.getElementById("admin-name-txt")!.innerText = data.name || "Administrator";
         initDashboard();

@@ -50,13 +50,29 @@ onAuthStateChanged(auth, async (user) => {
   
   // Fetch profile detailed settings
   get(ref(db, `users/${user.uid}`)).then((snapshot) => {
-    if (snapshot.exists() && snapshot.val().role !== "user") {
+    if (snapshot.exists()) {
+      const uData = snapshot.val();
+      if (uData.role !== "user") {
+        showToast("Access Denied: Redirecting to your panel...", "info");
+        if (uData.role === "admin") {
+          window.location.href = "/admin.html";
+        } else if (uData.role === "store") {
+          window.location.href = "/store.html";
+        } else if (uData.role === "delivery") {
+          window.location.href = "/delivery.html";
+        } else {
+          signOut(auth).then(() => {
+            window.location.href = "/index.html";
+          });
+        }
+      } else {
+        showToast(`Logged in safely!`, "success");
+        bootstrapGeoLocation();
+      }
+    } else {
       signOut(auth).then(() => {
         window.location.href = "/index.html";
       });
-    } else if (snapshot.exists()) {
-      showToast(`Logged in safely!`, "success");
-      bootstrapGeoLocation();
     }
   });
 
