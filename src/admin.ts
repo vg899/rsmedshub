@@ -6,6 +6,7 @@ import { showToast, uploadToCloudinary, getRouteMapUrl, getStaticMapUrl } from "
 // Core Variables
 let activeSection = "panel-overview";
 let systemTimeInterval: any = null;
+let ridersCache: any[] = [];
 
 // Auth Check & Block Unauthorized Access
 onAuthStateChanged(auth, (user) => {
@@ -219,6 +220,7 @@ function subscribeToStats() {
       const cntRiders = document.getElementById("cnt-riders");
       if (cntRiders) cntRiders.innerText = `${total} Riders`;
 
+      ridersCache = items;
       renderRidersTable(items);
     } catch (err) {
       console.error("Error in onValue(delivery):", err);
@@ -341,12 +343,15 @@ function renderRidersTable(riders: any[]) {
           </span>
         </div>
       </td>
-      <td class="px-5 py-3 text-right space-x-1.5">
+      <td class="px-5 py-3 text-right space-x-1.5 whitespace-nowrap">
+        <button onclick="viewRiderKyc('${rid}')" class="bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-150 text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-pointer transition-all inline-flex items-center gap-1">
+          <i class="fa-solid fa-file-shield text-[11px]"></i> Verify KYC
+        </button>
         ${!approved ? `
-          <button onclick="approveRider('${rid}')" class="bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-pointer transition-all">Approve</button>
-          <button onclick="rejectRider('${rid}')" class="bg-rose-500 hover:bg-rose-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-pointer transition-all">Reject</button>
+          <button onclick="approveRider('${rid}')" class="bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-pointer transition-all inline-block">Approve</button>
+          <button onclick="rejectRider('${rid}')" class="bg-rose-500 hover:bg-rose-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-pointer transition-all inline-block">Reject</button>
         `: `
-          <button onclick="toggleRiderActive('${rid}', ${active})" class="text-[10px] font-bold px-2.5 py-1 rounded-lg transition-all border ${active ? "border-slate-200 text-slate-600 bg-white hover:bg-slate-50" : "bg-emerald-500 text-white border-transparent hover:bg-emerald-600"}">
+          <button onclick="toggleRiderActive('${rid}', ${active})" class="text-[10px] font-bold px-2.5 py-1 rounded-lg transition-all border inline-block ${active ? "border-slate-200 text-slate-600 bg-white hover:bg-slate-50" : "bg-emerald-500 text-white border-transparent hover:bg-emerald-600"}">
             ${active ? "Disable" : "Enable"}
           </button>
         `}
@@ -420,6 +425,226 @@ Object.assign(window, {
   toggleBlockCustomer(id: string, current: boolean) {
     update(ref(db, `users/${id}`), { isBlocked: !current });
     showToast(`User ${!current ? "blocked" : "unblocked"} successfully!`, "success");
+  },
+  viewRiderKyc(id: string) {
+    const r = ridersCache.find((item) => item.deliveryId === id);
+    if (!r) {
+      showToast("Rider profile details not found in cache.", "error");
+      return;
+    }
+    
+    const kycModal = document.getElementById("rider-kyc-modal");
+    const kycContent = document.getElementById("rider-kyc-modal-content");
+    if (!kycModal || !kycContent) return;
+
+    const name = r.name || "Anonymous Rider";
+    const email = r.email || "N/A";
+    const mobile = r.mobile || "N/A";
+    const aadhaar = r.aadhaarNumber || "Not filled";
+    const dlNumber = r.licenseNumber || "Not filled";
+    const vehicleType = r.vehicleType || "Not filled";
+    const vehicleNumber = r.vehicleNumber || "Not filled";
+    const state = r.state || "Not filled";
+    const district = r.district || "Not filled";
+    const status = r.status || "free";
+    const approved = r.approved !== undefined ? r.approved : false;
+    const active = r.active !== undefined ? r.active : true;
+    const submitted = r.onboardSubmitted !== undefined ? r.onboardSubmitted : false;
+
+    const aadFront = r.aadhaarFrontUrl || "";
+    const aadBack = r.aadhaarBackUrl || "";
+    const dlImage = r.licenseImageUrl || "";
+
+    kycContent.innerHTML = `
+      <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg border border-indigo-100">
+            <i class="fa-solid fa-file-invoice"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-extrabold text-slate-900 text-left">Rider Partner KYC Inspection</h3>
+            <span class="text-xs text-slate-400 font-semibold block text-left">Verify identity documents and credentials</span>
+          </div>
+        </div>
+        <div class="text-right">
+          <span class="text-[10px] text-slate-400 block font-mono">ID: ${id.substring(0, 10)}</span>
+          <span class="text-[10px] px-2 py-0.5 rounded font-black uppercase ${status === "busy" ? "bg-rose-50 text-rose-700 font-bold" : "bg-emerald-50 text-emerald-700 font-bold"}">
+            ${status === "busy" ? "On Duty" : "Standby/Free"}
+          </span>
+        </div>
+      </div>
+
+      <!-- Quick Summary Badges -->
+      <div class="flex gap-2 flex-wrap text-xs">
+        <span class="px-2 py-0.5 rounded font-black uppercase ${submitted ? "bg-indigo-50 text-indigo-700" : "bg-slate-100 text-slate-700"}">
+          ${submitted ? "Onboard Details Submitted" : "Incomplete Onboard Draft"}
+        </span>
+        <span class="px-2 py-0.5 rounded font-black uppercase ${approved ? "bg-emerald-50 text-emerald-700" : "bg-yellow-50 text-yellow-700"}">
+          Status: ${approved ? "Approved" : "Pending Approval"}
+        </span>
+        <span class="px-2 py-0.5 rounded font-black uppercase ${active ? "bg-emerald-100 text-emerald-800" : "bg-slate-50 text-slate-500"}">
+          Duty: ${active ? "Active" : "Suspended"}
+        </span>
+      </div>
+
+      <!-- 2 Column Layout with Details & Documents -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs text-slate-600 text-left">
+        
+        <!-- Left Side: Fields -->
+        <div class="space-y-3.5 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+          <h4 class="font-bold text-slate-900 border-b border-slate-200 pb-1.5 flex items-center gap-1.5 leading-none">
+            <i class="fa-solid fa-user-gear text-slate-400"></i>
+            <span>Rider Information</span>
+          </h4>
+          
+          <div class="grid grid-cols-3 gap-y-2.5">
+            <span class="font-bold text-slate-400">Full Name:</span>
+            <span class="col-span-2 font-black text-slate-800">${name}</span>
+
+            <span class="font-bold text-slate-400">Mobile:</span>
+            <span class="col-span-2 font-mono font-bold text-slate-800">${mobile}</span>
+
+            <span class="font-bold text-slate-400">Email:</span>
+            <span class="col-span-2 font-mono text-slate-800">${email}</span>
+
+            <span class="font-bold text-slate-400">Aadhaar No:</span>
+            <span class="col-span-2 font-mono text-slate-800">${aadhaar}</span>
+
+            <span class="font-bold text-slate-400">DL Number:</span>
+            <span class="col-span-2 font-mono uppercase text-slate-800">${dlNumber}</span>
+
+            <span class="font-bold text-slate-400">Vehicle:</span>
+            <span class="col-span-2 font-semibold capitalize text-slate-800">${vehicleType}</span>
+
+            <span class="font-bold text-slate-400">Plate No:</span>
+            <span class="col-span-2 font-mono uppercase text-slate-800">${vehicleNumber}</span>
+
+            <span class="font-bold text-slate-400">State:</span>
+            <span class="col-span-2 font-semibold text-slate-800">${state}</span>
+
+            <span class="font-bold text-slate-400">District:</span>
+            <span class="col-span-2 font-semibold text-slate-800">${district}</span>
+          </div>
+        </div>
+
+        <!-- Right Side: Document Photos -->
+        <div class="space-y-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+          <h4 class="font-bold text-slate-900 border-b border-slate-200 pb-1.5 flex items-center gap-1.5 leading-none">
+            <i class="fa-solid fa-passport text-slate-400"></i>
+            <span>Uploaded KYC Files</span>
+          </h4>
+          
+          <!-- Aadhaar front/back -->
+          <div class="space-y-1.5">
+            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider text-left">Aadhaar Identity Card</div>
+            <div class="grid grid-cols-2 gap-2">
+              <div class="relative bg-white rounded-xl border border-slate-200 overflow-hidden group aspect-video">
+                ${aadFront ? `
+                  <img src="${aadFront}" class="w-full h-full object-cover cursor-pointer hover:scale-105 transition-all" onclick="window.open('${aadFront}', '_blank')" alt="Aadhaar Front" referrerPolicy="no-referrer" />
+                  <div class="absolute bottom-0 inset-x-0 bg-slate-950/60 text-white text-[9px] py-0.5 text-center font-bold">Front Copy</div>
+                ` : `
+                  <div class="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-1 bg-white">
+                    <i class="fa-solid fa-image text-lg"></i>
+                    <span class="text-[9px]">Not Uploaded</span>
+                  </div>
+                `}
+              </div>
+              <div class="relative bg-white rounded-xl border border-slate-200 overflow-hidden group aspect-video">
+                ${aadBack ? `
+                  <img src="${aadBack}" class="w-full h-full object-cover cursor-pointer hover:scale-105 transition-all" onclick="window.open('${aadBack}', '_blank')" alt="Aadhaar Back" referrerPolicy="no-referrer" />
+                  <div class="absolute bottom-0 inset-x-0 bg-slate-950/60 text-white text-[9px] py-0.5 text-center font-bold">Back Copy</div>
+                ` : `
+                  <div class="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-1 bg-white">
+                    <i class="fa-solid fa-image text-lg"></i>
+                    <span class="text-[9px]">Not Uploaded</span>
+                  </div>
+                `}
+              </div>
+            </div>
+          </div>
+
+          <!-- License copy -->
+          <div class="space-y-1.5">
+            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider text-left">Driving License</div>
+            <div class="relative bg-white rounded-xl border border-slate-200 overflow-hidden group aspect-video h-20">
+              ${dlImage ? `
+                <img src="${dlImage}" class="w-full h-full object-cover cursor-pointer hover:scale-105 transition-all" onclick="window.open('${dlImage}', '_blank')" alt="Driving License" referrerPolicy="no-referrer" />
+                <div class="absolute bottom-0 inset-x-0 bg-slate-950/60 text-white text-[9px] py-0.5 text-center font-bold">DL Image</div>
+              ` : `
+                <div class="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-1 bg-white">
+                  <i class="fa-solid fa-image text-lg"></i>
+                  <span class="text-[9px]">Not Uploaded</span>
+                </div>
+              `}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions Footer inside modal -->
+      <div class="border-t border-slate-100 pt-4 flex flex-wrap justify-between items-center gap-3">
+        <div>
+          ${r.createdAt ? `
+            <span class="text-[10px] text-slate-400 font-mono">Date Registered: ${new Date(r.createdAt).toLocaleString("en-US", { timeZone: "UTC" })} UTC</span>
+          ` : ""}
+        </div>
+        <div class="flex gap-2">
+          ${!approved ? `
+            <button onclick="approveRiderFromKyc('${id}')" class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-xl cursor-pointer transition-all flex items-center gap-1.5 shadow-sm">
+              <i class="fa-solid fa-user-check"></i> Approve Rider
+            </button>
+            <button onclick="rejectRiderFromKyc('${id}')" class="bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold px-4 py-2 rounded-xl cursor-pointer transition-all flex items-center gap-1.5 shadow-sm">
+              <i class="fa-solid fa-user-times"></i> Reject Application
+            </button>
+          ` : `
+            <button onclick="toggleRiderActiveFromKyc('${id}', ${active})" class="bg-slate-950 text-white hover:bg-slate-800 text-xs font-bold px-4 py-2 rounded-xl cursor-pointer transition-all flex items-center gap-1.5 shadow-sm">
+              <i class="fa-solid ${active ? "fa-user-slash" : "fa-user-shield"}"></i> ${active ? "Suspend Duty" : "Activate Duty"}
+            </button>
+            <span class="text-emerald-700 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-xl font-extrabold text-xs flex items-center gap-1">
+              <i class="fa-solid fa-circle-check text-[14px]"></i> Approved Rider
+            </span>
+          `}
+        </div>
+      </div>
+    `;
+
+    kycModal.classList.remove("hidden");
+  },
+  approveRiderFromKyc(id: string) {
+    update(ref(db, `users/${id}`), { approved: true });
+    update(ref(db, `delivery/${id}`), { approved: true }).then(() => {
+      showToast("Rider approved successfully!", "success");
+      setTimeout(() => {
+        // Find updated details from ridersCache to re-render in modal
+        const r = ridersCache.find((item) => item.deliveryId === id);
+        if (r) {
+          r.approved = true;
+          (window as any).viewRiderKyc(id);
+        }
+      }, 200);
+    });
+  },
+  rejectRiderFromKyc(id: string) {
+    if (confirm("Reject and remove this rider profile?")) {
+      remove(ref(db, `users/${id}`));
+      remove(ref(db, `delivery/${id}`)).then(() => {
+        showToast("Rider application deleted.", "info");
+        document.getElementById("rider-kyc-modal")?.classList.add("hidden");
+      });
+    }
+  },
+  toggleRiderActiveFromKyc(id: string, current: boolean) {
+    update(ref(db, `delivery/${id}`), { active: !current }).then(() => {
+      showToast(`Rider state changed!`, "success");
+      setTimeout(() => {
+        // Find and update item in cache locally for seamless responsive state
+        const r = ridersCache.find((item) => item.deliveryId === id);
+        if (r) {
+          r.active = !current;
+          (window as any).viewRiderKyc(id);
+        }
+      }, 200);
+    });
   }
 });
 
@@ -629,6 +854,10 @@ Object.assign(window, {
 
 document.getElementById("btn-close-invoice")?.addEventListener("click", () => {
   document.getElementById("invoice-modal")?.classList.add("hidden");
+});
+
+document.getElementById("btn-close-rider-kyc")?.addEventListener("click", () => {
+  document.getElementById("rider-kyc-modal")?.classList.add("hidden");
 });
 
 // 5. CHARGES & REGIONAL AREA SERVICE BINDINGS
