@@ -1,0 +1,6 @@
+{
+  "name": "MedsHub Medicine Delivery",
+  "description": "A premium, mobile-first medicine delivery platform built to connect users, stores, delivery agents, and admins in real-time using Firebase RTDB, Geoapify, and Cloudinary.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

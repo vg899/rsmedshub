@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MedsHub Admin Central Platform</title>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Global Stylesheet -->
+  <link rel="stylesheet" href="/src/index.css">
+</head>
+<body class="bg-slate-100 flex flex-col md:flex-row min-h-screen">
+
+  <!-- Left Sidebar / Navigation (Sticky on desktop, scrollable row on mobile) -->
+  <aside id="admin-sidebar" class="w-full md:w-64 bg-slate-900 text-white shrink-0 flex flex-col border-r border-slate-800 z-10 transition-all duration-300">
+    <div class="px-6 py-5 flex items-center justify-between border-b border-slate-800 bg-slate-950">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-laptop-medical text-teal-400 text-2xl"></i>
+        <span class="text-lg font-bold tracking-tight">Admin<span class="text-teal-400">Portal</span></span>
+      </div>
+      <button id="btn-signout" class="text-rose-400 hover:text-rose-300 ml-auto cursor-pointer p-1.5 rounded-lg hover:bg-slate-800 text-sm" title="Log Out">
+        <i class="fa-solid fa-sign-out-alt"></i>
+      </button>
+    </div>
+
+    <!-- Admin Account context -->
+    <div class="px-6 py-4 border-b border-slate-800 bg-slate-900/50 flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-teal-500/20 text-teal-400 flex items-center justify-center font-bold text-sm">
+        HA
+      </div>
+      <div>
+        <h4 id="admin-name-txt" class="text-xs font-bold text-slate-100">Harsh Vardhan</h4>
+        <span class="text-[10px] text-teal-400 font-semibold bg-teal-500/15 px-1.5 py-0.5 rounded uppercase">Platform Admin</span>
+      </div>
+    </div>
+
+    <!-- Navigation List -->
+    <nav class="flex-1 px-4 py-4 flex flex-row md:flex-col overflow-x-auto md:overflow-y-auto gap-1 no-scrollbar select-none">
+      <button data-target="panel-overview" class="admin-nav-btn active flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left whitespace-nowrap cursor-pointer">
+        <i class="fa-solid fa-chart-line text-lg w-5"></i>Overview Stat
+      </button>
+      <button data-target="panel-partners" class="admin-nav-btn flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left whitespace-nowrap cursor-pointer">
+        <i class="fa-solid fa-store-slash text-lg w-5"></i>Partners & Users
+      </button>
+      <button data-target="panel-orders" class="admin-nav-btn flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left whitespace-nowrap cursor-pointer">
+        <i class="fa-solid fa-clipboard-list text-lg w-5"></i>Orders Monitor
+      </button>
+      <button data-target="panel-finance" class="admin-nav-btn flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left whitespace-nowrap cursor-pointer">
+        <i class="fa-solid fa-indian-rupee-sign text-lg w-5"></i>Finance & Area
+      </button>
+      <button data-target="panel-marketing" class="admin-nav-btn flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left whitespace-nowrap cursor-pointer">
+        <i class="fa-solid fa-rectangle-ad text-lg w-5"></i>Promo & Marketing
+      </button>
+    </nav>
+  </aside>
+
+  <!-- Right Main Panel Body -->
+  <main class="flex-1 flex flex-col min-h-0 overflow-y-auto">
+    
+    <!-- Top Bar with Real-time Updates Badge -->
+    <header class="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shadow-sm shrink-0">
+      <div class="flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+        <h2 class="text-sm font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+          MedsHub Central Base
+          <span class="text-[10px] font-bold bg-slate-100 text-slate-500 py-0.5 px-2 rounded-full border border-slate-200 uppercase">Real-Time Sync Ready</span>
+        </h2>
+      </div>
+      <!-- Quick System Clock -->
+      <div class="flex items-center gap-3">
+        <div class="text-right hidden sm:block">
+          <p id="system-time-txt" class="text-xs font-bold text-slate-900">May 30, 01:52 UTC</p>
+          <span class="text-[9px] text-slate-400 font-bold uppercase">System Time</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content Sections Sandbox -->
+    <div class="p-4 md:p-6 space-y-6 flex-1">
+
+      <!-- ================================= PANEL 1: OVERVIEW ================================= -->
+      <section id="panel-overview" class="admin-panel space-y-6">
+        
+        <!-- Live Counters -->
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm relative overflow-hidden flex flex-col justify-between">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-wide">Total Users</p>
+                <h3 id="stat-users" class="text-2xl font-extrabold text-slate-800 mt-1">0</h3>
+              </div>
+              <div class="p-2 ml-1 rounded-xl bg-teal-50 text-teal-500"><i class="fa-solid fa-users"></i></div>
+            </div>
+            <div class="mt-4 text-[10px] text-emerald-600 font-bold"><i class="fa-solid fa-arrow-trend-up"></i> Live Members</div>
+          </div>
+
+          <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm relative overflow-hidden flex flex-col justify-between">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-wide">Total Stores</p>
+                <h3 id="stat-stores" class="text-2xl font-extrabold text-slate-800 mt-1">0</h3>
+              </div>
+              <div class="p-2 ml-1 rounded-xl bg-sky-50 text-sky-500"><i class="fa-solid fa-store"></i></div>
+            </div>
+            <div class="mt-4 text-[10px] text-sky-600 font-bold" id="stat-stores-active">0 Active Nodes</div>
+          </div>
+
+          <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm relative overflow-hidden flex flex-col justify-between">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-wide">Active Riders</p>
+                <h3 id="stat-delivery" class="text-2xl font-extrabold text-slate-800 mt-1">0</h3>
+              </div>
+              <div class="p-2 ml-1 rounded-xl bg-amber-50 text-amber-500"><i class="fa-solid fa-truck-motorcycle"></i></div>
+            </div>
+            <div class="mt-4 text-[10px] text-amber-600 font-bold" id="stat-delivery-active">0 Registered Riders</div>
+          </div>
+
+          <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm relative overflow-hidden flex flex-col justify-between">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-wide">Total Orders</p>
+                <h3 id="stat-orders" class="text-2xl font-extrabold text-slate-800 mt-1">0</h3>
+              </div>
+              <div class="p-2 ml-1 rounded-xl bg-violet-50 text-violet-500"><i class="fa-solid fa-basket-shopping"></i></div>
+            </div>
+            <div class="mt-4 text-[10px] text-indigo-600 font-bold" id="stat-orders-pending">0 Pending Processing</div>
+          </div>
+
+          <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm relative overflow-hidden flex flex-col justify-between col-span-2 lg:col-span-1">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-wide">Total Profit</p>
+                <h3 id="stat-earnings" class="text-2xl font-extrabold text-slate-800 mt-1">₹0</h3>
+              </div>
+              <div class="p-2 ml-1 rounded-xl bg-emerald-50 text-emerald-500"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+            </div>
+            <div class="mt-4 text-[10px] text-emerald-600 font-bold"><i class="fa-solid fa-shield-halved"></i> Platform Commission</div>
+          </div>
+        </div>
+
+        <!-- Geoapify Maps Dashboard & Analytical Charts Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          <!-- Geoapify Visual Map Center -->
+          <div class="lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-50 pb-3">
+              <h3 class="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                <i class="fa-solid fa-earth-asia text-teal-500"></i>
+                Geoapify Regional Hub Monitor
+              </h3>
+              <span class="text-[10px] font-bold bg-teal-50 text-teal-600 px-2 py-1 rounded">Auto Tracking</span>
+            </div>
+            <div id="admin-map-container" class="relative rounded-xl overflow-hidden bg-slate-50 border border-slate-100 h-80 flex items-center justify-center">
+              <img id="geoapify-admin-map" class="w-full h-full object-cover" src="https://maps.geoapify.com/v1/staticmap?style=osm-bright&width=800&height=320&center=lonlat:77.5946,12.9716&zoom=11&apiKey=a2f093c8994441179a2c1599f08f7386" alt="Live Map Status">
+              <div class="absolute bottom-3 left-3 bg-slate-950/80 backdrop-blur-sm text-white p-3 rounded-lg text-xs font-semibold space-y-1 shadow">
+                <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> <span>Stores operating active</span></div>
+                <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> <span>Delivery agent hubs</span></div>
+              </div>
+            </div>
+            <p class="text-[10px] text-slate-400 font-bold leading-relaxed">Map visual auto-updates centering coordinates: <span id="map-coordinates">Indira Nagar, Bengaluru (12.9716, 77.5946)</span> using Geoapify APIs.</p>
+          </div>
+
+          <!-- Pure Dynamic CSS Analytics Chart panel -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4 flex flex-col justify-between">
+            <h3 class="text-sm font-extrabold text-slate-900 border-b border-slate-50 pb-3">
+              <i class="fa-solid fa-chart-bar text-sky-500 mr-2"></i>Sales & Profit Growth
+            </h3>
+            
+            <div class="space-y-4" id="stat-chart-container">
+              <!-- Dynamically Filled or SVG Generated inside JavaScript -->
+              <div id="analytics-svg-wrapper" class="flex flex-col gap-4 py-2">
+                <!-- Fallback premium Bar indicator -->
+                <div>
+                  <div class="flex justify-between text-xs font-bold text-slate-600 mb-1">
+                    <span>Bengaluru Hub Sales</span>
+                    <span>₹24,500</span>
+                  </div>
+                  <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                    <div class="bg-teal-500 h-full rounded-full transition-all" style="width: 75%"></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="flex justify-between text-xs font-bold text-slate-600 mb-1">
+                    <span>Store Commissions Earnings</span>
+                    <span>₹4,200</span>
+                  </div>
+                  <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                    <div class="bg-sky-500 h-full rounded-full transition-all" style="width: 45%"></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="flex justify-between text-xs font-bold text-slate-600 mb-1">
+                    <span>Completed Deliveries</span>
+                    <span>42 Orders</span>
+                  </div>
+                  <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                    <div class="bg-violet-500 h-full rounded-full transition-all" style="width: 60%"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- AI Marketing & Insight Engine -->
+            <div class="bg-teal-50/50 p-3.5 rounded-xl border border-teal-100">
+              <h4 class="text-xs font-bold text-teal-900 flex items-center gap-1.5">
+                <i class="fa-solid fa-brain text-teal-600"></i>AI Marketing Recommendation
+              </h4>
+              <p id="ai-marketing-insight-text" class="text-[11px] text-teal-800 leading-relaxed font-semibold mt-1">Detecting peak ordering times around 7:00 PM - 9:00 PM. Recommend sending a MEDS20 push notification to boost conversion!</p>
+              <button id="btn-trigger-ai-promo" class="mt-2 w-full bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs py-1.5 rounded-lg transition-all shadow-md shadow-teal-100">
+                Execute Targeted Campaign
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Custom Notification Dispatcher -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+          <h3 class="text-sm font-extrabold text-slate-900 border-b border-slate-50 pb-3">
+            <i class="fa-solid fa-bullhorn text-amber-500 mr-2"></i>Global Push Announcement System
+          </h3>
+          <form id="form-broadcast" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div class="md:col-span-2">
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Message Content</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                  <i class="fa-regular fa-bell"></i>
+                </span>
+                <input type="text" id="broadcast-message" required placeholder="Important system update or promo codes broadcast to all partners..." class="w-full pl-9 pr-4 py-3 border border-slate-200 rounded-xl outline-none focus:border-teal-500 text-xs font-semibold transition-all">
+              </div>
+            </div>
+            <div>
+              <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-xl text-xs flex items-center justify-center gap-2 transition-all cursor-pointer">
+                <i class="fa-solid fa-paper-plane"></i>
+                <span>Broadcast Live Push Pin</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- ================================= PANEL 2: PARTNERS & USERS ================================= -->
+      <section id="panel-partners" class="admin-panel hidden space-y-6">
+        
+        <!-- Store Approval Hub -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
+            <h3 class="text-sm font-extrabold text-slate-900"><i class="fa-solid fa-store text-sky-500 mr-2"></i>Pharmacy Store Approvals & Management</h3>
+            <span class="text-[10px] bg-sky-100 text-sky-800 font-bold px-2 py-1 rounded shadow-sm" id="cnt-stores">0 Stores</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-100 text-slate-400 uppercase font-black tracking-wider">
+                  <th class="px-5 py-3">Store Name</th>
+                  <th class="px-5 py-3">Owner & Contact</th>
+                  <th class="px-5 py-3">Region City</th>
+                  <th class="px-5 py-3">Status</th>
+                  <th class="px-5 py-3 text-right">Actions Required</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-stores" class="font-medium text-slate-700">
+                <!-- Stores loaded dynamically -->
+                <tr>
+                  <td colspan="5" class="py-12 text-center text-slate-400">
+                    <i class="fa-solid fa-circle-notch fa-spin text-2xl text-teal-500 mb-2"></i>
+                    <div>Synching node databases...</div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Delivery Boy Approvals -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
+            <h3 class="text-sm font-extrabold text-slate-900"><i class="fa-solid fa-truck-motorcycle text-amber-500 mr-2"></i>Delivery Rider Network</h3>
+            <span class="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-1 rounded shadow-sm" id="cnt-riders">0 Riders</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-100 text-slate-400 uppercase font-black tracking-wider">
+                  <th class="px-5 py-3">Rider Name</th>
+                  <th class="px-5 py-3">Contact Detail</th>
+                  <th class="px-5 py-3">Availability</th>
+                  <th class="px-5 py-3">Approval Gate</th>
+                  <th class="px-5 py-3 text-right">Actions Required</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-riders" class="font-medium text-slate-700">
+                <!-- Rider Nodes loaded dynamically -->
+                <tr>
+                  <td colspan="5" class="py-12 text-center text-slate-400">
+                    <i class="fa-solid fa-circle-notch fa-spin text-2xl text-teal-500 mb-2"></i>
+                    <div>Synching partner networks...</div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- General Users Management -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
+            <h3 class="text-sm font-extrabold text-slate-900"><i class="fa-solid fa-users text-violet-500 mr-2"></i>Customer Access Control Panel</h3>
+            <span class="text-[10px] bg-violet-100 text-violet-800 font-bold px-2 py-1 rounded shadow-sm" id="cnt-users text-right">0 Users</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-100 text-slate-400 uppercase font-black tracking-wider">
+                  <th class="px-5 py-3">Customer Profile</th>
+                  <th class="px-5 py-3">Email Address</th>
+                  <th class="px-5 py-3">Phone Line</th>
+                  <th class="px-5 py-3">Status Gate</th>
+                  <th class="px-5 py-3 text-right">Block/Unblock Constraint</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-customers" class="font-medium text-slate-700">
+                <!-- Dynamic customers -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================= PANEL 3: ORDERS MONITOR ================================= -->
+      <section id="panel-orders" class="admin-panel hidden space-y-6">
+        
+        <!-- Live Orders Board -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
+            <h3 class="text-sm font-extrabold text-slate-900">
+              <i class="fa-solid fa-truck-ramp-box text-emerald-500 mr-2"></i>System-wide Order Monitor
+            </h3>
+            <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2.5 py-1 rounded-full uppercase" id="cnt-orders-active">0 Active Orders</span>
+          </div>
+          
+          <div class="p-4 bg-slate-50 border-b border-slate-100 flex flex-wrap gap-2">
+            <button class="order-filter-btn px-3.5 py-1.5 rounded-full text-xs font-bold bg-slate-900 text-white cursor-pointer transition-all" data-filter="all">All</button>
+            <button class="order-filter-btn px-3.5 py-1.5 rounded-full text-xs font-bold bg-white text-slate-600 border border-slate-200 cursor-pointer hover:bg-slate-100 transition-all" data-filter="pending">Pending</button>
+            <button class="order-filter-btn px-3.5 py-1.5 rounded-full text-xs font-bold bg-white text-slate-600 border border-slate-200 cursor-pointer hover:bg-slate-100 transition-all" data-filter="accepted">Accepted</button>
+            <button class="order-filter-btn px-3.5 py-1.5 rounded-full text-xs font-bold bg-white text-slate-600 border border-slate-200 cursor-pointer hover:bg-slate-100 transition-all" data-filter="packed">Packed/Ready</button>
+            <button class="order-filter-btn px-3.5 py-1.5 rounded-full text-xs font-bold bg-white text-slate-600 border border-slate-200 cursor-pointer hover:bg-slate-100 transition-all" data-filter="out">Out for Delivery</button>
+            <button class="order-filter-btn px-3.5 py-1.5 rounded-full text-xs font-bold bg-white text-slate-600 border border-slate-200 cursor-pointer hover:bg-slate-100 transition-all" data-filter="delivered">Delivered</button>
+          </div>
+
+          <div class="divide-y divide-slate-100" id="admin-orders-list">
+            <!-- Loaded dynamically -->
+            <div class="p-12 text-center text-slate-400 font-medium">Syncing order engines...</div>
+          </div>
+        </div>
+
+        <!-- Detailed Invoice preview Modal block (Overlaid) -->
+        <div id="invoice-modal" class="hidden fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div class="bg-white rounded-3xl w-full max-w-lg p-6 shadow-2xl relative border border-slate-100 max-h-[90vh] overflow-y-auto no-scrollbar">
+            <button id="btn-close-invoice" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 cursor-pointer">
+              <i class="fa-solid fa-times-circle text-2xl"></i>
+            </button>
+            <div id="invoice-modal-content" class="space-y-4">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================= PANEL 4: FINANCE & AREA ================================= -->
+      <section id="panel-finance" class="admin-panel hidden space-y-6">
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+          <!-- System Charge controls and finance parameters -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+            <h3 class="text-sm font-extrabold text-slate-900 border-b border-slate-50 pb-3">
+              <i class="fa-solid fa-sliders text-teal-500 mr-2"></i>Charges Management (Tax, Comms & Fees)
+            </h3>
+            
+            <form id="form-charges" class="space-y-4">
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Delivery Charge (₹)</label>
+                  <input type="number" id="charge-delivery" required min="0" class="w-full px-4 py-3 border border-slate-200 rounded-xl font-bold text-slate-700 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Platform Fee (₹)</label>
+                  <input type="number" id="charge-platform" required min="0" class="w-full px-4 py-3 border border-slate-200 rounded-xl font-bold text-slate-700 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-500 uppercase mb-2">GST Rate (%)</label>
+                  <input type="number" id="charge-gst" required min="0" max="100" class="w-full px-4 py-3 border border-slate-200 rounded-xl font-bold text-slate-700 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Store Commission (%)</label>
+                  <input type="number" id="charge-commission" required min="0" max="100" class="w-full px-4 py-3 border border-slate-200 rounded-xl font-bold text-slate-700 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm">
+                </div>
+              </div>
+              <button type="submit" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-4 rounded-xl text-center text-xs transition-all tracking-wide shadow shadow-teal-100 flex items-center justify-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-save"></i>
+                Save Configuration Parameters
+              </button>
+            </form>
+          </div>
+
+          <!-- Service Area & India state expansions -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-50 pb-3">
+              <h3 class="text-sm font-extrabold text-slate-900"><i class="fa-solid fa-map-location-dot text-indigo-500 mr-2"></i>Service Cities & Regional Areas</h3>
+              <!-- Multi-city Auto detection toggle -->
+              <label class="relative inline-flex items-center cursor-pointer select-none">
+                <input type="checkbox" id="city-auto-detect" class="sr-only peer" checked>
+                <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-teal-505 dark:bg-slate-700 peer-checked:bg-teal-500"></div>
+                <span id="label-expansion-mode" class="ml-2 text-[10px] font-extrabold text-slate-500 uppercase">Auto Expand on GPS</span>
+              </label>
+            </div>
+
+            <!-- Manual Area override form -->
+            <form id="form-add-area" class="grid grid-cols-3 gap-2">
+              <input type="text" id="area-state" placeholder="State (e.g. Goa)" required class="col-span-1 px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none focus:border-teal-500">
+              <input type="text" id="area-city" placeholder="City (e.g. Panaji)" required class="col-span-1 px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none focus:border-teal-500">
+              <button type="submit" class="col-span-1 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg py-2 transition-all cursor-pointer">
+                <i class="fa-solid fa-plus-circle mr-1"></i>Add
+              </button>
+            </form>
+
+            <div class="max-h-56 overflow-y-auto space-y-2 border border-slate-100 rounded-xl p-3 bg-slate-50/50" id="service-areas-list">
+              <!-- Dynamically populated states and districts / cities -->
+            </div>
+          </div>
+
+        </div>
+
+        <!-- COD Payouts Settlement Panel and Warehouse Logs -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+            <h3 class="text-sm font-extrabold text-slate-900 border-b border-slate-50 pb-3">
+              <i class="fa-solid fa-coins text-amber-500 mr-2"></i>Cash on Delivery (COD) Settle & Payouts
+            </h3>
+            <div class="overflow-x-auto h-64 border border-slate-100 rounded-xl">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr class="bg-slate-50 border-b border-slate-100 text-slate-400 uppercase font-bold">
+                    <th class="p-3">Partner Node</th>
+                    <th class="p-3">COD Amount</th>
+                    <th class="p-3">Type</th>
+                    <th class="p-3">Settle State</th>
+                    <th class="p-3 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-settlement-cod" class="font-semibold text-slate-700">
+                  <!-- Payout settlements -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+            <h3 class="text-sm font-extrabold text-slate-900 border-b border-slate-50 pb-3">
+              <i class="fa-solid fa-warehouse text-emerald-500 mr-2"></i>Centrally Managed Warehouses
+            </h3>
+            <form id="form-warehouse" class="flex gap-2">
+              <input type="text" id="warehouse-name" required placeholder="New Warehouse Name (e.g., Bengaluru East Core)" class="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold outline-none focus:border-teal-500">
+              <button type="submit" class="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-4 rounded-lg transition-all cursor-pointer">
+                Configure Hub
+              </button>
+            </form>
+            <div class="max-h-56 overflow-y-auto space-y-3 p-3 bg-slate-50 rounded-xl" id="warehouse-list-container">
+              <!-- Loaded dynamically -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================= PANEL 5: MARKETING ================================= -->
+      <section id="panel-marketing" class="admin-panel hidden space-y-6">
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+          <!-- Banner Ads Upload and Controls -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+            <h3 class="text-sm font-extrabold text-slate-900 border-b border-slate-50 pb-3">
+              <i class="fa-solid fa-images text-indigo-500 mr-2"></i>Banner Campaigns & Ads Slider
+            </h3>
+            
+            <form id="form-banners" class="space-y-4">
+              <div class="grid grid-cols-1 gap-3">
+                <div>
+                  <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Device Image Upload (Cloudinary)</label>
+                  <label class="flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-200 rounded-xl cursor-pointer hover:border-teal-500 bg-slate-50 hover:bg-slate-50/10 transition-all text-center">
+                    <i class="fa-solid fa-cloud-arrow-up text-2xl text-slate-400 mb-2" id="banner-upload-icon"></i>
+                    <span id="banner-upload-txt" class="text-xs font-semibold text-slate-500">Select Banner from Device</span>
+                    <input type="file" id="banner-file" accept="image/*" class="hidden">
+                  </label>
+                  <input type="hidden" id="banner-url">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Campaign Redirect</label>
+                    <input type="text" id="banner-redirect" placeholder="/user.html?category=Allergies" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs outline-none focus:border-teal-500">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Priority Weight</label>
+                    <input type="number" id="banner-priority" required min="1" value="1" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs outline-none focus:border-teal-500">
+                  </div>
+                </div>
+              </div>
+              <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-lg text-xs transition-all cursor-pointer">
+                Inject Cloudinary Banner Campaign
+              </button>
+            </form>
+
+            <div class="space-y-2 border-t border-slate-50 pt-4" id="banner-list-container">
+              <!-- Loaded dynamically -->
+            </div>
+          </div>
+
+          <!-- Coupon Coupons creation and list -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+            <h3 class="text-sm font-extrabold text-slate-900 border-b border-slate-50 pb-3">
+              <i class="fa-solid fa-tags text-teal-500 mr-2"></i>Coupon Promo Admin System
+            </h3>
+            
+            <form id="form-coupon" class="grid grid-cols-2 gap-3 items-end">
+              <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Promo Code</label>
+                <input type="text" id="coupon-code" required placeholder="MEDS20" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-extrabold outline-none focus:border-teal-500 uppercase">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Discount (%)</label>
+                <input type="number" id="coupon-percent" required min="1" max="100" placeholder="20" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs outline-none focus:border-teal-500">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Max Cap Amount (₹)</label>
+                <input type="number" id="coupon-max-discount" required min="1" placeholder="100" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs outline-none focus:border-teal-500">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Min Order Value (₹)</label>
+                <input type="number" id="coupon-min-order" required min="1" placeholder="300" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs outline-none focus:border-teal-500">
+              </div>
+              <button type="submit" class="col-span-2 bg-teal-500 hover:bg-teal-600 text-white font-bold py-2.5 rounded-lg text-xs transition-all cursor-pointer">
+                Inject Live Promo Coupon
+              </button>
+            </form>
+
+            <div class="h-64 overflow-y-auto border border-slate-100 rounded-xl bg-slate-50/50 p-2 space-y-2" id="coupon-list-container">
+              <!-- Coupons managed dynamically -->
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <script type="module" src="/src/admin.ts"></script>
+</body>
+</html>

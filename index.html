@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MedsHub - Real-time Medicine Delivery Platform</title>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Global Stylesheet -->
+  <link rel="stylesheet" href="/src/index.css">
+</head>
+<body class="bg-slate-50 flex items-center justify-center min-h-screen text-slate-800">
+
+  <!-- Main Portal Wrapper -->
+  <div class="w-full max-w-md mx-auto p-4 md:p-6">
+    <div id="portal-card" class="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden transition-all duration-300">
+      
+      <!-- Top Branding -->
+      <div class="px-6 pt-8 pb-4 text-center bg-gradient-to-b from-teal-50/50 to-white">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-teal-500 text-white shadow-md shadow-teal-100 mb-4 animate-bounce">
+          <i class="fa-solid fa-laptop-medical text-3xl"></i>
+        </div>
+        <h1 class="text-3xl font-extrabold tracking-tight text-slate-900 font-sans">Meds<span class="text-teal-500">Hub</span></h1>
+        <p class="text-sm text-slate-500 mt-2 font-medium">Real-time On-Demand Medicine Delivery Network</p>
+      </div>
+
+      <!-- Tab Selection -->
+      <div class="flex border-b border-slate-100 px-6">
+        <button id="tab-login" class="flex-1 py-3 text-sm font-semibold border-b-2 border-teal-500 text-teal-600 focus:outline-none transition-all">
+          <i class="fa-solid fa-right-to-bracket mr-2"></i>Sign In
+        </button>
+        <button id="tab-register" class="flex-1 py-3 text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-600 focus:outline-none transition-all">
+          <i class="fa-solid fa-user-plus mr-2"></i>Sign Up
+        </button>
+      </div>
+
+      <!-- Forms Container -->
+      <div class="p-6">
+        
+        <!-- Loading overlay -->
+        <div id="portal-loader" class="hidden flex flex-col items-center justify-center py-12 text-slate-500">
+          <i class="fa-solid fa-circle-notch fa-spin text-4xl text-teal-500 mb-3"></i>
+          <span class="text-sm font-medium animate-pulse" id="loader-msg">Verifying account credentials...</span>
+        </div>
+
+        <!-- LOGIN FORM -->
+        <form id="form-login" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Email Address</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                <i class="fa-regular fa-envelope"></i>
+              </span>
+              <input type="email" id="login-email" required placeholder="name@example.com" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Password</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                <i class="fa-solid fa-lock"></i>
+              </span>
+              <input type="password" id="login-password" required placeholder="Enter password" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all">
+            </div>
+          </div>
+
+          <button type="submit" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-md shadow-teal-100 flex items-center justify-center gap-2 cursor-pointer mt-2 hover:-translate-y-0.5">
+            <span>Sign In to Account</span>
+            <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </form>
+
+        <!-- REGISTER FORM -->
+        <form id="form-register" class="hidden space-y-4">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Are you joining as?</label>
+            <div class="grid grid-cols-3 gap-2">
+              <label class="flex flex-col items-center justify-center p-3 rounded-xl border-2 border-teal-500 bg-teal-50/40 text-teal-700 cursor-pointer transition-all hover:bg-teal-50/20 text-center relative" id="lbl-role-user">
+                <input type="radio" name="reg-role" value="user" checked class="absolute top-2 right-2 accent-teal-500">
+                <i class="fa-solid fa-user text-lg mb-1"></i>
+                <span class="text-xs font-bold">User</span>
+              </label>
+              <label class="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-200 bg-white text-slate-600 cursor-pointer transition-all hover:bg-slate-50 text-center relative" id="lbl-role-store">
+                <input type="radio" name="reg-role" value="store" class="absolute top-2 right-2 accent-teal-500">
+                <i class="fa-solid fa-store text-lg mb-1"></i>
+                <span class="text-xs font-bold">Store</span>
+              </label>
+              <label class="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-200 bg-white text-slate-600 cursor-pointer transition-all hover:bg-slate-50 text-center relative" id="lbl-role-delivery">
+                <input type="radio" name="reg-role" value="delivery" class="absolute top-2 right-2 accent-teal-500">
+                <i class="fa-solid fa-truck-motorcycle text-lg mb-1"></i>
+                <span class="text-xs font-bold">Rider</span>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5" id="lbl-fullname">Full Name</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                <i class="fa-regular fa-user"></i>
+              </span>
+              <input type="text" id="reg-name" required placeholder="John Doe" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Email Address</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                <i class="fa-regular fa-envelope"></i>
+              </span>
+              <input type="email" id="reg-email" required placeholder="name@example.com" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Mobile Number</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                <i class="fa-solid fa-phone"></i>
+              </span>
+              <input type="tel" id="reg-mobile" required placeholder="9123456789" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Password</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                <i class="fa-solid fa-lock"></i>
+              </span>
+              <input type="password" id="reg-password" required minlength="6" placeholder="At least 6 characters" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all">
+            </div>
+          </div>
+
+          <!-- GPS Location requirements block for Partner Store / Delivery -->
+          <div id="gps-prompt-block" class="hidden p-3.5 bg-yellow-50 rounded-xl border border-yellow-100 flex items-start gap-3">
+            <i class="fa-solid fa-location-crosshairs text-yellow-500 text-lg mt-0.5"></i>
+            <div class="flex-1">
+              <h4 class="text-xs font-bold text-yellow-900">Partner Location Required</h4>
+              <p class="text-[11px] text-yellow-700 font-medium leading-relaxed mt-0.5">Stores and Delivery riders must capture their operating GPS location to register.</p>
+              <button type="button" id="btn-capture-gps" class="mt-2 inline-flex items-center gap-1.5 bg-yellow-500 hover:bg-yellow-600 text-white font-bold text-xs px-3 py-1.5 rounded-lg transition-all">
+                <i class="fa-solid fa-location-dot"></i>
+                <span id="gps-status-txt">Capture GPS</span>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-md shadow-teal-100 flex items-center justify-center gap-2 cursor-pointer mt-2 hover:-translate-y-0.5">
+            <span>Register Secure Account</span>
+            <i class="fa-solid fa-user-plus"></i>
+          </button>
+        </form>
+
+      </div>
+
+      <!-- Quick Test Accounts Segment for presentation/evaluation -->
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 text-center">
+        <h4 class="text-[11px] uppercase tracking-wider font-extrabold text-slate-400 mb-2">Developer / Tester Fast Login</h4>
+        <div class="grid grid-cols-2 gap-2 max-w-xs mx-auto">
+          <button type="button" class="btn-fast-login text-left bg-white border border-slate-200 rounded-lg p-2 text-[11px] hover:border-teal-500 hover:bg-teal-50/10 cursor-pointer transition-all" data-email="admin@medshub.com" data-pass="admin123">
+            <div class="font-bold text-slate-700">Admin Account</div>
+            <div class="text-slate-400 truncate">admin@medshub.com</div>
+          </button>
+          <button type="button" class="btn-fast-login text-left bg-white border border-slate-200 rounded-lg p-2 text-[11px] hover:border-teal-500 hover:bg-teal-50/10 cursor-pointer transition-all" data-email="user@medshub.com" data-pass="user123">
+            <div class="font-bold text-slate-700">User Client</div>
+            <div class="text-slate-400 truncate">user@medshub.com</div>
+          </button>
+          <button type="button" class="btn-fast-login text-left bg-white border border-slate-200 rounded-lg p-2 text-[11px] hover:border-teal-500 hover:bg-teal-50/10 cursor-pointer transition-all" data-email="store@medshub.com" data-pass="store123">
+            <div class="font-bold text-slate-700">Apollo Pharmacy</div>
+            <div class="text-slate-400 truncate">store@medshub.com</div>
+          </button>
+          <button type="button" class="btn-fast-login text-left bg-white border border-slate-200 rounded-lg p-2 text-[11px] hover:border-teal-500 hover:bg-teal-50/10 cursor-pointer transition-all" data-email="delivery@medshub.com" data-pass="rider123">
+            <div class="font-bold text-slate-700">Delivery Rider</div>
+            <div class="text-slate-400 truncate">delivery@medshub.com</div>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script type="module" src="/src/index.ts"></script>
+</body>
+</html>

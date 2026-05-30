@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MedsHub - Delivery Boy Express Portal</title>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Global Stylesheet -->
+  <link rel="stylesheet" href="/src/index.css">
+</head>
+<body class="bg-amber-50/10 text-slate-800 flex items-center justify-center min-h-screen">
+
+  <!-- Mobile-first Phone container box -->
+  <div class="w-full max-w-md h-screen md:h-[840px] bg-slate-50 relative flex flex-col md:rounded-3xl md:shadow-2xl md:border md:border-slate-100 overflow-hidden">
+    
+    <!-- HEADER BAR -->
+    <header class="bg-amber-500 text-white px-5 py-4 shrink-0 flex items-center justify-between shadow-md relative z-10">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-full bg-white/20 text-white flex items-center justify-center text-sm font-bold animate-bounce">
+          <i class="fa-solid fa-truck-motorcycle"></i>
+        </div>
+        <div>
+          <h3 id="delivery-profile-rider-name" class="text-xs text-amber-50 font-bold uppercase tracking-wider">Rider Agent Base</h3>
+          <p class="text-xs font-black tracking-tight flex items-center gap-1">
+            <span id="tracker-duty-txt">Standby Duty</span>
+            <i class="fa-solid fa-circle-check text-white text-[10px]"></i>
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="btn-delivery-signout" class="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center text-rose-100 cursor-pointer" title="Log Out">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- CONTENT DISPLAY SCROLL -->
+    <section class="flex-1 overflow-y-auto px-4 py-4 space-y-5 pb-20 no-scrollbar">
+      
+      <!-- STATS COUNTERS -->
+      <div class="grid grid-cols-3 gap-2.5 shrink-0 select-none">
+        <div class="bg-white rounded-xl p-3 border border-slate-100 shadow-xs flex flex-col justify-between">
+          <p class="text-[9px] font-black text-slate-400 uppercase">Payout Earnings</p>
+          <h4 id="rider-stat-earnings" class="text-base font-extrabold text-amber-600 mt-1">₹0</h4>
+          <span class="text-[8px] text-slate-400 mt-2 block font-semibold leading-relaxed">Delivery Charges</span>
+        </div>
+        <div class="bg-white rounded-xl p-3 border border-slate-100 shadow-xs flex flex-col justify-between">
+          <p class="text-[9px] font-black text-slate-400 uppercase">Pending Pools</p>
+          <h4 id="rider-stat-pools" class="text-base font-extrabold text-indigo-600 mt-1">0</h4>
+          <span class="text-[8px] text-slate-405 text-indigo-500 mt-2 block font-extrabold uppercase">Accept Jobs</span>
+        </div>
+        <div class="bg-white rounded-xl p-3 border border-slate-100 shadow-xs flex flex-col justify-between">
+          <p class="text-[9px] font-black text-slate-400 uppercase">Rider Duty</p>
+          <button id="btn-toggle-pacing-status" class="mt-2 text-[10px] font-black py-1 px-2.5 bg-emerald-500 text-white rounded-lg block cursor-pointer text-center">
+            ACTIVE ON
+          </button>
+          <span class="text-[7.5px] text-slate-400 mt-1 block font-bold text-center leading-tight">GPS Position live</span>
+        </div>
+      </div>
+
+      <!-- ==================== SUBSECTION 1: ACTIVE ORDER DEVIATION WORKSPACE ==================== -->
+      <div id="rider-active-delivery-workspace" class="hidden bg-white rounded-3xl border border-slate-100 p-4 shadow-md space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-50 pb-2">
+          <h4 class="text-xs font-black text-amber-600 flex items-center gap-1.5 animate-pulse">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> ACTIVE RUN WORKSPACE
+          </h4>
+          <span id="rider-map-eta" class="text-[10px] bg-slate-900 text-white font-black px-2 py-0.5 rounded">Calculating route...</span>
+        </div>
+
+        <!-- Geoapify navigation static route display maps -->
+        <div class="relative bg-slate-100 rounded-xl overflow-hidden h-44 border border-slate-150 flex items-center justify-center">
+          <img id="rider-map-img" class="w-full h-full object-cover" src="" alt="OSM Map Route Navigation">
+          <div class="absolute bottom-2 left-2 bg-slate-900/80 backdrop-blur-xs text-white text-[9px] font-black p-1.5 rounded uppercase flex items-center gap-1 shadow">
+            <i class="fa-solid fa-diamond-turn-right text-teal-400"></i> Route Optimized Nav
+          </div>
+        </div>
+
+        <!-- Details block of active order stores and addresses -->
+        <div class="space-y-3 text-xs font-semibold">
+          <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
+            <span class="text-[9px] font-black text-slate-400 uppercase flex items-center gap-1 select-none">
+              <i class="fa-solid fa-mortar-pestle text-indigo-500"></i> Pickup Store Pharmacy
+            </span>
+            <h5 id="active-pickup-store-name" class="font-extrabold text-slate-900">Apollo Pharmacy</h5>
+            <p id="active-pickup-store-addr" class="text-[10px] text-slate-500 block truncate font-medium">Store address details</p>
+          </div>
+
+          <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
+            <span class="text-[9px] font-black text-slate-400 uppercase flex items-center gap-1 select-none">
+              <i class="fa-solid fa-user text-emerald-500"></i> Dropoff Patient Client
+            </span>
+            <h5 id="active-dropoff-user" class="font-extrabold text-slate-900">Recipient Name</h5>
+            <p id="active-dropoff-addr" class="text-[10px] text-slate-500 block truncate font-medium">Customer marked address</p>
+          </div>
+        </div>
+
+        <!-- Delivery status progression controller buttons -->
+        <div class="pt-2 border-t border-slate-100 space-y-3">
+          
+          <!-- Proof snapshot upload segment -->
+          <div id="proof-delivery-camera-block" class="hidden p-3.5 bg-indigo-50/50 rounded-2xl border border-dashed border-indigo-200 space-y-2">
+            <h5 class="text-xs font-black text-indigo-900"><i class="fa-solid fa-camera text-indigo-600 mr-1"></i>Camera Delivery Proof Upload</h5>
+            <p class="text-[10px] text-indigo-700 leading-normal font-semibold">Requirement: Upload handover or billing receipt receipt image to complete transaction.</p>
+            
+            <label class="flex items-center justify-center p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-all text-center">
+              <i class="fa-solid fa-plus-circle text-lg text-indigo-500 mr-2" id="proof-icon"></i>
+              <span id="proof-txt" class="text-[10px] text-slate-500 font-sans font-bold">Snap Camera Photo</span>
+              <input type="file" id="proof-file-input" accept="image/*" class="hidden">
+            </label>
+            <input type="hidden" id="proof-image-url">
+          </div>
+
+          <!-- Action buttons triggers dynamically changing inside javascript -->
+          <button id="btn-delivery-progress-action" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl shadow transition-all cursor-pointer text-center text-xs">
+            Awaiting Status Processing...
+          </button>
+        </div>
+      </div>
+
+      <!-- ==================== SUBSECTION 2: JOBS POOL LISTINGS ==================== -->
+      <div id="rider-pools-segment" class="space-y-4">
+        <div class="flex items-center justify-between">
+          <h4 class="text-xs font-black text-slate-800 uppercase tracking-wider">Operational Job Pools</h4>
+          <span class="text-[10px] text-indigo-600 font-bold" id="cnt-pools-indicator">0 Pools</span>
+        </div>
+
+        <div class="space-y-3.5" id="rider-pools-container">
+          <!-- Dynamic packed order pools -->
+          <div class="text-center py-12 text-slate-400">
+            <i class="fa-solid fa-box-open text-4xl mb-2 text-slate-200 animate-pulse"></i>
+            <p class="text-xs font-semibold">Syncing operational packed jobs pools...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== SUBSECTION 3: SETTLEMENTS & EARNINGS ==================== -->
+      <div id="rider-settlements-segment" class="space-y-4 pt-2 border-t border-slate-150">
+        <h4 class="text-xs font-black text-slate-800 uppercase tracking-wider">Completed settlements payouts</h4>
+        <div class="space-y-2.5" id="rider-settlements-history-list">
+          <p class="text-[10px] text-slate-450 text-slate-400 text-center py-4 font-semibold">No historic distributions recorded.</p>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- TOAST OVERLAYS -->
+    <div id="toast-container" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-full max-w-xs px-4"></div>
+
+  </div>
+
+  <script type="module" src="/src/delivery.ts"></script>
+</body>
+</html>
