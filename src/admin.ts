@@ -172,16 +172,29 @@ function subscribeToStats() {
     let total = 0;
     const items: any[] = [];
 
-    snapshot.forEach((child) => {
-      total++;
-      const d = child.val();
-      if (d.active) active++;
-      items.push(d);
-    });
+    if (snapshot.exists()) {
+      snapshot.forEach((child) => {
+        const d = child.val();
+        if (d) {
+          total++;
+          if (!d.deliveryId) {
+            d.deliveryId = child.key || "";
+          }
+          if (d.active) active++;
+          items.push(d);
+        }
+      });
+    }
 
-    document.getElementById("stat-delivery")!.innerText = total.toString();
-    document.getElementById("stat-delivery-active")!.innerText = `${active} Active Riders`;
-    document.getElementById("cnt-riders")!.innerText = `${total} Riders`;
+    const statDelivery = document.getElementById("stat-delivery");
+    if (statDelivery) statDelivery.innerText = total.toString();
+
+    const statActive = document.getElementById("stat-delivery-active");
+    if (statActive) statActive.innerText = `${active} Active Riders`;
+
+    const cntRiders = document.getElementById("cnt-riders");
+    if (cntRiders) cntRiders.innerText = `${total} Riders`;
+
     renderRidersTable(items);
   });
 }
@@ -240,53 +253,66 @@ function renderStoresTable(stores: any[]) {
 
 function renderRidersTable(riders: any[]) {
   const tbody = document.getElementById("tbody-riders")!;
+  if (!tbody) return;
+
   if (riders.length === 0) {
     tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-400 font-medium">No riders registered yet.</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = riders.map((r) => `
+  tbody.innerHTML = riders.map((r) => {
+    const rid = r.deliveryId || "";
+    const shortId = rid ? rid.substring(0, 6) : "N/A";
+    const name = r.name || "Anonymous Rider";
+    const mobile = r.mobile || "N/A";
+    const email = r.email || "N/A";
+    const status = r.status || "free";
+    const approved = r.approved !== undefined ? r.approved : false;
+    const active = r.active !== undefined ? r.active : true;
+
+    return `
     <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-all font-medium">
       <td class="px-5 py-3 flex items-center gap-2.5">
         <div class="w-8 h-8 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center text-xs border border-amber-100">
           <i class="fa-solid fa-user-ninja"></i>
         </div>
         <div>
-          <h4 class="font-bold text-slate-900">${r.name}</h4>
-          <span class="text-[10px] text-slate-400 font-mono">Rider ID: ${r.deliveryId.substring(0,6)}</span>
+          <h4 class="font-bold text-slate-900">${name}</h4>
+          <span class="text-[10px] text-slate-400 font-mono">Rider ID: ${shortId}</span>
         </div>
       </td>
       <td class="px-5 py-3">
-        <div class="text-xs font-semibold">${r.mobile}</div>
-        <div class="text-[10px] text-slate-400 font-mono">${r.email}</div>
+        <div class="text-xs font-semibold">${mobile}</div>
+        <div class="text-[10px] text-slate-400 font-mono">${email}</div>
       </td>
       <td class="px-5 py-3">
-        <span class="text-[10px] px-2 py-0.5 rounded font-black uppercase ${r.status === "busy" ? "bg-rose-50 text-rose-700 animate-pulse" : "bg-emerald-50 text-emerald-700"}">
-          ${r.status === "busy" ? "On Duty" : "Standby/Free"}
+        <span class="text-[10px] px-2 py-0.5 rounded font-black uppercase ${status === "busy" ? "bg-rose-50 text-rose-700 animate-pulse" : "bg-emerald-50 text-emerald-700"}">
+          ${status === "busy" ? "On Duty" : "Standby/Free"}
         </span>
       </td>
       <td class="px-5 py-3">
         <div class="flex gap-1.5 flex-wrap">
-          <span class="text-[10px] px-2 py-0.5 rounded font-black uppercase ${r.approved ? "bg-emerald-100 text-emerald-800" : "bg-yellow-50 text-yellow-700"}">
-            ${r.approved ? "Approved" : "Pending"}
+          <span class="text-[10px] px-2 py-0.5 rounded font-black uppercase ${approved ? "bg-emerald-100 text-emerald-800" : "bg-yellow-50 text-yellow-700"}">
+            ${approved ? "Approved" : "Pending"}
           </span>
-          <span class="text-[10px] px-2 py-0.5 rounded font-black uppercase ${r.active ? "bg-emerald-100 text-emerald-800" : "bg-slate-50 text-slate-500"}">
-            ${r.active ? "Active" : "Suspended"}
+          <span class="text-[10px] px-2 py-0.5 rounded font-black uppercase ${active ? "bg-emerald-100 text-emerald-800" : "bg-slate-50 text-slate-500"}">
+            ${active ? "Active" : "Suspended"}
           </span>
         </div>
       </td>
       <td class="px-5 py-3 text-right space-x-1.5">
-        ${!r.approved ? `
-          <button onclick="approveRider('${r.deliveryId}')" class="bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-pointer transition-all">Approve</button>
-          <button onclick="rejectRider('${r.deliveryId}')" class="bg-rose-500 hover:bg-rose-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-pointer transition-all">Reject</button>
+        ${!approved ? `
+          <button onclick="approveRider('${rid}')" class="bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-pointer transition-all">Approve</button>
+          <button onclick="rejectRider('${rid}')" class="bg-rose-500 hover:bg-rose-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-pointer transition-all">Reject</button>
         `: `
-          <button onclick="toggleRiderActive('${r.deliveryId}', ${r.active})" class="text-[10px] font-bold px-2.5 py-1 rounded-lg transition-all border ${r.active ? "border-slate-200 text-slate-600 bg-white hover:bg-slate-50" : "bg-emerald-500 text-white border-transparent hover:bg-emerald-600"}">
-            ${r.active ? "Disable" : "Enable"}
+          <button onclick="toggleRiderActive('${rid}', ${active})" class="text-[10px] font-bold px-2.5 py-1 rounded-lg transition-all border ${active ? "border-slate-200 text-slate-600 bg-white hover:bg-slate-50" : "bg-emerald-500 text-white border-transparent hover:bg-emerald-600"}">
+            ${active ? "Disable" : "Enable"}
           </button>
         `}
       </td>
     </tr>
-  `).join("");
+    `;
+  }).join("");
 }
 
 function renderCustomersTable(customers: any[]) {
