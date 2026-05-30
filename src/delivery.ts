@@ -1,7 +1,7 @@
 import { auth, db } from "./firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { ref, onValue, set, get, update } from "firebase/database";
-import { showToast, getCurrentGPS, calculateDistance, getRouteMapUrl, uploadToCloudinary } from "./utils";
+import { showToast, getCurrentGPS, calculateDistance, getRouteMapUrl, uploadToCloudinary, updateLeafletMap } from "./utils";
 
 // Core State variables
 let loggedInRider: any = null;
@@ -223,7 +223,6 @@ function renderRiderDashboardViews() {
 let selectedProofImageFile: File | null = null;
 
 function renderRiderActiveWorkspace(o: any) {
-  const mapImg = document.getElementById("rider-map-img") as HTMLImageElement;
   const mapEta = document.getElementById("rider-map-eta")!;
   const pickupStoreName = document.getElementById("active-pickup-store-name")!;
   const pickupStoreAddr = document.getElementById("active-pickup-store-addr")!;
@@ -245,7 +244,7 @@ function renderRiderActiveWorkspace(o: any) {
   const eta = Math.ceil((distance / 35) * 60) + 2;
 
   mapEta.innerText = `ETA: ${eta} Mins (${distance} KM)`;
-  mapImg.src = getRouteMapUrl(riderLat, riderLng, userLat, userLng);
+  updateLeafletMap("rider-map-div", riderLat, riderLng, userLat, userLng, false);
 
   // Status controls progressions mapping
   actionBtn.disabled = false;

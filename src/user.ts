@@ -1,7 +1,7 @@
 import { auth, db } from "./firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { ref, onValue, set, get, update, remove } from "firebase/database";
-import { showToast, getCurrentGPS, reverseGeocode, searchAddress, calculateDistance, getRouteMapUrl, getStaticMapUrl, GeoLocation } from "./utils";
+import { showToast, getCurrentGPS, reverseGeocode, searchAddress, calculateDistance, getRouteMapUrl, getStaticMapUrl, updateLeafletMap, GeoLocation } from "./utils";
 
 // Core State variables
 let loggedInUser: any = null;
@@ -945,7 +945,6 @@ function setActiveOrderTracking(orderId: string) {
     }
 
     // Dynamic map tracking for transit rider
-    const mapImg = document.getElementById("tracker-map-img") as HTMLImageElement;
     const etaBadge = document.getElementById("tracker-eta")!;
     const riderName = document.getElementById("tracker-rider-name")!;
     const riderPhone = document.getElementById("tracker-rider-phone")!;
@@ -973,14 +972,14 @@ function setActiveOrderTracking(orderId: string) {
         const eta = Math.ceil((distance / 35) * 60) + 5; // Distance time + packing buffering
 
         etaBadge.innerText = `ETA: ${eta} Mins (${distance} KM)`;
-        mapImg.src = getRouteMapUrl(riderLat, riderLng, userLat, userLng);
+        updateLeafletMap("tracker-map-div", riderLat, riderLng, userLat, userLng, false);
       });
     } else {
       riderName.innerText = o.deliveryName || "Agent not assigned yet";
       riderPhone.innerText = "Standby process queue";
       callRider.removeAttribute("href");
       etaBadge.innerText = "Standby Status";
-      mapImg.src = getStaticMapUrl(userLat, userLng, 14, 400, 180);
+      updateLeafletMap("tracker-map-div", userLat, userLng, userLat, userLng, true);
     }
   });
 }

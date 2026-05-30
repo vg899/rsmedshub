@@ -6,6 +6,9 @@
   <title>MedsHub - Delivery Boy Express Portal</title>
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Leaflet Map CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <!-- Global Stylesheet -->
   <link rel="stylesheet" href="/src/index.css">
 </head>
@@ -70,8 +73,8 @@
 
         <!-- Geoapify navigation static route display maps -->
         <div class="relative bg-slate-100 rounded-xl overflow-hidden h-44 border border-slate-150 flex items-center justify-center">
-          <img id="rider-map-img" class="w-full h-full object-cover" src="" alt="OSM Map Route Navigation">
-          <div class="absolute bottom-2 left-2 bg-slate-900/80 backdrop-blur-xs text-white text-[9px] font-black p-1.5 rounded uppercase flex items-center gap-1 shadow">
+          <div id="rider-map-div" class="w-full h-full z-0"></div>
+          <div class="absolute bottom-2 left-2 bg-slate-900/80 backdrop-blur-xs text-white text-[9px] font-black p-1.5 rounded uppercase flex items-center gap-1 shadow z-[500]">
             <i class="fa-solid fa-diamond-turn-right text-teal-400"></i> Route Optimized Nav
           </div>
         </div>

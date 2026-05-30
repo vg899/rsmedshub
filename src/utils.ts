@@ -186,3 +186,111 @@ export function getRouteMapUrl(
 ): string {
   return `https://maps.geoapify.com/v1/staticmap?style=osm-bright&width=${width}&height=${height}&geometry=line:lonlat:${startLng},${startLat},${endLng},${endLat};color:%233b82f6;weight:4&marker=lonlat:${startLng},${startLat};color:%2310b981;size:medium|lonlat:${endLng},${endLat};color:%23ef4444;size:medium&apiKey=${GEOAPIFY_API_KEY}`;
 }
+
+export function updateLeafletMap(
+  containerId: string,
+  startLat: number,
+  startLng: number,
+  endLat: number,
+  endLng: number,
+  isSingleMarker: boolean = false,
+  startIconClass: string = "marker-rider",
+  startIconAwesome: string = "fa-truck-motorcycle",
+  endIconClass: string = "marker-user",
+  endIconAwesome: string = "fa-house-chimney-medical"
+) {
+  const L = (window as any).L;
+  if (!L) {
+    console.warn("Leaflet library not loaded yet.");
+    return;
+  }
+
+  const mapContainer = document.getElementById(containerId);
+  if (!mapContainer) return;
+
+  // Let's check if map already initialized
+  let mapInstance = (window as any)["map_" + containerId];
+  if (!mapInstance) {
+    mapInstance = L.map(containerId, {
+      zoomControl: true,
+      attributionControl: false
+    }).setView([endLat, endLng], 14);
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19
+    }).addTo(mapInstance);
+
+    (window as any)["map_" + containerId] = mapInstance;
+  }
+
+  // Force Leaflet to recalculate size in case container was hidden previously
+  setTimeout(() => {
+    mapInstance.invalidateSize();
+  }, 100);
+
+  // Remove existing layers stored inside our tracked registry
+  let activeLayers = (window as any)["layers_" + containerId] || [];
+  activeLayers.forEach((layer: any) => {
+    try {
+      mapInstance.removeLayer(layer);
+    } catch (e) {}
+  });
+  activeLayers = [];
+
+  // Create custom markers
+  const startIcon = L.divIcon({
+    html: `<div class="leaflet-custom-marker ${startIconClass} w-8 h-8"><i class="fa-solid ${startIconAwesome} text-xs"></i></div>`,
+    className: '',
+    iconSize: [32, 32],
+    iconAnchor: [16, 16]
+  });
+
+  const endIcon = L.divIcon({
+    html: `<div class="leaflet-custom-marker ${endIconClass} w-8 h-8"><i class="fa-solid ${endIconAwesome} text-xs"></i></div>`,
+    className: '',
+    iconSize: [32, 32],
+    iconAnchor: [16, 16]
+  });
+
+  if (isSingleMarker) {
+    // Single Location View
+    const targetMarker = L.marker([endLat, endLng], { icon: endIcon }).addTo(mapInstance);
+    activeLayers.push(targetMarker);
+    mapInstance.setView([endLat, endLng], 15);
+  } else {
+    // Dual Route Navigation View
+    const riderMarker = L.marker([startLat, startLng], { icon: startIcon }).addTo(mapInstance);
+    const userMarker = L.marker([endLat, endLng], { icon: endIcon }).addTo(mapInstance);
+    
+    activeLayers.push(riderMarker);
+    activeLayers.push(userMarker);
+
+    riderMarker.addTo(mapInstance);
+    userMarker.addTo(mapInstance);
+
+    // Dynamic Route Line with beautiful indigo/blue shade
+    const polylinePoints = [[startLat, startLng], [endLat, endLng]];
+    const routeLine = L.polyline(polylinePoints, {
+      color: '#4f46e5',
+      weight: 4,
+      opacity: 0.8,
+      dashArray: '5, 8'
+    }).addTo(mapInstance);
+    activeLayers.push(routeLine);
+
+    // Smart Fitting Boundaries
+    try {
+      const bounds = L.latLngBounds([
+        [startLat, startLng],
+        [endLat, endLng]
+      ]);
+      mapInstance.fitBounds(bounds, { padding: [30, 30] });
+    } catch (e) {
+      mapInstance.setView([endLat, endLng], 14);
+    }
+  }
+
+  // Preserve layers registry
+  (window as any)["layers_" + containerId] = activeLayers;
+}
+
