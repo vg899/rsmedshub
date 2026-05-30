@@ -683,7 +683,7 @@ document.getElementById("btn-apply-coupon")?.addEventListener("click", () => {
   renderCartDrawer();
 });
 
-// 4. MULTIPLE ADDRESS SEARCH ENGINE & GEOLOCATION (Geoapify)
+// 4. MULTIPLE ADDRESS SEARCH ENGINE & GEOLOCATION (Mappls)
 let selectedAddressDetail: any = null;
 
 addrInput?.addEventListener("input", async (e) => {
@@ -905,7 +905,7 @@ function syncOrdersHistory() {
   });
 }
 
-// 7. TIMELINE & MAPS ROUTER BINDINGS (Geoapify static route maps)
+// 7. TIMELINE & MAPS ROUTER BINDINGS (Mappls static route maps)
 function setActiveOrderTracking(orderId: string) {
   activeOrderTrackingId = orderId;
   const panel = document.getElementById("user-live-tracking-panel")!;

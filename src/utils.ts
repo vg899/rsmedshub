@@ -79,8 +79,9 @@ export async function uploadToCloudinary(file: File): Promise<string> {
   }
 }
 
-// Geoapify Geocoding & Maps helpers
-const GEOAPIFY_API_KEY = "a2f093c8994441179a2c1599f08f7386";
+// // Mappls REST API & Web Maps Integration Keys
+export const MAPPLS_MAP_KEY = "3d8330747c66c6f01c3c680f12d5298d";
+export const MAPPLS_CLIENT_ID = "96dHZVzsAut5eW6crFBJRerLd4L_8GLV3wy72csWzFe6rl-64qpQl3owhoO3DU5h2CRClplvfHFvH0jc7_ZadA==";
 
 export interface GeoLocation {
   lat: number;
@@ -89,6 +90,72 @@ export interface GeoLocation {
   city?: string;
   district?: string;
   state?: string;
+}
+
+let cachedMapplsToken: string | null = null;
+let tokenExpiryTime: number = 0;
+
+export async function getMapplsToken(): Promise<string> {
+  if (cachedMapplsToken && Date.now() < tokenExpiryTime) {
+    return cachedMapplsToken;
+  }
+
+  try {
+    const params = new URLSearchParams();
+    params.append("grant_type", "client_credentials");
+    params.append("client_id", MAPPLS_CLIENT_ID);
+    params.append("client_secret", MAPPLS_MAP_KEY);
+
+    const res = await fetch("https://outpost.mapmyindia.com/api/security/oauth/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: params.toString(),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data.access_token) {
+        cachedMapplsToken = data.access_token;
+        const expiresInSec = data.expires_in || 86399;
+        tokenExpiryTime = Date.now() + (expiresInSec - 300) * 1000;
+        return cachedMapplsToken!;
+      }
+    }
+  } catch (error) {
+    console.error("Mappls token server error:", error);
+  }
+
+  return cachedMapplsToken || MAPPLS_MAP_KEY;
+}
+
+export function loadMapplsScript(callback: () => void) {
+  if ((window as any).mappls) {
+    callback();
+    return;
+  }
+
+  const existingScript = document.getElementById("mappls-sdk-script");
+  if (existingScript) {
+    existingScript.addEventListener("load", () => callback());
+    return;
+  }
+
+  const script = document.createElement("script");
+  script.id = "mappls-sdk-script";
+  script.src = `https://apis.mappls.com/advancedmaps/api/${MAPPLS_MAP_KEY}/map_sdk?v=3.0&layer=vector`;
+  script.async = true;
+  script.defer = true;
+  script.onload = () => {
+    const interval = setInterval(() => {
+      if ((window as any).mappls) {
+        clearInterval(interval);
+        callback();
+      }
+    }, 50);
+  };
+  document.head.appendChild(script);
 }
 
 export async function getCurrentGPS(): Promise<GeoLocation> {
@@ -120,38 +187,71 @@ export async function getCurrentGPS(): Promise<GeoLocation> {
 
 export async function reverseGeocode(lat: number, lng: number): Promise<GeoLocation> {
   try {
-    const url = `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lng}&apiKey=${GEOAPIFY_API_KEY}`;
+    const token = await getMapplsToken();
+    const url = `https://atlas.mappls.com/api/places/reverse_geocode?lat=${lat}&lng=${lng}&access_token=${token}`;
     const response = await fetch(url);
-    if (!response.ok) throw new Error("Reverse geocode failed");
+    if (!response.ok) throw new Error("Mappls Reverse geocode failed");
     const data = await response.json();
-    if (data.features && data.features.length > 0) {
-      const properties = data.features[0].properties;
+    if (data.results && data.results.length > 0) {
+      const properties = data.results[0];
       return {
         lat,
         lng,
-        address: properties.formatted || properties.name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
-        city: properties.city || properties.county || properties.suburb || "",
-        district: properties.district || properties.county || "",
-        state: properties.state || "",
+        address: properties.formatted_address || properties.formattedAddress || properties.address || `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
+        city: properties.city || properties.district || properties.sublocality || "Bengaluru",
+        district: properties.district || properties.sublocality || "",
+        state: properties.state || "Karnataka",
       };
     }
-    return { lat, lng };
   } catch (error) {
-    console.error("Geoapify reverse geocoding error:", error);
-    return { lat, lng };
+    console.error("Mappls reverse geocoding error:", error);
   }
+
+  // Backup simple reverse geocode using public Mappls maps fallback APIs
+  try {
+    const url = `https://apis.mappls.com/advancedmaps/v1/${MAPPLS_MAP_KEY}/reverse_geocode?lat=${lat}&lng=${lng}`;
+    const response = await fetch(url);
+    if (response.ok) {
+      const data = await response.json();
+      if (data.results && data.results.length > 0) {
+        const properties = data.results[0];
+        return {
+          lat,
+          lng,
+          address: properties.formatted_address || `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
+          city: properties.city || "Bengaluru",
+          district: properties.district || "",
+          state: properties.state || "Karnataka",
+        };
+      }
+    }
+  } catch (err) {}
+
+  return { lat, lng, address: `${lat.toFixed(5)}, ${lng.toFixed(5)}`, city: "Bengaluru", state: "Karnataka" };
 }
 
 export async function searchAddress(query: string): Promise<any[]> {
   if (!query || query.trim().length < 3) return [];
   try {
-    const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(query)}&apiKey=${GEOAPIFY_API_KEY}`;
+    const token = await getMapplsToken();
+    const url = `https://atlas.mappls.com/api/places/autosuggest?query=${encodeURIComponent(query)}&access_token=${token}`;
     const response = await fetch(url);
-    if (!response.ok) throw new Error("Geocoding search failed");
+    if (!response.ok) throw new Error("Mappls geocoding search failed");
     const data = await response.json();
-    return data.features || [];
+    const suggested = data.suggestedLocations || data.results || [];
+    return suggested.map((item: any) => ({
+      properties: {
+        formatted: item.placeAddress || item.placeName || item.formatted_address || item.address || ""
+      },
+      geometry: {
+        coordinates: [
+          parseFloat(item.longitude || item.lng || "77.5946"),
+          parseFloat(item.latitude || item.lat || "12.9716")
+        ]
+      }
+    }));
   } catch (error) {
-    console.error("Geoapify Address Search Error:", error);
+    console.error("Mappls Address Search Error:", error);
     return [];
   }
 }
@@ -171,9 +271,9 @@ export function calculateDistance(lat1: number, lon1: number, lat2: number, lon2
   return parseFloat((R * c).toFixed(2));
 }
 
-// Map Rendering Image URL (Static map for display)
+// Map Rendering Image URL (Static map for display using Mappls APIs)
 export function getStaticMapUrl(lat: number, lng: number, zoom: number = 14, width: number = 400, height: number = 250): string {
-  return `https://maps.geoapify.com/v1/staticmap?style=osm-bright&width=${width}&height=${height}&center=lonlat:${lng},${lat}&zoom=${zoom}&marker=lonlat:${lng},${lat};color:%23ff0000;size:medium&apiKey=${GEOAPIFY_API_KEY}`;
+  return `https://apis.mappls.com/advancedmaps/v1/${MAPPLS_MAP_KEY}/staticmap?center=${lat},${lng}&zoom=${zoom}&size=${width}x${height}&markers=color:red|${lat},${lng}`;
 }
 
 export function getRouteMapUrl(
@@ -184,7 +284,54 @@ export function getRouteMapUrl(
   width: number = 400,
   height: number = 250
 ): string {
-  return `https://maps.geoapify.com/v1/staticmap?style=osm-bright&width=${width}&height=${height}&geometry=line:lonlat:${startLng},${startLat},${endLng},${endLat};color:%233b82f6;weight:4&marker=lonlat:${startLng},${startLat};color:%2310b981;size:medium|lonlat:${endLng},${endLat};color:%23ef4444;size:medium&apiKey=${GEOAPIFY_API_KEY}`;
+  return `https://apis.mappls.com/advancedmaps/v1/${MAPPLS_MAP_KEY}/staticmap?size=${width}x${height}&path=color:0x3b82f6|weight:4|${startLat},${startLng}|${endLat},${endLng}&markers=color:green|${startLat},${startLng}|color:red|${endLat},${endLng}`;
+}
+
+export interface MapplsRouteResult {
+  polyline: number[][]; // array of [lat, lng]
+  distance: number;
+  duration: number;
+}
+
+export async function getMapplsRoute(
+  startLat: number,
+  startLng: number,
+  endLat: number,
+  endLng: number
+): Promise<MapplsRouteResult> {
+  try {
+    const token = await getMapplsToken();
+    const url = `https://apis.mappls.com/advancedmaps/v1/${token}/route_adv/driving/${startLng},${startLat};${endLng},${endLat}?overview=full&geometries=geojson`;
+    const response = await fetch(url);
+    if (response.ok) {
+      const data = await response.json();
+      const route = data.routes?.[0];
+      if (route) {
+        const coordinates = route.geometry?.coordinates || []; // [lng, lat]
+        const polylinePoints = coordinates.map((coord: any) => [coord[1], coord[0]]) as number[][];
+        const distance = (route.distance || 0) / 1000; // to KM
+        const duration = (route.duration || 0) / 60; // to Minutes
+        return {
+          polyline: polylinePoints,
+          distance: parseFloat(distance.toFixed(2)),
+          duration: Math.ceil(duration)
+        };
+      }
+    }
+  } catch (error) {
+    console.error("Mappls Route API failed, using fallback:", error);
+  }
+
+  const distance = calculateDistance(startLat, startLng, endLat, endLng);
+  const duration = Math.ceil((distance / 30) * 60) + 3;
+  return {
+    polyline: [
+      [startLat, startLng],
+      [endLat, endLng]
+    ],
+    distance,
+    duration
+  };
 }
 
 export function updateLeafletMap(
@@ -199,98 +346,106 @@ export function updateLeafletMap(
   endIconClass: string = "marker-user",
   endIconAwesome: string = "fa-house-chimney-medical"
 ) {
-  const L = (window as any).L;
-  if (!L) {
-    console.warn("Leaflet library not loaded yet.");
+  const mappls = (window as any).mappls;
+  if (!mappls) {
+    console.warn("Mappls JS SDK not loaded yet. Fetching script...");
+    loadMapplsScript(() => {
+      updateLeafletMap(containerId, startLat, startLng, endLat, endLng, isSingleMarker, startIconClass, startIconAwesome, endIconClass, endIconAwesome);
+    });
     return;
   }
 
   const mapContainer = document.getElementById(containerId);
   if (!mapContainer) return;
 
-  // Let's check if map already initialized
+  // Initialize Map Instance if not present
   let mapInstance = (window as any)["map_" + containerId];
   if (!mapInstance) {
-    mapInstance = L.map(containerId, {
-      zoomControl: true,
-      attributionControl: false
-    }).setView([endLat, endLng], 14);
-
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      maxZoom: 19
-    }).addTo(mapInstance);
-
-    (window as any)["map_" + containerId] = mapInstance;
-  }
-
-  // Force Leaflet to recalculate size in case container was hidden previously
-  setTimeout(() => {
-    mapInstance.invalidateSize();
-  }, 100);
-
-  // Remove existing layers stored inside our tracked registry
-  let activeLayers = (window as any)["layers_" + containerId] || [];
-  activeLayers.forEach((layer: any) => {
+    mapContainer.innerHTML = "";
     try {
-      mapInstance.removeLayer(layer);
-    } catch (e) {}
-  });
-  activeLayers = [];
-
-  // Create custom markers
-  const startIcon = L.divIcon({
-    html: `<div class="leaflet-custom-marker ${startIconClass} w-8 h-8"><i class="fa-solid ${startIconAwesome} text-xs"></i></div>`,
-    className: '',
-    iconSize: [32, 32],
-    iconAnchor: [16, 16]
-  });
-
-  const endIcon = L.divIcon({
-    html: `<div class="leaflet-custom-marker ${endIconClass} w-8 h-8"><i class="fa-solid ${endIconAwesome} text-xs"></i></div>`,
-    className: '',
-    iconSize: [32, 32],
-    iconAnchor: [16, 16]
-  });
-
-  if (isSingleMarker) {
-    // Single Location View
-    const targetMarker = L.marker([endLat, endLng], { icon: endIcon }).addTo(mapInstance);
-    activeLayers.push(targetMarker);
-    mapInstance.setView([endLat, endLng], 15);
-  } else {
-    // Dual Route Navigation View
-    const riderMarker = L.marker([startLat, startLng], { icon: startIcon }).addTo(mapInstance);
-    const userMarker = L.marker([endLat, endLng], { icon: endIcon }).addTo(mapInstance);
-    
-    activeLayers.push(riderMarker);
-    activeLayers.push(userMarker);
-
-    riderMarker.addTo(mapInstance);
-    userMarker.addTo(mapInstance);
-
-    // Dynamic Route Line with beautiful indigo/blue shade
-    const polylinePoints = [[startLat, startLng], [endLat, endLng]];
-    const routeLine = L.polyline(polylinePoints, {
-      color: '#4f46e5',
-      weight: 4,
-      opacity: 0.8,
-      dashArray: '5, 8'
-    }).addTo(mapInstance);
-    activeLayers.push(routeLine);
-
-    // Smart Fitting Boundaries
-    try {
-      const bounds = L.latLngBounds([
-        [startLat, startLng],
-        [endLat, endLng]
-      ]);
-      mapInstance.fitBounds(bounds, { padding: [30, 30] });
+      // Mappls expectations on center coordinates: [latitude, longitude] as confirmed!
+      mapInstance = new mappls.Map(containerId, {
+        center: [endLat, endLng],
+        zoom: 14,
+        zoomControl: true,
+        attributionControl: false
+      });
+      (window as any)["map_" + containerId] = mapInstance;
     } catch (e) {
-      mapInstance.setView([endLat, endLng], 14);
+      console.error("Failed to init Mappls map on container:", containerId, e);
+      return;
     }
   }
 
-  // Preserve layers registry
-  (window as any)["layers_" + containerId] = activeLayers;
+  // Force size adjustments
+  setTimeout(() => {
+    try {
+      if (mapInstance && typeof mapInstance.invalidateSize === "function") {
+        mapInstance.invalidateSize();
+      }
+    } catch (e) {}
+  }, 100);
+
+  // Clear previous overlays
+  let activeOverlays = (window as any)["overlays_" + containerId] || [];
+  activeOverlays.forEach((ol: any) => {
+    try {
+      if (ol && typeof ol.remove === "function") {
+        ol.remove();
+      }
+    } catch (e) {}
+  });
+  activeOverlays = [];
+
+  try {
+    if (isSingleMarker) {
+      // Single Location Map View
+      const marker = new mappls.Marker({
+        map: mapInstance,
+        position: { lat: endLat, lng: endLng },
+        html: `<div class="mappls-custom-marker ${endIconClass} w-8 h-8 rounded-full shadow border-2 border-white flex items-center justify-center bg-teal-500 text-white"><i class="fa-solid ${endIconAwesome} text-xs"></i></div>`
+      });
+      activeOverlays.push(marker);
+      mapInstance.setCenter([endLat, endLng]);
+    } else {
+      // Dual Pin Routing Map View
+      const riderMarker = new mappls.Marker({
+        map: mapInstance,
+        position: { lat: startLat, lng: startLng },
+        html: `<div class="mappls-custom-marker ${startIconClass} w-8 m-8 rounded-full shadow border-2 border-white flex items-center justify-center bg-indigo-500 text-white"><i class="fa-solid ${startIconAwesome} text-xs"></i></div>`
+      });
+      const userMarker = new mappls.Marker({
+        map: mapInstance,
+        position: { lat: endLat, lng: endLng },
+        html: `<div class="mappls-custom-marker ${endIconClass} w-8 h-8 rounded-full shadow border-2 border-white flex items-center justify-center bg-teal-500 text-white"><i class="fa-solid ${endIconAwesome} text-xs"></i></div>`
+      });
+      activeOverlays.push(riderMarker);
+      activeOverlays.push(userMarker);
+
+      // Extract route using getMapplsRoute
+      getMapplsRoute(startLat, startLng, endLat, endLng).then((res) => {
+        try {
+          const polyline = new mappls.Polyline({
+            map: mapInstance,
+            paths: res.polyline.map((p: any) => ({ lat: p[0], lng: p[1] })),
+            strokeColor: '#4f46e5',
+            strokeWeight: 5,
+            strokeOpacity: 0.95
+          });
+          activeOverlays.push(polyline);
+        } catch (pe) {
+          console.error("Polyline overlay exception:", pe);
+        }
+      });
+
+      const midLat = (startLat + endLat) / 2;
+      const midLng = (startLng + endLng) / 2;
+      mapInstance.setCenter([midLat, midLng]);
+    }
+  } catch (overlayErr) {
+    console.error("Drawing Mappls overlays error:", overlayErr);
+  }
+
+  (window as any)["overlays_" + containerId] = activeOverlays;
 }
 

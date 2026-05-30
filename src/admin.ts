@@ -1,7 +1,7 @@
 import { auth, db } from "./firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { ref, onValue, set, update, remove, get } from "firebase/database";
-import { showToast, uploadToCloudinary, getRouteMapUrl, getStaticMapUrl } from "./utils";
+import { showToast, uploadToCloudinary, getRouteMapUrl, getStaticMapUrl, loadMapplsScript } from "./utils";
 
 // Core Variables
 let activeSection = "panel-overview";
@@ -1507,22 +1507,22 @@ Object.assign(window, {
   }
 });
 
-// 11. MAPS SYSTEM (Geoapify static tracker representation)
+// 11. MAPS SYSTEM (Mappls dynamic tracker representation)
 function updateGeoapifyAdminMap(stores: any[]) {
-  const mapImg = document.getElementById("geoapify-admin-map") as HTMLImageElement;
-  if (!mapImg) return;
-
-  if (stores.length === 0) {
-    mapImg.src = `https://maps.geoapify.com/v1/staticmap?style=osm-bright&width=800&height=320&center=lonlat:77.5946,12.9716&zoom=11&apiKey=a2f093c8994441179a2c1599f08f7386`;
+  const mappls = (window as any).mappls;
+  if (!mappls) {
+    loadMapplsScript(() => {
+      updateGeoapifyAdminMap(stores);
+    });
     return;
   }
 
-  // Draw pins representation on static maps for Geoapify
-  const pins = stores.map((s, idx) => {
-    const lat = s.location?.lat || 12.9716;
-    const lng = s.location?.lng || 77.5946;
-    return `lonlat:${lng},${lat};color:%233b82f6;size:medium;text:${idx+1}`;
-  }).join("|");
+  const mapDiv = document.getElementById("mappls-admin-map");
+  if (!mapDiv) return;
+
+  if (stores.length === 0) {
+    return;
+  }
 
   const centerStore = stores[0];
   const cLat = centerStore.location?.lat || 12.9716;
@@ -1530,9 +1530,59 @@ function updateGeoapifyAdminMap(stores: any[]) {
 
   const mapCoords = document.getElementById("map-coordinates");
   if (mapCoords) {
-    mapCoords.innerText = `${centerStore.name} Area (${cLat.toFixed(4)}, ${cLng.toFixed(4)})`;
+    mapCoords.innerText = `${centerStore.name || "Main Hub Area"} Center (${cLat.toFixed(4)}, ${cLng.toFixed(4)})`;
   }
-  mapImg.src = `https://maps.geoapify.com/v1/staticmap?style=osm-bright&width=800&height=320&center=lonlat:${cLng},${cLat}&zoom=12&marker=${pins}&apiKey=a2f093c8994441179a2c1599f08f7386`;
+
+  let mapInstance = (window as any)["map_mappls_admin_map"];
+  if (!mapInstance) {
+    mapDiv.innerHTML = "";
+    try {
+      mapInstance = new mappls.Map("mappls-admin-map", {
+        center: [cLat, cLng],
+        zoom: 11,
+        zoomControl: true,
+        attributionControl: false
+      });
+      (window as any)["map_mappls_admin_map"] = mapInstance;
+    } catch (e) {
+      console.error("Failed to init Mappls Map in Admin Portal:", e);
+      return;
+    }
+  }
+
+  // Clear existing overlays
+  let activeOverlays = (window as any)["overlays_mappls_admin_map"] || [];
+  activeOverlays.forEach((ol: any) => {
+    try {
+      if (ol && typeof ol.remove === "function") {
+        ol.remove();
+      }
+    } catch (e) {}
+  });
+  activeOverlays = [];
+
+  // Add a marker for each store
+  stores.forEach((s, idx) => {
+    const lat = s.location?.lat || 12.9716;
+    const lng = s.location?.lng || 77.5946;
+    try {
+      const marker = new mappls.Marker({
+        map: mapInstance,
+        position: { lat, lng },
+        html: `<div class="w-7 h-7 rounded-full shadow border-2 border-white flex items-center justify-center bg-teal-500 text-white font-bold text-[10px]">${idx + 1}</div>`
+      });
+      activeOverlays.push(marker);
+    } catch (e) {
+      console.error("Error drawing admin map marker:", e);
+    }
+  });
+
+  // Center on the first active store
+  try {
+    mapInstance.setCenter([cLat, cLng]);
+  } catch(e) {}
+
+  (window as any)["overlays_mappls_admin_map"] = activeOverlays;
 }
 
 // =================================== 12. DELIVERY BOY VERIFICATION CENTER ===================================

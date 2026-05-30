@@ -835,7 +835,7 @@ function renderActiveOrderPipelineLayout() {
     }
   }
 
-  // Draw Geoapify and Leaflet routing elements
+  // Draw Mappls routing elements
   triggerActiveOrderMapDraw();
 }
 
