@@ -194,7 +194,7 @@ function subscribeToStats() {
     }
   });
 
-  onValue(ref(db, "delivery"), (snapshot) => {
+  onValue(ref(db, "deliveryboy1"), (snapshot) => {
     try {
       let active = 0;
       let total = 0;
@@ -207,6 +207,9 @@ function subscribeToStats() {
             total++;
             if (!d.deliveryId) {
               d.deliveryId = child.key || "";
+            }
+            if (!d.uid) {
+              d.uid = child.key || "";
             }
             if (d.active) active++;
             items.push(d);
@@ -414,18 +417,18 @@ Object.assign(window, {
   },
   approveRider(id: string) {
     update(ref(db, `users/${id}`), { approved: true });
-    update(ref(db, `delivery/${id}`), { approved: true });
+    update(ref(db, `deliveryboy1/${id}`), { approved: true, verificationStatus: "Approved" });
     showToast("Rider approved!", "success");
   },
   rejectRider(id: string) {
     if (confirm("Reject and remove this rider profile?")) {
       remove(ref(db, `users/${id}`));
-      remove(ref(db, `delivery/${id}`));
+      remove(ref(db, `deliveryboy1/${id}`));
       showToast("Rider application deleted.", "info");
     }
   },
   toggleRiderActive(id: string, current: boolean) {
-    update(ref(db, `delivery/${id}`), { active: !current });
+    update(ref(db, `deliveryboy1/${id}`), { active: !current, verificationStatus: !current ? "Approved" : "Suspended" });
     showToast(`Rider ${!current ? "enabled" : "disabled"}!`, "success");
   },
   toggleBlockCustomer(id: string, current: boolean) {
@@ -618,13 +621,14 @@ Object.assign(window, {
   },
   approveRiderFromKyc(id: string) {
     update(ref(db, `users/${id}`), { approved: true });
-    update(ref(db, `delivery/${id}`), { approved: true }).then(() => {
+    update(ref(db, `deliveryboy1/${id}`), { approved: true, verificationStatus: "Approved" }).then(() => {
       showToast("Rider approved successfully!", "success");
       setTimeout(() => {
         // Find updated details from ridersCache to re-render in modal
         const r = ridersCache.find((item) => item.deliveryId === id);
         if (r) {
           r.approved = true;
+          r.verificationStatus = "Approved";
           (window as any).viewRiderKyc(id);
         }
       }, 200);
@@ -633,20 +637,21 @@ Object.assign(window, {
   rejectRiderFromKyc(id: string) {
     if (confirm("Reject and remove this rider profile?")) {
       remove(ref(db, `users/${id}`));
-      remove(ref(db, `delivery/${id}`)).then(() => {
+      remove(ref(db, `deliveryboy1/${id}`)).then(() => {
         showToast("Rider application deleted.", "info");
         document.getElementById("rider-kyc-modal")?.classList.add("hidden");
       });
     }
   },
   toggleRiderActiveFromKyc(id: string, current: boolean) {
-    update(ref(db, `delivery/${id}`), { active: !current }).then(() => {
+    update(ref(db, `deliveryboy1/${id}`), { active: !current, verificationStatus: !current ? "Approved" : "Suspended" }).then(() => {
       showToast(`Rider state changed!`, "success");
       setTimeout(() => {
         // Find and update item in cache locally for seamless responsive state
         const r = ridersCache.find((item) => item.deliveryId === id);
         if (r) {
           r.active = !current;
+          r.verificationStatus = !current ? "Approved" : "Suspended";
           (window as any).viewRiderKyc(id);
         }
       }, 200);
@@ -1826,7 +1831,7 @@ function viewRiderDetailedInspection(id: string) {
   // Auto transition to "Under Review" if currently "Pending"
   if (getRiderVerificationStatus(r) === "Pending") {
     r.verificationStatus = "Under Review";
-    update(ref(db, `delivery/${id}`), { verificationStatus: "Under Review" });
+    update(ref(db, `deliveryboy1/${id}`), { verificationStatus: "Under Review" });
   }
 
   const inspectorModal = document.getElementById("inspector-profile-modal");
@@ -2131,7 +2136,7 @@ Object.assign(window, {
   viewRiderDetailedInspection,
   approveRiderMaster(id: string) {
     update(ref(db, `users/${id}`), { approved: true });
-    update(ref(db, `delivery/${id}`), { approved: true, active: true, verificationStatus: "Approved" }).then(() => {
+    update(ref(db, `deliveryboy1/${id}`), { approved: true, active: true, verificationStatus: "Approved" }).then(() => {
       showToast("Delivery Boy verified and approved!", "success");
       const r = ridersCache.find(x => x.deliveryId === id);
       if (r) {
@@ -2150,7 +2155,7 @@ Object.assign(window, {
       return;
     }
     update(ref(db, `users/${id}`), { approved: false, onboardSubmitted: false });
-    update(ref(db, `delivery/${id}`), { approved: false, onboardSubmitted: false, verificationStatus: "Rejected", rejectionReason: reason }).then(() => {
+    update(ref(db, `deliveryboy1/${id}`), { approved: false, onboardSubmitted: false, verificationStatus: "Rejected", rejectionReason: reason }).then(() => {
       showToast("Delivery Boy application rejected.", "info");
       const r = ridersCache.find(x => x.deliveryId === id);
       if (r) {
@@ -2170,7 +2175,7 @@ Object.assign(window, {
       return;
     }
     update(ref(db, `users/${id}`), { approved: false, onboardSubmitted: false });
-    update(ref(db, `delivery/${id}`), { approved: false, onboardSubmitted: false, verificationStatus: "Pending", rejectionReason: `Re-upload requested: ${reason}` }).then(() => {
+    update(ref(db, `deliveryboy1/${id}`), { approved: false, onboardSubmitted: false, verificationStatus: "Pending", rejectionReason: `Re-upload requested: ${reason}` }).then(() => {
       showToast("Re-upload request dispatched to delivery boy.", "success");
       const r = ridersCache.find(x => x.deliveryId === id);
       if (r) {
@@ -2184,7 +2189,7 @@ Object.assign(window, {
   },
   suspendRiderMaster(id: string) {
     if (confirm("Are you sure you want to suspend this delivery boy?")) {
-      update(ref(db, `delivery/${id}`), { active: false, verificationStatus: "Suspended" }).then(() => {
+      update(ref(db, `deliveryboy1/${id}`), { active: false, verificationStatus: "Suspended" }).then(() => {
         showToast("Delivery Boy has been suspended from duties.", "info");
         const r = ridersCache.find(x => x.deliveryId === id);
         if (r) {
@@ -2196,7 +2201,7 @@ Object.assign(window, {
     }
   },
   reactivateRiderMaster(id: string) {
-    update(ref(db, `delivery/${id}`), { active: true, approved: true, verificationStatus: "Approved" }).then(() => {
+    update(ref(db, `deliveryboy1/${id}`), { active: true, approved: true, verificationStatus: "Approved" }).then(() => {
       showToast("Delivery Boy reactivated back to service!", "success");
       const r = ridersCache.find(x => x.deliveryId === id);
       if (r) {

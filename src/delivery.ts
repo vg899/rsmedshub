@@ -100,7 +100,7 @@ function syncSecurityRoleGuard() {
 
 // --- SYNC DISPATCH INFORMATION FROM FIREBASE DEVIATIONS ---
 function syncRiderCoreProfileData() {
-  onValue(ref(db, `delivery/${currentRiderId}`), (snapshot) => {
+  onValue(ref(db, `deliveryboy1/${currentRiderId}`), (snapshot) => {
     showLoader(false);
     if (!snapshot.exists()) {
       // Missing rider details entirely, show documentation onboarding!
@@ -112,19 +112,23 @@ function syncRiderCoreProfileData() {
     currentRiderDetail = dData;
     isDutyActive = dData.active !== false;
 
+    const dlNo = dData.drivingLicenseNumber || dData.licenseNumber;
+    const hasAadhaar = dData.aadhaarNumber;
+    const onboardSub = dData.onboardSubmitted === true || (hasAadhaar && dlNo);
+
     // Trigger Screen gates according to KYC states
-    if (dData.suspended === true) {
+    if (dData.suspended === true || dData.verificationStatus === "Suspended") {
       showSuspendedView();
       return;
     }
 
-    if (!dData.aadhaarNumber || !dData.licenseNumber || dData.onboardSubmitted !== true) {
+    if (!hasAadhaar || !dlNo || !onboardSub) {
       // Need KYC completion
       showOnboardingView();
       return;
     }
 
-    if (dData.approved !== true) {
+    if (dData.approved !== true && dData.verificationStatus !== "Approved") {
       // Docs uploaded but waiting admin approval
       showPendingApprovalView(dData);
       return;
@@ -346,29 +350,42 @@ formKyc?.addEventListener("submit", async (e) => {
   showLoader(true);
 
   const payload = {
-    deliveryId: currentRiderId,
-    name: loggedInUser?.displayName || "Express Rider Partner",
+    uid: currentRiderId,
+    fullName: loggedInUser?.displayName || "Express Rider Partner",
     email: loggedInUser?.email || "",
     mobile: currentRiderDetail?.mobile || "9988776655",
+    profilePhoto: loggedInUser?.photoURL || currentRiderDetail?.profilePhoto || "https://img.icons8.com/color/96/delivery-man.png",
     aadhaarNumber,
-    aadhaarFrontUrl: stateAadhaarFrontUrl,
-    aadhaarBackUrl: stateAadhaarBackUrl,
-    licenseNumber: dlNumber,
-    licenseImageUrl: stateLicenseImageUrl,
+    aadhaarFront: stateAadhaarFrontUrl,
+    aadhaarBack: stateAadhaarBackUrl,
+    drivingLicenseNumber: dlNumber,
+    drivingLicenseImage: stateLicenseImageUrl,
     vehicleType,
     vehicleNumber,
     state: stateVal,
     district: districtVal,
+    status: "free",
+    verificationStatus: "Pending",
+    totalDeliveries: 0,
+    earnings: 0,
+    pendingBalance: 0,
+    createdAt: Date.now(),
+    // Keep compatibility fields
+    deliveryId: currentRiderId,
+    name: loggedInUser?.displayName || "Express Rider Partner",
+    profilePhotoUrl: loggedInUser?.photoURL || currentRiderDetail?.profilePhotoUrl || "https://img.icons8.com/color/96/delivery-man.png",
+    aadhaarFrontUrl: stateAadhaarFrontUrl,
+    aadhaarBackUrl: stateAadhaarBackUrl,
+    licenseNumber: dlNumber,
+    licenseImageUrl: stateLicenseImageUrl,
     onboardSubmitted: true,
     approved: false,
-    active: true,
-    status: "free",
-    createdAt: Date.now()
+    active: true
   };
 
   try {
-    // Write profile under /delivery and /users
-    await update(ref(db, `delivery/${currentRiderId}`), payload);
+    // Write profile under /deliveryboy1 and /users
+    await update(ref(db, `deliveryboy1/${currentRiderId}`), payload);
     await update(ref(db, `users/${currentRiderId}`), {
       aadhaarNumber,
       vehicleNumber,
@@ -392,7 +409,7 @@ document.getElementById("btn-delivery-signout")?.addEventListener("click", async
     showLoader(true);
     if (riderGPSInterval) clearInterval(riderGPSInterval);
     try {
-      await update(ref(db, `delivery/${currentRiderId}`), { active: false });
+      await update(ref(db, `deliveryboy1/${currentRiderId}`), { active: false });
       await signOut(auth);
       window.location.href = "/index.html";
     } catch (err) {
@@ -411,7 +428,7 @@ function bootstrapRiderLiveLocationTracking() {
     try {
       // Direct Web API geolocation reading
       const live = await getCurrentGPS();
-      await update(ref(db, `delivery/${currentRiderId}/location`), {
+      await update(ref(db, `deliveryboy1/${currentRiderId}/location`), {
         lat: live.lat,
         lng: live.lng,
         lastUpdated: Date.now()
@@ -429,14 +446,14 @@ function bootstrapRiderLiveLocationTracking() {
         const stepLat = currentLat + (destLat - currentLat) * 0.12;
         const stepLng = currentLng + (destLng - currentLng) * 0.12;
 
-        await update(ref(db, `delivery/${currentRiderId}/location`), {
+        await update(ref(db, `deliveryboy1/${currentRiderId}/location`), {
           lat: stepLat,
           lng: stepLng,
           lastUpdated: Date.now()
         });
       } else {
         // Flat defaults simulation coordinates
-        await update(ref(db, `delivery/${currentRiderId}/location`), {
+        await update(ref(db, `deliveryboy1/${currentRiderId}/location`), {
           lat: currentRiderDetail?.location?.lat || 12.9716,
           lng: currentRiderDetail?.location?.lng || 77.5946,
           lastUpdated: Date.now()
@@ -451,7 +468,7 @@ document.getElementById("btn-force-track-gps")?.addEventListener("click", async 
   showToast("Re-calibrating high precision GPS transceiver...", "info");
   try {
     const loc = await getCurrentGPS();
-    await update(ref(db, `delivery/${currentRiderId}/location`), {
+    await update(ref(db, `deliveryboy1/${currentRiderId}/location`), {
       lat: loc.lat,
       lng: loc.lng,
       lastUpdated: Date.now()
@@ -465,7 +482,7 @@ document.getElementById("btn-force-track-gps")?.addEventListener("click", async 
     if (activeOrderPayload) {
       const destLat = activeOrderPayload.userLocation?.lat || 12.9716;
       const destLng = activeOrderPayload.userLocation?.lng || 77.5946;
-      await update(ref(db, `delivery/${currentRiderId}/location`), {
+      await update(ref(db, `deliveryboy1/${currentRiderId}/location`), {
         lat: destLat + 0.003,
         lng: destLng - 0.002,
         lastUpdated: Date.now()
@@ -600,6 +617,20 @@ function calculateAndRenderPayoutSheets(totalAllTimeEarnings: number) {
 
   // Keep a reference to remaining balance in window for constraints checks
   (window as any)["withdrawable_limit_rem"] = remainingWithdrawableBalance;
+
+  // Real-time synchronization of deliveryboy1 fields
+  const totalCompletedDeliveries = globalOrdersCache.filter((o) => o.status === "delivered" && o.deliveryId === currentRiderId).length;
+  if (currentRiderDetail && (
+    Number(currentRiderDetail.pendingBalance || 0) !== remainingWithdrawableBalance ||
+    Number(currentRiderDetail.earnings || 0) !== totalAllTimeEarnings ||
+    Number(currentRiderDetail.totalDeliveries || 0) !== totalCompletedDeliveries
+  )) {
+    update(ref(db, `deliveryboy1/${currentRiderId}`), {
+      pendingBalance: remainingWithdrawableBalance,
+      earnings: totalAllTimeEarnings,
+      totalDeliveries: totalCompletedDeliveries
+    });
+  }
 }
 
 // --- RENDER CURRENT LISTS OF PACKED ORDER POOLS ---
@@ -703,7 +734,7 @@ Object.assign(window, {
       updates[`orders/${orderId}/timeline/transitTime`] = Date.now();
       
       // Rider Status
-      updates[`delivery/${currentRiderId}/status`] = "busy";
+      updates[`deliveryboy1/${currentRiderId}/status`] = "busy";
 
       update(ref(db), updates).then(() => {
         showToast("Job Accepted Successfully! Optimized routing loaded.", "success");
@@ -875,7 +906,7 @@ async function finalizeDeliveryHandoverCompletion(order: any) {
   updates[`orders/${orderId}/timeline/deliveredTime`] = Date.now();
 
   // Reset rider state to free
-  updates[`delivery/${currentRiderId}/status`] = "free";
+  updates[`deliveryboy1/${currentRiderId}/status`] = "free";
 
   update(ref(db), updates).then(() => {
     soundSettled.play().catch(() => {});
@@ -918,7 +949,7 @@ btnSaveUpi?.addEventListener("click", () => {
     qrCodeUrl: stateUpiQrCodeUrl || currentRiderDetail?.qrCodeUrl || ""
   };
 
-  update(ref(db, `delivery/${currentRiderId}`), updates).then(() => {
+  update(ref(db, `deliveryboy1/${currentRiderId}`), updates).then(() => {
     showToast("UPI Direct Deposit Account Details Saved!", "success");
     showLoader(false);
   }).catch((err) => {
@@ -1115,7 +1146,7 @@ const lblDutySub = document.getElementById("lbl-duty-subtext");
 btnToggleDuty?.addEventListener("click", () => {
   const nextDutyState = !isDutyActive;
   showLoader(true);
-  update(ref(db, `delivery/${currentRiderId}`), { active: nextDutyState }).then(() => {
+  update(ref(db, `deliveryboy1/${currentRiderId}`), { active: nextDutyState }).then(() => {
     isDutyActive = nextDutyState;
     updateDutyButtonUI();
     showToast(`Duty Status toggled: ${nextDutyState ? "ONLINE READY" : "OFFLINE RESTING"}`, "info");

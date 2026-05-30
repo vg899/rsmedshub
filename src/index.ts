@@ -348,14 +348,37 @@ formRegister.addEventListener("submit", async (e) => {
         state: capturedLocation?.state || "Karnataka"
       });
     } else if (role === "delivery") {
-      await set(ref(db, `delivery/${uid}`), {
-        deliveryId: uid,
-        name,
+      await set(ref(db, `deliveryboy1/${uid}`), {
+        uid,
+        fullName: name,
         email,
         mobile,
+        profilePhoto: "https://img.icons8.com/color/96/delivery-man.png",
+        aadhaarNumber: "",
+        aadhaarFront: "",
+        aadhaarBack: "",
+        drivingLicenseNumber: "",
+        drivingLicenseImage: "",
+        vehicleType: "",
+        vehicleNumber: "",
+        state: "",
+        district: "",
+        status: "free",
+        verificationStatus: "Pending",
+        totalDeliveries: 0,
+        earnings: 0,
+        pendingBalance: 0,
+        createdAt: Date.now(),
+        // Also keep compatibility parameters (not part of the 20 fields but useful for UI state logic)
+        deliveryId: uid,
+        name,
+        profilePhotoUrl: "https://img.icons8.com/color/96/delivery-man.png",
+        aadhaarFrontUrl: "",
+        aadhaarBackUrl: "",
+        licenseNumber: "",
+        licenseImageUrl: "",
         approved: false,
         active: true,
-        status: "free",
         location: {
           lat: capturedLocation?.lat || 12.9716,
           lng: capturedLocation?.lng || 77.5946
@@ -508,14 +531,37 @@ document.querySelectorAll(".btn-fast-login").forEach((btn) => {
               await set(ref(db, `medicines/${med.medicineId}`), med);
             }
           } else if (role === "delivery") {
-            await set(ref(db, `delivery/${uid}`), {
-              deliveryId: uid,
-              name,
+            await set(ref(db, `deliveryboy1/${uid}`), {
+              uid,
+              fullName: name,
               email,
               mobile,
+              profilePhoto: "https://img.icons8.com/color/96/delivery-man.png",
+              aadhaarNumber: "",
+              aadhaarFront: "",
+              aadhaarBack: "",
+              drivingLicenseNumber: "",
+              drivingLicenseImage: "",
+              vehicleType: "",
+              vehicleNumber: "",
+              state: "",
+              district: "",
+              status: "free",
+              verificationStatus: "Approved",
+              totalDeliveries: 0,
+              earnings: 0,
+              pendingBalance: 0,
+              createdAt: Date.now(),
+              // compatibility parameters
+              deliveryId: uid,
+              name,
+              profilePhotoUrl: "https://img.icons8.com/color/96/delivery-man.png",
+              aadhaarFrontUrl: "",
+              aadhaarBackUrl: "",
+              licenseNumber: "",
+              licenseImageUrl: "",
               approved: true,
               active: true,
-              status: "free",
               location: { lat: 12.9716, lng: 77.5946 }
             });
           }

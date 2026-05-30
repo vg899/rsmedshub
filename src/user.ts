@@ -956,11 +956,11 @@ function setActiveOrderTracking(orderId: string) {
 
     if (o.status === "out" && o.deliveryId) {
       // Subscribe and calculate maps parameters relative to real rider locations from DB!
-      onValue(ref(db, `delivery/${o.deliveryId}`), (riderSnap) => {
+      onValue(ref(db, `deliveryboy1/${o.deliveryId}`), (riderSnap) => {
         if (!riderSnap.exists()) return;
         const r = riderSnap.val();
 
-        riderName.innerText = r.name || "Express Rider Partner";
+        riderName.innerText = r.fullName || r.name || "Express Rider Partner";
         riderPhone.innerText = r.mobile || "10 Digit Line";
         callRider.href = `tel:${r.mobile || ""}`;
 
