@@ -36,6 +36,9 @@ onAuthStateChanged(auth, (user) => {
       } else {
         document.getElementById("admin-name-txt")!.innerText = data.name || "Administrator";
         initDashboard();
+        if (typeof (window as any).initRiderVerificationListeners === "function") {
+          (window as any).initRiderVerificationListeners();
+        }
       }
     } else {
       showToast("User details not found.", "error");
@@ -222,6 +225,9 @@ function subscribeToStats() {
 
       ridersCache = items;
       renderRidersTable(items);
+      if (typeof (window as any).renderVerificationCenter === "function") {
+        (window as any).renderVerificationCenter(items);
+      }
     } catch (err) {
       console.error("Error in onValue(delivery):", err);
     }
@@ -1523,3 +1529,683 @@ function updateGeoapifyAdminMap(stores: any[]) {
   }
   mapImg.src = `https://maps.geoapify.com/v1/staticmap?style=osm-bright&width=800&height=320&center=lonlat:${cLng},${cLat}&zoom=12&marker=${pins}&apiKey=a2f093c8994441179a2c1599f08f7386`;
 }
+
+// =================================== 12. DELIVERY BOY VERIFICATION CENTER ===================================
+let verificationFilter = "All";
+let verificationSearch = "";
+
+let zoomFactor = 1;
+let rotateAngle = 0;
+let isPanning = false;
+let panStart = { x: 0, y: 0 };
+let panOffset = { x: 0, y: 0 };
+
+function getRiderVerificationStatus(r: any): "Pending" | "Under Review" | "Approved" | "Rejected" | "Suspended" {
+  if (r.verificationStatus) {
+    return r.verificationStatus;
+  }
+  if (r.active === false || r.suspended === true) {
+    return "Suspended";
+  }
+  if (r.approved === true) {
+    return "Approved";
+  }
+  if (r.rejectionReason || r.status === "rejected") {
+    return "Rejected";
+  }
+  if (r.onboardSubmitted === true) {
+    return "Pending";
+  }
+  return "Pending";
+}
+
+function renderVerificationCenter(riders: any[]) {
+  const tbody = document.getElementById("tbody-verification-center");
+  if (!tbody) return;
+
+  // Compute counters
+  let totalCount = riders.length;
+  let pendingCount = 0;
+  let approvedCount = 0;
+  let rejectedCount = 0;
+  let suspendedCount = 0;
+
+  riders.forEach((r) => {
+    const status = getRiderVerificationStatus(r);
+    if (status === "Pending" || status === "Under Review") pendingCount++;
+    else if (status === "Approved") approvedCount++;
+    else if (status === "Rejected") rejectedCount++;
+    else if (status === "Suspended") suspendedCount++;
+  });
+
+  // Update counter UI
+  const elTotal = document.getElementById("stat-verify-total");
+  const elPending = document.getElementById("stat-verify-pending");
+  const elApproved = document.getElementById("stat-verify-approved");
+  const elRejected = document.getElementById("stat-verify-rejected");
+  const elSuspended = document.getElementById("stat-verify-suspended");
+
+  if (elTotal) elTotal.innerText = totalCount.toString();
+  if (elPending) elPending.innerText = pendingCount.toString();
+  if (elApproved) elApproved.innerText = approvedCount.toString();
+  if (elRejected) elRejected.innerText = rejectedCount.toString();
+  if (elSuspended) elSuspended.innerText = suspendedCount.toString();
+
+  // Filter riders list
+  let filtered = riders.filter((r) => {
+    const status = getRiderVerificationStatus(r);
+    
+    // Status Filter
+    if (verificationFilter !== "All" && status !== verificationFilter) {
+      if (!(verificationFilter === "Pending" && status === "Under Review")) {
+        return false;
+      }
+    }
+
+    // Search Query
+    if (verificationSearch) {
+      const q = verificationSearch.toLowerCase();
+      const name = (r.name || "").toLowerCase();
+      const email = (r.email || "").toLowerCase();
+      const mobile = (r.mobile || "").toLowerCase();
+      const district = (r.district || "").toLowerCase();
+      const state = (r.state || "").toLowerCase();
+      const dl = (r.licenseNumber || "").toLowerCase();
+      const aadhaar = (r.aadhaarNumber || "").toLowerCase();
+
+      return name.includes(q) || email.includes(q) || mobile.includes(q) || district.includes(q) || state.includes(q) || dl.includes(q) || aadhaar.includes(q);
+    }
+
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="py-16 text-center text-slate-400 font-semibold">
+          No delivery partner profiles matched your search or status query.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map((r) => {
+    const rid = r.deliveryId || r.uid || "";
+    const name = r.name || "Anonymous Rider";
+    const status = getRiderVerificationStatus(r);
+
+    let statusPillClass = "";
+    if (status === "Pending") statusPillClass = "bg-yellow-50 text-yellow-700 border-yellow-200";
+    else if (status === "Under Review") statusPillClass = "bg-indigo-50 text-indigo-700 border-indigo-200";
+    else if (status === "Approved") statusPillClass = "bg-emerald-50 text-emerald-700 border-emerald-250";
+    else if (status === "Rejected") statusPillClass = "bg-rose-50 text-rose-700 border-rose-250";
+    else if (status === "Suspended") statusPillClass = "bg-slate-100 text-slate-700 border-slate-350";
+
+    const hasAadhaar = r.aadhaarFrontUrl && r.aadhaarBackUrl;
+    const hasDl = !!r.licenseImageUrl;
+
+    const profilePic = r.profilePhotoUrl || r.photoUrl || "https://img.icons8.com/color/96/delivery-man.png";
+
+    return `
+    <tr class="hover:bg-slate-50/50 transition-all">
+      <td class="px-5 py-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full border border-slate-200 overflow-hidden shrink-0 bg-slate-100 flex items-center justify-center">
+            <img src="${profilePic}" class="w-full h-full object-cover" alt="Rider Profile" referrerPolicy="no-referrer" onerror="this.src='https://img.icons8.com/color/96/delivery-man.png'" />
+          </div>
+          <div>
+            <h4 class="font-extrabold text-slate-900 leading-snug text-left">${name}</h4>
+            <span class="text-[10px] text-slate-400 font-mono block text-left">ID: ${rid.substring(0, 8)}...</span>
+          </div>
+        </div>
+      </td>
+      <td class="px-5 py-4 text-left">
+        <div class="text-xs font-bold text-slate-800">${r.mobile || "N/A"}</div>
+        <div class="text-[10px] text-slate-400 font-medium font-mono">${r.email || "N/A"}</div>
+        <div class="text-[10px] text-slate-500 font-semibold mt-1">
+          <i class="fa-solid fa-location-dot text-slate-400 mr-1"></i>${r.district || "N/A"}, ${r.state || "N/A"}
+        </div>
+      </td>
+      <td class="px-5 py-4 text-left">
+        <div class="text-xs font-bold text-slate-700 capitalize flex items-center gap-1.5 leading-none">
+          <i class="fa-solid ${r.vehicleType === "bicycle" ? "fa-bicycle text-teal-500" : "fa-motorcycle text-amber-500"} text-sm"></i>
+          <span>${r.vehicleType || "Not filled"}</span>
+        </div>
+        <div class="text-[10px] font-mono text-slate-400 uppercase mt-1">Plate: ${r.vehicleNumber || "Not filled"}</div>
+      </td>
+      <td class="px-5 py-4 text-left whitespace-nowrap">
+        <div class="flex flex-col gap-1 text-[10px]">
+          <span class="flex items-center gap-1 font-bold ${r.aadhaarNumber ? "text-emerald-600" : "text-slate-400"}">
+            <i class="fa-solid ${hasAadhaar ? "fa-square-check text-emerald-500" : "fa-square text-slate-300"}"></i> Aadhaar Card: ${r.aadhaarNumber ? r.aadhaarNumber.substring(0, 4) + "****" : "N/A"}
+          </span>
+          <span class="flex items-center gap-1 font-bold ${r.licenseNumber ? "text-emerald-600" : "text-slate-400"}">
+            <i class="fa-solid ${hasDl ? "fa-square-check text-emerald-500" : "fa-square text-slate-300"}"></i> Driver License: ${r.licenseNumber || "N/A"}
+          </span>
+        </div>
+      </td>
+      <td class="px-5 py-4 text-left">
+        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase border ${statusPillClass}">
+          ${status}
+        </span>
+      </td>
+      <td class="px-5 py-4 text-right">
+        <button onclick="viewRiderDetailedInspection('${rid}')" class="bg-indigo-600 hover:bg-indigo-700 hover:shadow-md text-white text-[11px] font-extrabold px-3 py-1.5 rounded-xl cursor-pointer transition-all flex items-center gap-1.5 ml-auto shadow-sm">
+          <i class="fa-solid fa-file-shield"></i> View Full Profile
+        </button>
+      </td>
+    </tr>
+    `;
+  }).join("");
+}
+
+function initRiderVerificationListeners() {
+  // Search filter
+  const searchInp = document.getElementById("verification-search-input");
+  searchInp?.addEventListener("input", (e) => {
+    verificationSearch = (e.target as HTMLInputElement).value;
+    renderVerificationCenter(ridersCache);
+  });
+
+  // Filter buttons
+  const filterBtns = document.querySelectorAll(".status-verify-filter-btn");
+  filterBtns.forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      filterBtns.forEach((b) => b.classList.remove("active", "bg-slate-900", "text-white"));
+      filterBtns.forEach((b) => b.classList.add("bg-white", "text-slate-600", "border", "border-slate-200"));
+      
+      const target = e.currentTarget as HTMLButtonElement;
+      target.classList.add("active", "bg-slate-900", "text-white");
+      target.classList.remove("bg-white", "text-slate-600", "border", "border-slate-200");
+      
+      verificationFilter = target.getAttribute("data-status") || "All";
+      renderVerificationCenter(ridersCache);
+    });
+  });
+
+  // Lightbox zoom constraints and event binds
+  const lbImg = document.getElementById("lightbox-image-element") as HTMLImageElement;
+
+  document.getElementById("lightbox-zoom-in")?.addEventListener("click", () => {
+    zoomFactor += 0.2;
+    updateLightboxImgTransform();
+  });
+
+  document.getElementById("lightbox-zoom-out")?.addEventListener("click", () => {
+    if (zoomFactor > 0.4) {
+      zoomFactor -= 0.2;
+      updateLightboxImgTransform();
+    }
+  });
+
+  document.getElementById("lightbox-zoom-reset")?.addEventListener("click", () => {
+    zoomFactor = 1;
+    rotateAngle = 0;
+    panOffset = { x: 0, y: 0 };
+    updateLightboxImgTransform();
+  });
+
+  document.getElementById("lightbox-rotate-btn")?.addEventListener("click", () => {
+    rotateAngle += 90;
+    updateLightboxImgTransform();
+  });
+
+  document.getElementById("lightbox-close-btn")?.addEventListener("click", () => {
+    document.getElementById("verification-lightbox")?.classList.add("hidden");
+  });
+
+  document.getElementById("btn-close-id-inspector")?.addEventListener("click", () => {
+    document.getElementById("inspector-profile-modal")?.classList.add("hidden");
+  });
+
+  if (lbImg) {
+    lbImg.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      isPanning = true;
+      panStart.x = e.clientX - panOffset.x;
+      panStart.y = e.clientY - panOffset.y;
+      lbImg.style.cursor = "grabbing";
+    });
+
+    window.addEventListener("mousemove", (e) => {
+      if (!isPanning) return;
+      panOffset.x = e.clientX - panStart.x;
+      panOffset.y = e.clientY - panStart.y;
+      updateLightboxImgTransform();
+    });
+
+    window.addEventListener("mouseup", () => {
+      if (isPanning) {
+        isPanning = false;
+        lbImg.style.cursor = "grab";
+      }
+    });
+  }
+}
+
+function updateLightboxImgTransform() {
+  const lbImg = document.getElementById("lightbox-image-element");
+  if (lbImg) {
+    lbImg.style.transform = `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomFactor}) rotate(${rotateAngle}deg)`;
+  }
+}
+
+function openLightboxImage(url: string, title: string, subtitle: string) {
+  const lightbox = document.getElementById("verification-lightbox");
+  const lbImg = document.getElementById("lightbox-image-element") as HTMLImageElement;
+  const lbTitle = document.getElementById("lightbox-doc-title");
+  const lbSubtitle = document.getElementById("lightbox-doc-subtitle");
+  const lbDownload = document.getElementById("lightbox-download-link") as HTMLAnchorElement;
+
+  if (!lightbox || !lbImg) return;
+
+  // Reset transforms
+  zoomFactor = 1;
+  rotateAngle = 0;
+  panOffset = { x: 0, y: 0 };
+  updateLightboxImgTransform();
+
+  lbImg.src = url;
+  if (lbTitle) lbTitle.innerText = title;
+  if (lbSubtitle) lbSubtitle.innerText = subtitle;
+  if (lbDownload) {
+    lbDownload.href = url;
+    lbDownload.setAttribute("download", title.replace(/\s+/g, "_") + ".jpg");
+  }
+
+  lightbox.classList.remove("hidden");
+}
+
+function viewRiderDetailedInspection(id: string) {
+  const r = ridersCache.find((item) => item.deliveryId === id);
+  if (!r) {
+    showToast("Profile details not found.", "error");
+    return;
+  }
+
+  // Auto transition to "Under Review" if currently "Pending"
+  if (getRiderVerificationStatus(r) === "Pending") {
+    r.verificationStatus = "Under Review";
+    update(ref(db, `delivery/${id}`), { verificationStatus: "Under Review" });
+  }
+
+  const inspectorModal = document.getElementById("inspector-profile-modal");
+  const inspectorContent = document.getElementById("inspector-modal-content");
+  if (!inspectorModal || !inspectorContent) return;
+
+  const name = r.name || "Anonymous Partner";
+  const email = r.email || "N/A";
+  const mobile = r.mobile || "N/A";
+  const aadhaar = r.aadhaarNumber || "Not entered";
+  const dlNumber = r.licenseNumber || "Not entered";
+  const vehicleType = r.vehicleType || "Not specified";
+  const vehicleNumber = r.vehicleNumber || "Not specified";
+  const state = r.state || "Not specified";
+  const district = r.district || "Not specified";
+  const status = getRiderVerificationStatus(r);
+  const dateStr = r.createdAt ? new Date(r.createdAt).toLocaleString() : "N/A";
+  const profilePic = r.profilePhotoUrl || r.photoUrl || "https://img.icons8.com/color/96/delivery-man.png";
+
+  const aadFront = r.aadhaarFrontUrl || "";
+  const aadBack = r.aadhaarBackUrl || "";
+  const dlImage = r.licenseImageUrl || "";
+
+  let badgeColor = "";
+  if (status === "Pending") badgeColor = "bg-yellow-50 text-yellow-700 border-yellow-250";
+  else if (status === "Under Review") badgeColor = "bg-indigo-50 text-indigo-700 border-indigo-250";
+  else if (status === "Approved") badgeColor = "bg-emerald-50 text-emerald-700 border-emerald-250";
+  else if (status === "Rejected") badgeColor = "bg-rose-50 text-rose-700 border-rose-250";
+  else if (status === "Suspended") badgeColor = "bg-slate-100 text-slate-700 border-slate-350";
+
+  inspectorContent.innerHTML = `
+    <!-- Top Identity Card Header -->
+    <div class="border-b border-slate-150 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-left">
+      <div class="flex items-center gap-4">
+        <div class="relative w-16 h-16 rounded-2xl overflow-hidden border border-slate-200 shadow-sm bg-slate-50 shrink-0 group">
+          <img src="${profilePic}" class="w-full h-full object-cover group-hover:scale-110 transition-all cursor-pointer" onclick="openLightboxImage('${profilePic}', '${name.replace(/'/g, "\\'")} - Profile', 'Face Photo')" alt="Rider profile thumbnail" referrerPolicy="no-referrer" />
+          <div class="absolute inset-0 bg-black/40 text-white text-[9px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none font-bold">
+            <i class="fa-solid fa-expand mr-1"></i>Zoom
+          </div>
+        </div>
+        <div>
+          <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Delivery Candidate Dossier</span>
+          <h2 class="text-lg font-black text-slate-900 flex items-center gap-2 leading-tight mt-0.5">
+            ${name}
+          </h2>
+          <span class="text-xs text-indigo-600 font-mono font-bold block">ID: ${id}</span>
+        </div>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="text-[11px] font-bold text-slate-400">Current Status:</span>
+          <span class="px-3 py-1 rounded-full text-xs font-black uppercase border ${badgeColor}">
+            ${status}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rejection warning / message if any -->
+    ${r.rejectionReason ? `
+      <div class="p-3 bg-rose-50 border border-rose-150 rounded-xl text-xs text-rose-850 text-left flex items-start gap-2">
+        <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
+        <div>
+          <span class="font-bold">Last Rejection/Re-upload Reason:</span>
+          <span class="font-semibold">${r.rejectionReason}</span>
+        </div>
+      </div>
+    ` : ""}
+
+    <!-- Complete 14 parameters Info Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 text-left text-xs bg-slate-50 p-5 rounded-2xl border border-slate-200">
+      
+      <!-- Box 1: Personal Information -->
+      <div class="space-y-3">
+        <h3 class="font-black text-slate-800 border-b border-slate-200 pb-1.5 flex items-center gap-1.5 leading-none">
+          <i class="fa-solid fa-address-card text-indigo-500 text-sm"></i>
+          <span>Personal Information</span>
+        </h3>
+        <div class="space-y-2">
+          <div>
+            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wide block">Candidate Name</span>
+            <span class="font-extrabold text-slate-800 text-sm block">${name}</span>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wide block">Email Address</span>
+            <span class="font-mono text-slate-700 block">${email}</span>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wide block">Mobile Line</span>
+            <span class="font-mono font-bold text-slate-800 block">${mobile}</span>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wide block">Registration Date</span>
+            <span class="font-mono text-slate-700 block">${dateStr}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Box 2: Vehicle Logistics -->
+      <div class="space-y-3">
+        <h3 class="font-black text-slate-800 border-b border-slate-200 pb-1.5 flex items-center gap-1.5 leading-none">
+          <i class="fa-solid fa-truck-fast text-amber-500 text-sm"></i>
+          <span>Vehicle Logistics</span>
+        </h3>
+        <div class="space-y-2">
+          <div>
+            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wide block">Vehicle Type</span>
+            <span class="font-extrabold text-slate-800 capitalize text-sm block">${vehicleType}</span>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wide block">License Plate Number</span>
+            <span class="font-mono uppercase text-slate-850 font-extrabold block bg-white px-2 py-1 rounded inline-block border border-slate-200 mt-0.5">${vehicleNumber}</span>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wide block">Operational State</span>
+            <span class="font-bold text-slate-700 block">${state}</span>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wide block">Service District</span>
+            <span class="font-bold text-slate-700 block">${district}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Box 3: Document Numbers -->
+      <div class="space-y-3">
+        <h3 class="font-black text-slate-800 border-b border-slate-200 pb-1.5 flex items-center gap-1.5 leading-none">
+          <i class="fa-solid fa-shield text-emerald-500 text-sm"></i>
+          <span>Document Numbers</span>
+        </h3>
+        <div class="space-y-2">
+          <div>
+            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wide block">Aadhaar Number</span>
+            <span class="font-mono text-slate-800 font-extrabold text-sm block tracking-widest mt-0.5">${aadhaar}</span>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wide block">Driving License Number</span>
+            <span class="font-mono text-slate-800 font-extrabold text-sm uppercase block tracking-widest mt-0.5">${dlNumber}</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Uploaded Documents Live Inspection View (CLOUD STORAGE LINKS) -->
+    <div class="space-y-3.5 text-left">
+      <h3 class="text-xs font-black text-slate-800 flex items-center justify-between border-b border-slate-100 pb-2">
+        <span class="flex items-center gap-1.5"><i class="fa-solid fa-passport text-slate-400"></i> Cloud Storage Assets (Manual Document Verification)</span>
+        <span class="text-[10px] text-slate-400 font-bold">Hosted on Cloudinary Secure Storage</span>
+      </h3>
+      
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        
+        <!-- Aadhaar Card Front -->
+        <div class="bg-white border border-slate-200 rounded-xl p-3 space-y-3 shadow-xs">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Aadhaar Front</span>
+            <span class="text-[9px] text-blue-650 font-bold uppercase flex items-center gap-1">
+              <i class="fa-solid fa-cloud-arrow-up"></i> Verified
+            </span>
+          </div>
+          <div class="relative rounded-lg overflow-hidden border border-slate-150 aspect-video max-h-32 bg-slate-50 flex items-center justify-center group">
+            ${aadFront ? `
+              <img src="${aadFront}" class="w-full h-full object-cover transition-all group-hover:scale-105" alt="Aadhaar Front" referrerPolicy="no-referrer" />
+              <button onclick="openLightboxImage('${aadFront}', '${name.replace(/'/g, "\\'")} - Aadhaar Front', 'Aadhaar Card Front Copy')" class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 text-white text-[10px] font-bold flex items-center justify-center gap-1 transition-opacity cursor-pointer">
+                <i class="fa-solid fa-magnifying-glass-plus"></i> View Front Image
+              </button>
+            ` : `
+              <div class="flex flex-col items-center justify-center text-slate-350 gap-1 bg-white">
+                <i class="fa-solid fa-circle-exclamation text-2xl"></i>
+                <span class="text-[10px] font-semibold">Not Uploaded</span>
+              </div>
+            `}
+          </div>
+          <div class="flex gap-1.5 pt-1">
+            <button onclick="openLightboxImage('${aadFront}', '${name.replace(/'/g, "\\'")} - Aadhaar Front', 'Aadhaar Card Front Copy')" class="flex-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-black py-1.5 rounded-lg border border-indigo-100 transition-all text-center cursor-pointer" ${!aadFront ? "disabled" : ""}>
+              <i class="fa-solid fa-expand mr-1"></i> View Aadhaar Front
+            </button>
+            <a href="${aadFront}" target="_blank" download class="bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 p-1.5 rounded-lg transition-all flex items-center justify-center cursor-pointer" title="Download Aadhaar Front Copy" ${!aadFront ? "style='pointer-events:none; opacity:0.5;'" : ""}>
+              <i class="fa-solid fa-download"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Aadhaar Card Back -->
+        <div class="bg-white border border-slate-200 rounded-xl p-3 space-y-3 shadow-xs">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Aadhaar Back</span>
+            <span class="text-[9px] text-blue-650 font-bold uppercase flex items-center gap-1">
+              <i class="fa-solid fa-cloud-arrow-up"></i> Verified
+            </span>
+          </div>
+          <div class="relative rounded-lg overflow-hidden border border-slate-150 aspect-video max-h-32 bg-slate-50 flex items-center justify-center group flex-col">
+            ${aadBack ? `
+              <img src="${aadBack}" class="w-full h-full object-cover transition-all group-hover:scale-105" alt="Aadhaar Back" referrerPolicy="no-referrer" />
+              <button onclick="openLightboxImage('${aadBack}', '${name.replace(/'/g, "\\'")} - Aadhaar Back', 'Aadhaar Card Back Copy')" class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 text-white text-[10px] font-bold flex items-center justify-center gap-1 transition-opacity cursor-pointer">
+                <i class="fa-solid fa-magnifying-glass-plus"></i> View Back Image
+              </button>
+            ` : `
+              <div class="flex flex-col items-center justify-center text-slate-350 gap-1 bg-white">
+                <i class="fa-solid fa-circle-exclamation text-2xl"></i>
+                <span class="text-[10px] font-semibold">Not Uploaded</span>
+              </div>
+            `}
+          </div>
+          <div class="flex gap-1.5 pt-1">
+            <button onclick="openLightboxImage('${aadBack}', '${name.replace(/'/g, "\\'")} - Aadhaar Back', 'Aadhaar Card Back Copy')" class="flex-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-black py-1.5 rounded-lg border border-indigo-100 transition-all text-center cursor-pointer" ${!aadBack ? "disabled" : ""}>
+              <i class="fa-solid fa-expand mr-1"></i> View Aadhaar Back
+            </button>
+            <a href="${aadBack}" target="_blank" download class="bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 p-1.5 rounded-lg transition-all flex items-center justify-center cursor-pointer" title="Download Aadhaar Back Copy" ${!aadBack ? "style='pointer-events:none; opacity:0.5;'" : ""}>
+              <i class="fa-solid fa-download"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Driving License Copy -->
+        <div class="bg-white border border-slate-200 rounded-xl p-3 space-y-3 shadow-xs">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Driving License</span>
+            <span class="text-[9px] text-blue-650 font-bold uppercase flex items-center gap-1">
+              <i class="fa-solid fa-cloud-arrow-up"></i> Verified
+            </span>
+          </div>
+          <div class="relative rounded-lg overflow-hidden border border-slate-150 aspect-video max-h-32 bg-slate-50 flex items-center justify-center group font-black">
+            ${dlImage ? `
+              <img src="${dlImage}" class="w-full h-full object-cover transition-all group-hover:scale-105" alt="Driving License" referrerPolicy="no-referrer" />
+              <button onclick="openLightboxImage('${dlImage}', '${name.replace(/'/g, "\\'")} - License', 'Driving License Copy')" class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 text-white text-[10px] font-bold flex items-center justify-center gap-1 transition-opacity cursor-pointer">
+                <i class="fa-solid fa-magnifying-glass-plus"></i> View DL Image
+              </button>
+            ` : `
+              <div class="flex flex-col items-center justify-center text-slate-350 gap-1 bg-white">
+                <i class="fa-solid fa-circle-exclamation text-2xl"></i>
+                <span class="text-[10px] font-semibold">Not Uploaded</span>
+              </div>
+            `}
+          </div>
+          <div class="flex gap-1.5 pt-1">
+            <button onclick="openLightboxImage('${dlImage}', '${name.replace(/'/g, "\\'")} - Driving License', 'Driving License Copy')" class="flex-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-black py-1.5 rounded-lg border border-indigo-100 transition-all text-center cursor-pointer" ${!dlImage ? "disabled" : ""}>
+              <i class="fa-solid fa-expand mr-1"></i> View DL Button
+            </button>
+            <a href="${dlImage}" target="_blank" download class="bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 p-1.5 rounded-lg transition-all flex items-center justify-center cursor-pointer" title="Download License Document Copy" ${!dlImage ? "style='pointer-events:none; opacity:0.5;'" : ""}>
+              <i class="fa-solid fa-download"></i>
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Active Verification Control Center (Verification actions) -->
+    <div class="border-t border-slate-150 pt-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-left">
+      <div>
+        <h4 class="text-xs font-black text-slate-800">Operational Verification Override</h4>
+        <p class="text-[10px] text-slate-400 font-semibold">Commit manual KYC audit decisions instantly to database endpoints.</p>
+      </div>
+      <div class="flex flex-wrap gap-2 shrink-0">
+        
+        ${status !== "Approved" ? `
+          <!-- Option: Approve Rider -->
+          <button onclick="approveRiderMaster('${id}')" class="bg-emerald-600 hover:bg-emerald-700 hover:shadow-md text-white text-xs font-black px-4 py-2.5 rounded-xl cursor-pointer transition-all flex items-center gap-1.5 shadow-sm">
+            <i class="fa-solid fa-user-check"></i> Approve Delivery Boy
+          </button>
+          
+          <!-- Option: Reject Application -->
+          <button onclick="rejectRiderMaster('${id}')" class="bg-rose-600 hover:bg-rose-700 hover:shadow-md text-white text-xs font-black px-4 py-2.5 rounded-xl cursor-pointer transition-all flex items-center gap-1.5 shadow-sm">
+            <i class="fa-solid fa-user-xmark"></i> Reject Delivery Boy
+          </button>
+
+          <!-- Option: Require document re-upload -->
+          <button onclick="requestRiderReupload('${id}')" class="bg-amber-500 hover:bg-amber-600 hover:shadow-md text-white text-xs font-black px-4 py-2.5 rounded-xl cursor-pointer transition-all flex items-center gap-1.5 shadow-sm">
+            <i class="fa-solid fa-rotate-left"></i> Request Re-Upload
+          </button>
+        ` : `
+          <!-- Option: Suspend Activity -->
+          <button onclick="suspendRiderMaster('${id}')" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-black px-4 py-2.5 rounded-xl cursor-pointer transition-all flex items-center gap-1.5 shadow-sm">
+            <i class="fa-solid fa-ban"></i> Suspend Delivery Boy
+          </button>
+
+          <span class="text-emerald-700 bg-emerald-50 border border-emerald-100 px-3.5 py-2.5 rounded-xl font-extrabold text-xs flex items-center gap-2 select-none">
+            <i class="fa-solid fa-circle-check text-base"></i> Active Verified Delivery Boy Account
+          </span>
+        `}
+
+        ${status === "Suspended" ? `
+          <!-- Option: Reactivate Suspect -->
+          <button onclick="reactivateRiderMaster('${id}')" class="bg-emerald-600 hover:bg-emerald-700 hover:shadow-md text-white text-xs font-black px-4 py-2.5 rounded-xl cursor-pointer transition-all flex items-center gap-1.5 shadow-sm">
+            <i class="fa-solid fa-user-shield"></i> Reactivate Agent
+          </button>
+        ` : ""}
+
+      </div>
+    </div>
+  `;
+
+  inspectorModal.classList.remove("hidden");
+}
+
+Object.assign(window, {
+  renderVerificationCenter,
+  initRiderVerificationListeners,
+  openLightboxImage,
+  viewRiderDetailedInspection,
+  approveRiderMaster(id: string) {
+    update(ref(db, `users/${id}`), { approved: true });
+    update(ref(db, `delivery/${id}`), { approved: true, active: true, verificationStatus: "Approved" }).then(() => {
+      showToast("Delivery Boy verified and approved!", "success");
+      const r = ridersCache.find(x => x.deliveryId === id);
+      if (r) {
+        r.approved = true;
+        r.active = true;
+        r.verificationStatus = "Approved";
+        viewRiderDetailedInspection(id);
+      }
+    });
+  },
+  rejectRiderMaster(id: string) {
+    const reason = prompt("Enter Rejection Reason:")?.trim();
+    if (reason === undefined) return;
+    if (!reason) {
+      showToast("Rejection reason is required.", "error");
+      return;
+    }
+    update(ref(db, `users/${id}`), { approved: false, onboardSubmitted: false });
+    update(ref(db, `delivery/${id}`), { approved: false, onboardSubmitted: false, verificationStatus: "Rejected", rejectionReason: reason }).then(() => {
+      showToast("Delivery Boy application rejected.", "info");
+      const r = ridersCache.find(x => x.deliveryId === id);
+      if (r) {
+        r.approved = false;
+        r.onboardSubmitted = false;
+        r.verificationStatus = "Rejected";
+        r.rejectionReason = reason;
+        viewRiderDetailedInspection(id);
+      }
+    });
+  },
+  requestRiderReupload(id: string) {
+    const reason = prompt("Describe document re-upload requirement details:")?.trim();
+    if (reason === undefined) return;
+    if (!reason) {
+      showToast("Requirement description is required.", "error");
+      return;
+    }
+    update(ref(db, `users/${id}`), { approved: false, onboardSubmitted: false });
+    update(ref(db, `delivery/${id}`), { approved: false, onboardSubmitted: false, verificationStatus: "Pending", rejectionReason: `Re-upload requested: ${reason}` }).then(() => {
+      showToast("Re-upload request dispatched to delivery boy.", "success");
+      const r = ridersCache.find(x => x.deliveryId === id);
+      if (r) {
+        r.approved = false;
+        r.onboardSubmitted = false;
+        r.verificationStatus = "Pending";
+        r.rejectionReason = `Re-upload requested: ${reason}`;
+        viewRiderDetailedInspection(id);
+      }
+    });
+  },
+  suspendRiderMaster(id: string) {
+    if (confirm("Are you sure you want to suspend this delivery boy?")) {
+      update(ref(db, `delivery/${id}`), { active: false, verificationStatus: "Suspended" }).then(() => {
+        showToast("Delivery Boy has been suspended from duties.", "info");
+        const r = ridersCache.find(x => x.deliveryId === id);
+        if (r) {
+          r.active = false;
+          r.verificationStatus = "Suspended";
+          viewRiderDetailedInspection(id);
+        }
+      });
+    }
+  },
+  reactivateRiderMaster(id: string) {
+    update(ref(db, `delivery/${id}`), { active: true, approved: true, verificationStatus: "Approved" }).then(() => {
+      showToast("Delivery Boy reactivated back to service!", "success");
+      const r = ridersCache.find(x => x.deliveryId === id);
+      if (r) {
+        r.active = true;
+        r.approved = true;
+        r.verificationStatus = "Approved";
+        viewRiderDetailedInspection(id);
+      }
+    });
+  }
+});
+
