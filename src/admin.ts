@@ -1538,7 +1538,7 @@ function updateGeoapifyAdminMap(stores: any[]) {
     mapDiv.innerHTML = "";
     try {
       mapInstance = new mappls.Map("mappls-admin-map", {
-        center: [cLat, cLng],
+        center: { lat: cLat, lng: cLng },
         zoom: 11,
         zoomControl: true,
         attributionControl: false
@@ -1579,7 +1579,7 @@ function updateGeoapifyAdminMap(stores: any[]) {
 
   // Center on the first active store
   try {
-    mapInstance.setCenter([cLat, cLng]);
+    mapInstance.setCenter({ lat: cLat, lng: cLng });
   } catch(e) {}
 
   (window as any)["overlays_mappls_admin_map"] = activeOverlays;

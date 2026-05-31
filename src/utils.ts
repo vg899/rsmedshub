@@ -367,9 +367,9 @@ export function updateLeafletMap(
   if (!mapInstance) {
     mapContainer.innerHTML = "";
     try {
-      // Mappls expectations on center coordinates: [latitude, longitude] as confirmed!
+      // Mappls expectations on center coordinates: { lat, lng } or MapLibre standard [lng, lat]
       mapInstance = new mappls.Map(containerId, {
-        center: [endLat, endLng],
+        center: { lat: endLat, lng: endLng },
         zoom: 14,
         zoomControl: true,
         attributionControl: false
@@ -410,7 +410,7 @@ export function updateLeafletMap(
         html: `<div class="mappls-custom-marker ${endIconClass} w-8.5 h-8.5 rounded-full shadow border-2 border-white flex items-center justify-center bg-teal-500 text-white"><i class="fa-solid ${endIconAwesome} text-xs"></i></div>`
       });
       activeOverlays.push(marker);
-      mapInstance.setCenter([endLat, endLng]);
+      mapInstance.setCenter({ lat: endLat, lng: endLng });
       mapInstance.setZoom(14);
     } else {
       // Dual/Triple Pin Routing Map View
@@ -471,7 +471,7 @@ export function updateLeafletMap(
 
         const midLat = (startLat + middleLat + endLat) / 3;
         const midLng = (startLng + middleLng + endLng) / 3;
-        mapInstance.setCenter([midLat, midLng]);
+        mapInstance.setCenter({ lat: midLat, lng: midLng });
       } else {
         // Direct segment (Rider -> Customer)
         getMapplsRoute(startLat, startLng, endLat, endLng).then((res) => {
@@ -491,7 +491,7 @@ export function updateLeafletMap(
 
         const midLat = (startLat + endLat) / 2;
         const midLng = (startLng + endLng) / 2;
-        mapInstance.setCenter([midLat, midLng]);
+        mapInstance.setCenter({ lat: midLat, lng: midLng });
       }
 
       // Adjust Zoom dynamically based on distance
