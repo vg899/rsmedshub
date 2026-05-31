@@ -181,7 +181,142 @@ document.getElementById("btn-user-signout")?.addEventListener("click", async () 
 let allMedicines: any[] = [];
 let allStores: any[] = [];
 
+// Fallback high-quality promotional slides
+const DEFAULT_CAROUSEL_SLIDES = [
+  {
+    bannerId: "default_heart",
+    imageUrl: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800",
+    redirectUrl: "#",
+    isLarge: true,
+    title: "HEART CARE PROMO",
+    description: "Get 25% discount on all premium cardiovascular segments and vitamins.",
+    badge: "25% OFF",
+    cta: "Save Now"
+  },
+  {
+    bannerId: "default_wellness",
+    imageUrl: "https://images.unsplash.com/photo-1631549916768-4119b2e55c06?w=800",
+    redirectUrl: "#",
+    isLarge: false,
+    title: "Wellness & Herbs",
+    description: "Cold-chain dispatched therapeutic supplements directly from premium labs.",
+    badge: "ESSENTIAL",
+    cta: "Browse Deals"
+  },
+  {
+    bannerId: "default_clinical",
+    imageUrl: "https://images.unsplash.com/photo-1607619056574-7b8d304a3b6f?w=800",
+    redirectUrl: "#",
+    isLarge: true,
+    title: "Clinical Safe Check",
+    description: "100% WHO complied drug licenses and certified chemists checking every order.",
+    badge: "100% VERIFIED",
+    cta: "Order Safe"
+  }
+];
+
+let userBannersCache: any[] = [];
+let userActiveBannerIndex = 0;
+let userBannerAutoplayInterval: any = null;
+
+function renderUserBannerCarousel() {
+  const section = document.getElementById("banner-section");
+  if (!section) return;
+
+  const slidesToRender = userBannersCache.length > 0 ? userBannersCache : DEFAULT_CAROUSEL_SLIDES;
+  if (slidesToRender.length === 0) return;
+
+  if (userActiveBannerIndex >= slidesToRender.length) {
+    userActiveBannerIndex = 0;
+  }
+
+  const slide = slidesToRender[userActiveBannerIndex];
+  let contentHtml = "";
+
+  if (slide.isLarge) {
+    // Large Image Layout: Center image object-contain + blurred backdrop overlay to solve black border padding voids beautifully
+    contentHtml = `
+      <div class="relative w-full h-[140px] md:h-[185px] overflow-hidden flex items-center justify-center cursor-pointer select-none rounded-2xl group" onclick="window.location.href='${slide.redirectUrl || "#"}'">
+        <div class="absolute inset-0 bg-cover bg-center scale-110 blur-xl opacity-35 transition-all duration-700 group-hover:scale-115" style="background-image: url('${slide.imageUrl}')"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-950/20 via-transparent to-transparent"></div>
+        <img src="${slide.imageUrl}" class="relative z-10 w-full h-full object-contain select-none max-w-full" alt="Promo Billboard">
+      </div>
+    `;
+  } else {
+    // Small Image Layout: Display rich descriptive information card with floating badge, Title, CTA, and centered floating image preview
+    const displayBadge = slide.badge || "COUPON";
+    const displayTitle = slide.title || "Special Medicine Delivery";
+    const displayDesc = slide.description || "Grab active deals with sterile cold-chain assurance.";
+    const displayCta = slide.cta || "Shop Now";
+
+    contentHtml = `
+      <div class="relative w-full h-[140px] md:h-[185px] overflow-hidden bg-gradient-to-r from-blue-50 to-blue-100 flex items-center border border-blue-100/60 cursor-pointer p-4 pr-2 transition-all duration-300 rounded-2xl text-left" onclick="window.location.href='${slide.redirectUrl || "#"}'">
+        <div class="absolute -right-10 -top-10 w-44 h-44 bg-blue-200 rounded-full blur-2xl opacity-20 pointer-events-none"></div>
+        <div class="p-2 z-10 max-w-[62%] space-y-1.5 text-slate-800">
+          <span class="bg-blue-600 text-white text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider font-display shadow-xs animate-pulse">${displayBadge}</span>
+          <h2 class="text-[12.5px] font-black text-slate-900 leading-tight uppercase tracking-tight line-clamp-2">${displayTitle}</h2>
+          <p class="text-[9.5px] text-slate-600 font-semibold leading-tight line-clamp-2">${displayDesc}</p>
+          <button class="mt-1 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-[8px] px-3.5 py-1.5 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-xs transition-all active:scale-95">
+            <span>${displayCta}</span>
+            <i class="fa-solid fa-circle-arrow-right text-[8px]"></i>
+          </button>
+        </div>
+        
+        <div class="absolute right-4 top-2 bottom-2 w-[34%] flex items-center justify-center z-10">
+          <div class="relative select-none group">
+            <div class="absolute inset-0 bg-blue-200/50 rounded-full blur-md scale-105 opacity-40 group-hover:scale-115 transition-all"></div>
+            <div class="w-16 h-16 md:w-20 md:h-20 bg-white rounded-2xl shadow-sm p-1.5 flex items-center justify-center border border-blue-100/50 z-10 relative">
+              <img src="${slide.imageUrl}" class="w-full h-full object-contain rounded-xl select-none" referrerPolicy="no-referrer">
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Dots listing selector
+  let dotsHtml = `<div class="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-25">`;
+  slidesToRender.forEach((_, idx) => {
+    const isActive = idx === userActiveBannerIndex;
+    dotsHtml += `
+      <button onclick="event.stopPropagation(); window.setUserBannerIndex(${idx})" class="h-1.5 rounded-full transition-all duration-300 focus:outline-none cursor-pointer ${isActive ? 'w-4.5 bg-blue-600' : 'w-1.5 bg-slate-400/40 hover:bg-slate-400'}" aria-label="Go to slide ${idx + 1}"></button>
+    `;
+  });
+  dotsHtml += `</div>`;
+
+  section.className = "relative rounded-2xl overflow-hidden shadow-xs border border-blue-50 bg-slate-50 flex flex-col justify-center transition-all duration-300 min-h-[140px] md:min-h-[185px]";
+  section.innerHTML = `
+    <div class="w-full h-full slide-fade">
+      ${contentHtml}
+    </div>
+    ${dotsHtml}
+  `;
+}
+
+function startBannerAutoplay() {
+  if (userBannerAutoplayInterval) {
+    clearInterval(userBannerAutoplayInterval);
+  }
+  const slidesToRender = userBannersCache.length > 0 ? userBannersCache : DEFAULT_CAROUSEL_SLIDES;
+  if (slidesToRender.length <= 1) return;
+
+  userBannerAutoplayInterval = setInterval(() => {
+    userActiveBannerIndex = (userActiveBannerIndex + 1) % slidesToRender.length;
+    renderUserBannerCarousel();
+  }, 4500);
+}
+
+// Bind carousel methods on global scope for easy window communication
+(window as any).renderUserBannerCarousel = renderUserBannerCarousel;
+(window as any).startBannerAutoplay = startBannerAutoplay;
+(window as any).userActiveBannerIndex = userActiveBannerIndex;
+(window as any).userBannersCache = userBannersCache;
+
 function syncMainMarketplace() {
+  // Prime first render instantly
+  renderUserBannerCarousel();
+  startBannerAutoplay();
+
   // Fetch live global charges configuration
   get(ref(db, "charges")).then((snap) => {
     if (snap.exists()) {
@@ -191,29 +326,69 @@ function syncMainMarketplace() {
 
   // Susbscribe promotional banners campaigns
   onValue(ref(db, "banners"), (snapshot) => {
-    const section = document.getElementById("banner-section")!;
+    if (userBannerAutoplayInterval) {
+      clearInterval(userBannerAutoplayInterval);
+      userBannerAutoplayInterval = null;
+    }
+
     if (snapshot.exists()) {
-      const banners: any[] = [];
+      const activeBanners: any[] = [];
       snapshot.forEach((child) => {
         const b = child.val();
-        if (b.active) banners.push(b);
+        if (b.active) activeBanners.push(b);
       });
 
-      if (banners.length > 0) {
+      if (activeBanners.length > 0) {
         // Sort by priority weight
-        banners.sort((a,b) => (a.priority || 1) - (b.priority || 1));
-        const activeAd = banners[0];
+        activeBanners.sort((a,b) => (a.priority || 1) - (b.priority || 1));
         
-        section.innerHTML = `
-          <div class="absolute inset-0 bg-slate-950/20 mix-blend-multiply"></div>
-          <div class="p-5 relative z-10 max-w-[65%] space-y-1.5 text-white">
-            <span class="bg-white/20 text-white text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider">Flash Campaign Ready</span>
-            <h2 class="text-sm font-extrabold leading-tight">Surgical meds direct from premium labs</h2>
-            <button onclick="window.location.href='${activeAd.redirectUrl || "#"}'" class="mt-2 bg-white text-teal-600 font-bold text-[10px] px-3.5 py-1.5 rounded-lg">Browse Offer</button>
-          </div>
-          <img class="absolute right-0 bottom-0 w-28 h-full object-cover" src="${activeAd.imageUrl}" alt="Flash promo">
-        `;
+        // Load and pre-classify all images based on dimension aspect
+        const promises = activeBanners.map(b => {
+          return new Promise<any>((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+              const aspect = img.naturalWidth / img.naturalHeight;
+              const isLarge = img.naturalWidth >= 400 && aspect >= 1.4;
+              resolve({
+                ...b,
+                isLarge,
+                title: b.title || "Flash Offer Specials",
+                description: b.description || "Dispatched safely with certified cold chain storage.",
+                badge: b.badge || "SPECIAL",
+                cta: b.cta || "Browse Offer"
+              });
+            };
+            img.onerror = () => {
+              resolve({
+                ...b,
+                isLarge: true,
+                title: b.title || "Specialist Offer",
+                description: b.description || "Dispatched safely with certified cold chain storage.",
+                badge: b.badge || "PROMO",
+                cta: b.cta || "Shop Now"
+              });
+            };
+            img.src = b.imageUrl;
+          });
+        });
+
+        Promise.all(promises).then(classified => {
+          userBannersCache = classified;
+          userActiveBannerIndex = 0;
+          renderUserBannerCarousel();
+          startBannerAutoplay();
+        });
+      } else {
+        userBannersCache = [];
+        userActiveBannerIndex = 0;
+        renderUserBannerCarousel();
+        startBannerAutoplay();
       }
+    } else {
+      userBannersCache = [];
+      userActiveBannerIndex = 0;
+      renderUserBannerCarousel();
+      startBannerAutoplay();
     }
   });
 
@@ -709,6 +884,14 @@ addrInput?.addEventListener("input", async (e) => {
 });
 
 Object.assign(window, {
+  setUserBannerIndex(idx: number) {
+    if (userBannerAutoplayInterval) {
+      clearInterval(userBannerAutoplayInterval);
+    }
+    userActiveBannerIndex = idx;
+    renderUserBannerCarousel();
+    startBannerAutoplay();
+  },
   selectAutocompleteAddress(formatted: string, lat: number, lng: number) {
     addrInput.value = formatted;
     selectedAddressDetail = { address: formatted, lat, lng };
