@@ -1057,6 +1057,245 @@ Object.assign(window, {
 
 // 7. BANNER ADS & PROMOS MANAGER
 let currentAdFile: File | null = null;
+let adminBannersCache: any[] = [];
+
+// Local Date/Time formatter helpers
+function formatLocalDate(date: Date): string {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function formatLocalTime(date: Date): string {
+  const hh = String(date.getHours()).padStart(2, '0');
+  const mm = String(date.getMinutes()).padStart(2, '0');
+  return `${hh}:${mm}`;
+}
+
+function parseLocalToEpoch(dateStr: string, timeStr: string): number {
+  if (!dateStr || !timeStr) return Date.now();
+  const parts = dateStr.split("-");
+  const timeParts = timeStr.split(":");
+  const d = new Date(
+    parseInt(parts[0]),
+    parseInt(parts[1]) - 1,
+    parseInt(parts[2]),
+    parseInt(timeParts[0]),
+    parseInt(timeParts[1] || "0"),
+    0,
+    0
+  );
+  return d.getTime();
+}
+
+function formatEpochToDateTime(epoch: number): string {
+  if (!epoch) return "Immediate";
+  const d = new Date(epoch);
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const date = d.getDate();
+  const month = months[d.getMonth()];
+  const year = d.getFullYear().toString().slice(-2);
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${date} ${month} '${year} at ${hh}:${mm}`;
+}
+
+function getBannerCampaignStatus(b: any) {
+  const now = Date.now();
+  if (b.active === false) {
+    return {
+      text: "Deactivated",
+      colorClass: "bg-slate-100 text-slate-700 border border-slate-200",
+      remainingText: "Active State Suspended"
+    };
+  }
+
+  const start = b.startEpoch;
+  const end = b.endEpoch;
+
+  if (start && now < start) {
+    const diff = start - now;
+    return {
+      text: "Scheduled",
+      colorClass: "bg-amber-100 text-amber-800 border border-amber-200",
+      remainingText: `Starts in ${formatAdminDuration(diff)}`
+    };
+  }
+
+  if (end && now > end) {
+    return {
+      text: "Expired",
+      colorClass: "bg-rose-100 text-rose-800 border border-rose-200",
+      remainingText: "Ended Automatically (Expired)"
+    };
+  }
+
+  // Active
+  const diff = end ? (end - now) : null;
+  return {
+    text: "Active",
+    colorClass: "bg-emerald-100 text-emerald-850 border border-emerald-200",
+    remainingText: diff ? `Expires in ${formatAdminDuration(diff)}` : "Always Active"
+  };
+}
+
+function formatAdminDuration(ms: number): string {
+  const totSec = Math.floor(ms / 1000);
+  if (totSec < 60) return `${totSec}s`;
+  const totMin = Math.floor(totSec / 60);
+  if (totMin < 60) return `${totMin}m`;
+  const totHr = Math.floor(totMin / 60);
+  const remMin = totMin % 60;
+  if (totHr < 24) return `${totHr}h ${remMin}m`;
+  const totDay = Math.floor(totHr / 24);
+  const remHr = totHr % 24;
+  return `${totDay}d ${remHr}h`;
+}
+
+function initBannerDateTimeDefaults() {
+  const startDateInp = document.getElementById("banner-start-date") as HTMLInputElement;
+  const startTimeInp = document.getElementById("banner-start-time") as HTMLInputElement;
+  const endDateInp = document.getElementById("banner-end-date") as HTMLInputElement;
+  const endTimeInp = document.getElementById("banner-end-time") as HTMLInputElement;
+  const presetSelect = document.getElementById("banner-duration-preset") as HTMLSelectElement;
+
+  if (!startDateInp) return;
+
+  const now = new Date();
+  startDateInp.value = formatLocalDate(now);
+  startTimeInp.value = formatLocalTime(now);
+
+  // Default is 24 Hours preset
+  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  endDateInp.value = formatLocalDate(tomorrow);
+  endTimeInp.value = formatLocalTime(tomorrow);
+
+  presetSelect?.addEventListener("change", () => {
+    const val = presetSelect.value;
+    if (val === "custom") return;
+
+    const hours = parseInt(val);
+    if (!isNaN(hours)) {
+      const activeStart = new Date();
+      startDateInp.value = formatLocalDate(activeStart);
+      startTimeInp.value = formatLocalTime(activeStart);
+
+      const activeEnd = new Date(activeStart.getTime() + hours * 60 * 60 * 1000);
+      endDateInp.value = formatLocalDate(activeEnd);
+      endTimeInp.value = formatLocalTime(activeEnd);
+    }
+  });
+
+  [startDateInp, startTimeInp, endDateInp, endTimeInp].forEach(inp => {
+    inp?.addEventListener("change", () => {
+      if (presetSelect) presetSelect.value = "custom";
+    });
+  });
+}
+
+function renderAdminBannersList() {
+  const container = document.getElementById("banner-list-container");
+  if (!container) return;
+
+  if (adminBannersCache.length === 0) {
+    container.innerHTML = `<p class="text-[11px] text-slate-400 py-3 text-center">No slider banners. Default banners will render.</p>`;
+    return;
+  }
+
+  let html = "";
+  adminBannersCache.forEach((b) => {
+    const stat = getBannerCampaignStatus(b);
+    const views = b.views || 0;
+    const clicks = b.clicks || 0;
+    const ctr = views > 0 ? ((clicks / views) * 100).toFixed(1) : "0.0";
+
+    const formattedStart = b.startEpoch ? formatEpochToDateTime(b.startEpoch) : "Immediate";
+    const formattedEnd = b.endEpoch ? formatEpochToDateTime(b.endEpoch) : "Never Expires";
+
+    const isCampaignOverlays = b.title || b.badge || b.description || b.cta;
+    const isActiveToggle = b.active !== false;
+
+    html += `
+      <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-100 flex flex-col gap-2.5 transition-all">
+        <div class="flex items-start gap-3">
+          <div class="relative shrink-0 select-none">
+            <img src="${b.imageUrl}" class="w-20 h-11 object-cover rounded shadow-xs border border-slate-200">
+            <span class="absolute top-1 left-1.5 z-10 text-[7px] font-black ${stat.colorClass} px-1.5 py-0.5 rounded shadow-xs uppercase tracking-wider">
+              ${stat.text}
+            </span>
+          </div>
+
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-1">
+              <span class="text-[8.5px] text-indigo-600 font-extrabold truncate max-w-[65%] font-mono uppercase tracking-wider">
+                Ref: ${b.bannerId}
+              </span>
+              <div class="flex items-center gap-1.5 shrink-0">
+                <button onclick="toggleBannerCampaignActive('${b.bannerId}', ${isActiveToggle})" class="text-[10px] select-none text-slate-400 hover:text-slate-600 outline-none p-0.5 cursor-pointer transition-all" title="Toggle Campaign Lock">
+                  <i class="fa-solid ${isActiveToggle ? 'fa-toggle-on text-emerald-500 text-lg' : 'fa-toggle-off text-slate-300 text-lg'}"></i>
+                </button>
+                <button onclick="removeBanner('${b.bannerId}')" class="text-rose-500 hover:text-rose-700 cursor-pointer p-0.5" title="Scrub Campaign Permanently"><i class="fa-regular fa-trash-can"></i></button>
+              </div>
+            </div>
+
+            <p class="text-[10px] text-slate-700 font-bold mt-1 truncate">
+              Redirect: <span class="text-indigo-600 font-mono select-all">${b.redirectUrl || "None"}</span>
+            </p>
+          </div>
+        </div>
+
+        ${isCampaignOverlays ? `
+          <div class="px-2.5 py-1.5 bg-indigo-50/30 rounded-lg text-[9px] border border-indigo-100/30 space-y-0.5">
+            <span class="text-[7.5px] font-black uppercase text-indigo-500 tracking-wider block">Content Overlay details</span>
+            ${b.title ? `<p class="font-extrabold text-slate-700 uppercase">Title: ${b.title}</p>` : ''}
+            ${b.description ? `<p class="font-semibold text-slate-500 italic">Desc: "${b.description}"</p>` : ''}
+            <div class="flex items-center gap-2 mt-1">
+              ${b.badge ? `<span class="bg-indigo-600 text-white text-[7px] px-1.5 py-0.5 rounded font-black tracking-wider uppercase">${b.badge}</span>` : ''}
+              ${b.cta ? `<span class="bg-white border border-indigo-150 text-slate-600 text-[7px] px-1.5 py-0.5 rounded font-bold uppercase">CTA: ${b.cta}</span>` : ''}
+            </div>
+          </div>
+        ` : ''}
+
+        <div class="bg-white p-2 rounded-lg border border-slate-150/40 grid grid-cols-2 gap-2 text-[9px] font-bold text-slate-500">
+          <div>
+            <span class="text-[7.5px] font-black uppercase text-slate-400 tracking-wider block">Campaign Starts</span>
+            <span class="text-slate-700">${formattedStart}</span>
+          </div>
+          <div>
+            <span class="text-[7.5px] font-black uppercase text-slate-400 tracking-wider block">Campaign Ends</span>
+            <span class="text-slate-700">${formattedEnd}</span>
+          </div>
+          <div class="col-span-2 border-t border-slate-50 pt-1.5 flex items-center justify-between">
+            <span class="text-[8px] font-black text-amber-600 uppercase tracking-wider flex items-center gap-1.5">
+              <i class="fa-solid fa-hourglass-half"></i> ${stat.remainingText}
+            </span>
+          </div>
+        </div>
+
+        <div class="bg-slate-100/40 p-2 rounded-lg grid grid-cols-3 text-center text-[10px] font-black text-slate-700">
+          <div class="border-r border-slate-200/50">
+            <span class="text-[7.5px] font-black uppercase text-slate-400 tracking-widest block">VIEWS</span>
+            <span class="text-slate-800 text-xs">${views}</span>
+          </div>
+          <div class="border-r border-slate-200/50">
+            <span class="text-[7.5px] font-black uppercase text-slate-400 tracking-widest block">CLICKS</span>
+            <span class="text-slate-800 text-xs">${clicks}</span>
+          </div>
+          <div>
+            <span class="text-[7.5px] font-black uppercase text-slate-400 tracking-widest block">CTR</span>
+            <span class="text-cyan-600 text-xs">${ctr}%</span>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+// Reactively tick remaining time calculation live in the admin panel every 5s
+setInterval(renderAdminBannersList, 5000);
 
 const bannerFileInput = document.getElementById("banner-file") as HTMLInputElement;
 bannerFileInput?.addEventListener("change", (e) => {
@@ -1073,6 +1312,29 @@ document.getElementById("form-banners")?.addEventListener("submit", async (e) =>
   const redirectUrl = (document.getElementById("banner-redirect") as HTMLInputElement).value || "";
   const priority = parseInt((document.getElementById("banner-priority") as HTMLInputElement).value) || 1;
 
+  // Custom Content Overlays
+  const title = (document.getElementById("banner-title") as HTMLInputElement).value.trim() || "";
+  const badge = (document.getElementById("banner-badge") as HTMLInputElement).value.trim() || "";
+  const cta = (document.getElementById("banner-cta") as HTMLInputElement).value.trim() || "";
+  const description = (document.getElementById("banner-description") as HTMLInputElement).value.trim() || "";
+
+  // Scheduler Dates
+  const startDateVal = (document.getElementById("banner-start-date") as HTMLInputElement).value;
+  const startTimeVal = (document.getElementById("banner-start-time") as HTMLInputElement).value || "00:00";
+  const endDateVal = (document.getElementById("banner-end-date") as HTMLInputElement).value;
+  const endTimeVal = (document.getElementById("banner-end-time") as HTMLInputElement).value || "00:00";
+
+  const startEpoch = parseLocalToEpoch(startDateVal, startTimeVal);
+  const endEpoch = parseLocalToEpoch(endDateVal, endTimeVal);
+
+  const autoActivate = (document.getElementById("banner-auto-activate") as HTMLInputElement).checked;
+  const autoExpire = (document.getElementById("banner-auto-expire") as HTMLInputElement).checked;
+
+  if (startEpoch >= endEpoch) {
+    showToast("Invalid Schedule: Start timeline must be before End timeline!", "error");
+    return;
+  }
+
   if (!currentAdFile) {
     showToast("Please upload an image campaign banner", "error");
     return;
@@ -1088,14 +1350,25 @@ document.getElementById("form-banners")?.addEventListener("submit", async (e) =>
       imageUrl,
       redirectUrl,
       priority,
-      active: true
+      active: true,
+      title,
+      badge,
+      cta,
+      description,
+      startEpoch,
+      endEpoch,
+      autoActivate,
+      autoExpire,
+      views: 0,
+      clicks: 0
     }).then(() => {
-      showToast("App promotional banner configured live!", "success");
+      showToast("App promotional campaign banner scheduled successfully!", "success");
       // Reset
       currentAdFile = null;
       (document.getElementById("form-banners") as HTMLFormElement).reset();
       document.getElementById("banner-upload-txt")!.innerText = "Select Banner from Device";
       document.getElementById("banner-upload-icon")!.className = "fa-solid fa-cloud-arrow-up text-2xl text-slate-400 mb-2";
+      initBannerDateTimeDefaults();
     });
   } catch (error) {
     showToast("Banner upload failed", "error");
@@ -1105,29 +1378,17 @@ document.getElementById("form-banners")?.addEventListener("submit", async (e) =>
 function subscribeToBannersCoupons() {
   // Banner ads list
   onValue(ref(db, "banners"), (snapshot) => {
-    const container = document.getElementById("banner-list-container")!;
-    if (!snapshot.exists()) {
-      container.innerHTML = `<p class="text-[11px] text-slate-400 py-3 text-center">No slider banners. Default banners will render.</p>`;
-      return;
+    adminBannersCache = [];
+    if (snapshot.exists()) {
+      snapshot.forEach((child) => {
+        adminBannersCache.push(child.val());
+      });
     }
-
-    let html = "";
-    snapshot.forEach((child) => {
-      const b = child.val();
-      html += `
-        <div class="flex items-center gap-3 p-2 bg-slate-50 rounded-xl border border-slate-100 text-xs">
-          <img src="${b.imageUrl}" class="w-14 h-8 object-cover rounded shadow-xs shrink-0">
-          <div class="flex-1 truncate">
-            <h5 class="font-bold text-slate-800">Redirect: <span class="text-indigo-600 font-mono text-[10px]">${b.redirectUrl || "None"}</span></h5>
-            <p class="text-[10px] text-slate-400 font-mono">Weight: ${b.priority || 1}</p>
-          </div>
-          <button onclick="removeBanner('${b.bannerId}')" class="text-rose-500 hover:text-rose-700 cursor-pointer px-2"><i class="fa-regular fa-trash-can"></i></button>
-        </div>
-      `;
-    });
-
-    container.innerHTML = html;
+    renderAdminBannersList();
   });
+
+  // Initialize DateTime selectors for scheduled campaign admin options
+  setTimeout(initBannerDateTimeDefaults, 400);
 
   // Coupons listing
   onValue(ref(db, "coupons"), (snapshot) => {
@@ -1144,7 +1405,7 @@ function subscribeToBannersCoupons() {
         <div class="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-xl shadow-xs text-xs">
           <div>
             <div class="flex items-center gap-1.5 font-sans">
-              <span class="bg-teal-50 text-teal-600 text-[10px] font-black tracking-wide px-2 py-0.5 rounded uppercase border border-teal-100">${cp.code}</span>
+              <span class="bg-teal-50 text-teal-600 text-[10px] font-black tracking-wide px-2 py-0.5 rounded uppercase tracking-wider uppercase border border-teal-100">${cp.code}</span>
               <strong class="text-slate-800">${cp.discountPercent}% Off</strong>
             </div>
             <p class="text-[10px] text-slate-400 mt-1 font-semibold">Min Cart: ₹${cp.minOrder} | Cap: ₹${cp.maxDiscount}</p>
@@ -1174,10 +1435,19 @@ document.getElementById("form-coupon")?.addEventListener("submit", (e) => {
 });
 
 Object.assign(window, {
+  toggleBannerCampaignActive(bannerId: string, currentVal: boolean) {
+    update(ref(db, `banners/${bannerId}`), { active: !currentVal })
+      .then(() => {
+        showToast("Campaign activation changed successfully!", "success");
+        renderAdminBannersList();
+      });
+  },
   removeBanner(key: string) {
     if (confirm("Delete this Cloudinary promo ad campaign?")) {
       remove(ref(db, `banners/${key}`))
-        .then(() => showToast("Banner deleted", "info"));
+        .then(() => {
+          showToast("Banner deleted", "info");
+        });
     }
   },
   deleteCouponCode(code: string) {

@@ -1129,6 +1129,7 @@
                   </label>
                   <input type="hidden" id="banner-url">
                 </div>
+                
                 <div class="grid grid-cols-2 gap-2">
                   <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Campaign Redirect</label>
@@ -1139,9 +1140,90 @@
                     <input type="number" id="banner-priority" required min="1" value="1" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs outline-none focus:border-teal-500">
                   </div>
                 </div>
+
+                <!-- Campaign Overlays (Needed if image is small/custom) -->
+                <div class="p-3 bg-indigo-50/40 rounded-xl border border-indigo-100/50 space-y-2">
+                  <span class="text-[9px] font-black text-indigo-600 uppercase tracking-wider block"><i class="fa-solid fa-rectangle-ad"></i> Optional Content Overlay (For Small / Custom Banners)</span>
+                  <div class="grid grid-cols-2 gap-2">
+                    <div>
+                      <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1">Campaign Title</label>
+                      <input type="text" id="banner-title" placeholder="e.g. Heart Care Promo" class="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-xs outline-none focus:border-indigo-500 bg-white">
+                    </div>
+                    <div>
+                      <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1">Badge Indicator</label>
+                      <input type="text" id="banner-badge" placeholder="e.g. 25% OFF" class="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-xs outline-none focus:border-indigo-500 bg-white">
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2">
+                    <div>
+                      <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1">CTA Button Text</label>
+                      <input type="text" id="banner-cta" placeholder="e.g. Save Now" class="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-xs outline-none focus:border-indigo-500 bg-white">
+                    </div>
+                    <div>
+                      <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1">Campaign Description</label>
+                      <input type="text" id="banner-description" placeholder="e.g. Save 25% discount storewide" class="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-xs outline-none focus:border-indigo-500 bg-white font-normal">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Live Dynamic Scheduling System -->
+                <div class="p-3 bg-amber-50/45 rounded-xl border border-amber-100/50 space-y-2.5">
+                  <span class="text-[9px] font-black text-amber-700 uppercase tracking-wider block"><i class="fa-solid fa-clock"></i> Campaign Scheduler & Quick Durations</span>
+                  
+                  <!-- Quick Duration Dropdowns & Presets -->
+                  <div>
+                    <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Quick Duration Preset</label>
+                    <select id="banner-duration-preset" class="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-amber-500 font-extrabold text-slate-800 cursor-pointer">
+                      <option value="custom">-- Custom Duration (Select Below) --</option>
+                      <option value="1">1 Hour</option>
+                      <option value="6">6 Hours</option>
+                      <option value="12">12 Hours</option>
+                      <option value="24" selected>24 Hours (1 Day)</option>
+                      <option value="72">3 Days (72 hours)</option>
+                      <option value="168">7 Days (1 Week)</option>
+                      <option value="360">15 Days (2 Weeks)</option>
+                      <option value="720">30 Days (1 Month)</option>
+                    </select>
+                  </div>
+
+                  <!-- Start DateTime & End DateTime controls -->
+                  <div class="grid grid-cols-2 gap-2">
+                    <div>
+                      <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1">Start Date</label>
+                      <input type="date" id="banner-start-date" required class="w-full px-2 py-1 border border-slate-200 rounded-lg text-xs outline-none focus:border-amber-500 bg-white">
+                    </div>
+                    <div>
+                      <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1">Start Time</label>
+                      <input type="time" id="banner-start-time" required class="w-full px-2 py-1 border border-slate-200 rounded-lg text-xs outline-none focus:border-amber-500 bg-white">
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-2 gap-2">
+                    <div>
+                      <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1">End Date</label>
+                      <input type="date" id="banner-end-date" required class="w-full px-2 py-1 border border-slate-200 rounded-lg text-xs outline-none focus:border-amber-500 bg-white">
+                    </div>
+                    <div>
+                      <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1">End Time</label>
+                      <input type="time" id="banner-end-time" required class="w-full px-2 py-1 border border-slate-200 rounded-lg text-xs outline-none focus:border-amber-500 bg-white">
+                    </div>
+                  </div>
+
+                  <!-- Automation Checkboxes -->
+                  <div class="flex items-center gap-4 text-[10px] text-slate-600 font-bold border-t border-amber-100/40 pt-2 selection:bg-transparent">
+                    <label class="flex items-center gap-1.5 cursor-pointer">
+                      <input type="checkbox" id="banner-auto-activate" checked class="accent-amber-500 cursor-pointer">
+                      <span>Auto Activates</span>
+                    </label>
+                    <label class="flex items-center gap-1.5 cursor-pointer">
+                      <input type="checkbox" id="banner-auto-expire" checked class="accent-amber-500 cursor-pointer">
+                      <span>Auto Expires</span>
+                    </label>
+                  </div>
+                </div>
               </div>
               <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-lg text-xs transition-all cursor-pointer">
-                Inject Cloudinary Banner Campaign
+                Inject Cloudinary Scheduled Banner Campaign
               </button>
             </form>
 

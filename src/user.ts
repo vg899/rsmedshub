@@ -219,6 +219,97 @@ let userBannersCache: any[] = [];
 let userActiveBannerIndex = 0;
 let userBannerAutoplayInterval: any = null;
 
+// Session cache to prevent over-counting views on simple slide rotations in a single run
+const countedSessionViews = new Set<string>();
+let rawBannersSnapshotData: any[] = [];
+
+function recordBannerCampaignView(bannerId: string) {
+  if (!bannerId || bannerId.startsWith("default_")) return;
+  if (countedSessionViews.has(bannerId)) return;
+  countedSessionViews.add(bannerId);
+
+  get(ref(db, `banners/${bannerId}/views`)).then((snap) => {
+    const cur = snap.val() || 0;
+    update(ref(db, `banners/${bannerId}`), { views: cur + 1 });
+  });
+}
+
+function applyLiveBannerFiltering() {
+  const now = Date.now();
+  const activeBanners: any[] = [];
+
+  rawBannersSnapshotData.forEach((b) => {
+    // A banner is active right now if:
+    // 1. active state is not explicitly set to false
+    // 2. if b.startEpoch is set, current time (now) >= b.startEpoch
+    // 3. if b.endEpoch is set, current time (now) <= b.endEpoch
+    const isScheduled = b.startEpoch && now < b.startEpoch;
+    const isExpired = b.endEpoch && now > b.endEpoch;
+    const isActiveState = b.active !== false;
+
+    if (isActiveState && !isScheduled && !isExpired) {
+      activeBanners.push(b);
+    }
+  });
+
+  if (activeBanners.length > 0) {
+    // Sort by priority weight
+    activeBanners.sort((a, b) => (a.priority || 1) - (b.priority || 1));
+    
+    // Load and pre-classify images
+    const promises = activeBanners.map(b => {
+      return new Promise<any>((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          const aspect = img.naturalWidth / img.naturalHeight;
+          const isLarge = img.naturalWidth >= 400 && aspect >= 1.4;
+          resolve({
+            ...b,
+            isLarge,
+            title: b.title || "Specialist Offer",
+            description: b.description || "Grab active deals with sterile cold-chain assurance.",
+            badge: b.badge || "COUPON",
+            cta: b.cta || "Browse Deals"
+          });
+        };
+        img.onerror = () => {
+          resolve({
+            ...b,
+            isLarge: true,
+            title: b.title || "Specialist Offer",
+            description: b.description || "Grab active deals with sterile cold-chain assurance.",
+            badge: b.badge || "PROMO",
+            cta: b.cta || "Shop Now"
+          });
+        };
+        img.src = b.imageUrl;
+      });
+    });
+
+    Promise.all(promises).then(classified => {
+      const oldIds = userBannersCache.map(x => x.bannerId).join(",");
+      const newIds = classified.map(x => x.bannerId).join(",");
+      
+      if (oldIds !== newIds) {
+        userBannersCache = classified;
+        userActiveBannerIndex = 0;
+        renderUserBannerCarousel();
+        startBannerAutoplay();
+      }
+    });
+  } else {
+    if (userBannersCache.length > 0) {
+      userBannersCache = [];
+      userActiveBannerIndex = 0;
+      renderUserBannerCarousel();
+      startBannerAutoplay();
+    }
+  }
+}
+
+// Check schedule state change every 5 seconds on active tab to activate/expire instantly
+setInterval(applyLiveBannerFiltering, 5000);
+
 function renderUserBannerCarousel() {
   const section = document.getElementById("banner-section");
   if (!section) return;
@@ -231,12 +322,18 @@ function renderUserBannerCarousel() {
   }
 
   const slide = slidesToRender[userActiveBannerIndex];
+  
+  // Track this campaign view metrics safely
+  if (slide && slide.bannerId) {
+    recordBannerCampaignView(slide.bannerId);
+  }
+
   let contentHtml = "";
 
   if (slide.isLarge) {
     // Large Image Layout: Center image object-contain + blurred backdrop overlay to solve black border padding voids beautifully
     contentHtml = `
-      <div class="relative w-full h-[140px] md:h-[185px] overflow-hidden flex items-center justify-center cursor-pointer select-none rounded-2xl group" onclick="window.location.href='${slide.redirectUrl || "#"}'">
+      <div class="relative w-full h-[140px] md:h-[185px] overflow-hidden flex items-center justify-center cursor-pointer select-none rounded-2xl group" onclick="window.handleBannerCampaignClick('${slide.bannerId}', '${slide.redirectUrl || "#"}')">
         <div class="absolute inset-0 bg-cover bg-center scale-110 blur-xl opacity-35 transition-all duration-700 group-hover:scale-115" style="background-image: url('${slide.imageUrl}')"></div>
         <div class="absolute inset-0 bg-gradient-to-t from-slate-950/20 via-transparent to-transparent"></div>
         <img src="${slide.imageUrl}" class="relative z-10 w-full h-full object-contain select-none max-w-full" alt="Promo Billboard">
@@ -250,7 +347,7 @@ function renderUserBannerCarousel() {
     const displayCta = slide.cta || "Shop Now";
 
     contentHtml = `
-      <div class="relative w-full h-[140px] md:h-[185px] overflow-hidden bg-gradient-to-r from-blue-50 to-blue-100 flex items-center border border-blue-100/60 cursor-pointer p-4 pr-2 transition-all duration-300 rounded-2xl text-left" onclick="window.location.href='${slide.redirectUrl || "#"}'">
+      <div class="relative w-full h-[140px] md:h-[185px] overflow-hidden bg-gradient-to-r from-blue-50 to-blue-100 flex items-center border border-blue-100/60 cursor-pointer p-4 pr-2 transition-all duration-300 rounded-2xl text-left" onclick="window.handleBannerCampaignClick('${slide.bannerId}', '${slide.redirectUrl || "#"}')">
         <div class="absolute -right-10 -top-10 w-44 h-44 bg-blue-200 rounded-full blur-2xl opacity-20 pointer-events-none"></div>
         <div class="p-2 z-10 max-w-[62%] space-y-1.5 text-slate-800">
           <span class="bg-blue-600 text-white text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider font-display shadow-xs animate-pulse">${displayBadge}</span>
@@ -331,65 +428,13 @@ function syncMainMarketplace() {
       userBannerAutoplayInterval = null;
     }
 
+    rawBannersSnapshotData = [];
     if (snapshot.exists()) {
-      const activeBanners: any[] = [];
       snapshot.forEach((child) => {
-        const b = child.val();
-        if (b.active) activeBanners.push(b);
+        rawBannersSnapshotData.push(child.val());
       });
-
-      if (activeBanners.length > 0) {
-        // Sort by priority weight
-        activeBanners.sort((a,b) => (a.priority || 1) - (b.priority || 1));
-        
-        // Load and pre-classify all images based on dimension aspect
-        const promises = activeBanners.map(b => {
-          return new Promise<any>((resolve) => {
-            const img = new Image();
-            img.onload = () => {
-              const aspect = img.naturalWidth / img.naturalHeight;
-              const isLarge = img.naturalWidth >= 400 && aspect >= 1.4;
-              resolve({
-                ...b,
-                isLarge,
-                title: b.title || "Flash Offer Specials",
-                description: b.description || "Dispatched safely with certified cold chain storage.",
-                badge: b.badge || "SPECIAL",
-                cta: b.cta || "Browse Offer"
-              });
-            };
-            img.onerror = () => {
-              resolve({
-                ...b,
-                isLarge: true,
-                title: b.title || "Specialist Offer",
-                description: b.description || "Dispatched safely with certified cold chain storage.",
-                badge: b.badge || "PROMO",
-                cta: b.cta || "Shop Now"
-              });
-            };
-            img.src = b.imageUrl;
-          });
-        });
-
-        Promise.all(promises).then(classified => {
-          userBannersCache = classified;
-          userActiveBannerIndex = 0;
-          renderUserBannerCarousel();
-          startBannerAutoplay();
-        });
-      } else {
-        userBannersCache = [];
-        userActiveBannerIndex = 0;
-        renderUserBannerCarousel();
-        startBannerAutoplay();
-      }
-    } else {
-      userBannersCache = [];
-      userActiveBannerIndex = 0;
-      renderUserBannerCarousel();
-      startBannerAutoplay();
     }
+    applyLiveBannerFiltering();
   });
 
   // Subscribe operational pharmacy stores
@@ -884,6 +929,17 @@ addrInput?.addEventListener("input", async (e) => {
 });
 
 Object.assign(window, {
+  handleBannerCampaignClick(bannerId: string, redirectUrl: string) {
+    if (bannerId && !bannerId.startsWith("default_")) {
+      get(ref(db, `banners/${bannerId}/clicks`)).then((snap) => {
+        const cur = snap.val() || 0;
+        update(ref(db, `banners/${bannerId}`), { clicks: cur + 1 });
+      });
+    }
+    if (redirectUrl && redirectUrl !== "#") {
+      window.location.href = redirectUrl;
+    }
+  },
   setUserBannerIndex(idx: number) {
     if (userBannerAutoplayInterval) {
       clearInterval(userBannerAutoplayInterval);
