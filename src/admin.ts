@@ -8,6 +8,19 @@ let activeSection = "panel-overview";
 let systemTimeInterval: any = null;
 let ridersCache: any[] = [];
 
+// Advanced Dashboard Cache Variables
+let globalCustomers: any[] = [];
+let userSearchQuery = "";
+let notificationsCache: any[] = [];
+let complaintsCache: any[] = [];
+let globalReviewsCache: any[] = [];
+let mediaAssetsCache: any[] = [];
+let inactivityLimitSeconds = 300;
+let inactivityEnabled = false;
+let lastUserActivityTime = Date.now();
+let activeReviewsStarFilter = "all";
+let reviewsSearchQuery = "";
+
 // Auth Check & Block Unauthorized Access
 onAuthStateChanged(auth, (user) => {
   if (!user) {
@@ -109,6 +122,18 @@ function initDashboard() {
   subscribeToCategories();
   setupCategoryFormListeners();
   initStoreManagementCenter();
+
+  // Initialize Advanced Hubs
+  initNotificationsCenter();
+  initReviewsComplaintsHub();
+  initCloudinaryMediaHub();
+  initPlatformSettings();
+
+  // Connect customer search input field
+  document.getElementById("user-search-input")?.addEventListener("input", (e) => {
+    userSearchQuery = (e.target as HTMLInputElement).value;
+    renderFilteredCustomers();
+  });
 }
 
 // 1. STATS ENGINE

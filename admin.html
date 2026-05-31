@@ -59,7 +59,19 @@
         <i class="fa-solid fa-rectangle-ad text-lg w-5"></i>Promo & Marketing
       </button>
       <button data-target="panel-categories" class="admin-nav-btn flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left whitespace-nowrap cursor-pointer">
-        <i class="fa-solid fa-layer-group text-lg w-5"></i>Category Manager
+        <i class="fa-solid fa-layer-group text-lg w-5 text-indigo-500"></i>Category Manager
+      </button>
+      <button data-target="panel-notifications" class="admin-nav-btn flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left whitespace-nowrap cursor-pointer hover:bg-slate-100">
+        <i class="fa-solid fa-bullhorn text-lg w-5 text-teal-400"></i>Notification Center
+      </button>
+      <button data-target="panel-reviews" class="admin-nav-btn flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left whitespace-nowrap cursor-pointer hover:bg-slate-100">
+        <i class="fa-solid fa-comments text-lg w-5 text-rose-400"></i>Reviews & Complaints
+      </button>
+      <button data-target="panel-cloudinary" class="admin-nav-btn flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left whitespace-nowrap cursor-pointer hover:bg-slate-100">
+        <i class="fa-solid fa-cloud text-lg w-5 text-sky-450"></i>Cloudinary Hub
+      </button>
+      <button data-target="panel-settings" class="admin-nav-btn flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left whitespace-nowrap cursor-pointer hover:bg-slate-100">
+        <i class="fa-solid fa-gears text-lg w-5 text-slate-400"></i>Platform Settings
       </button>
     </nav>
   </aside>
@@ -313,10 +325,13 @@
         </div>
 
         <!-- General Users Management -->
-        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-          <div class="px-5 py-4 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden bg-slate-50/10">
+          <div class="px-5 py-4 border-b border-slate-50 bg-slate-50/50 flex flex-col sm:flex-row gap-4 justify-between sm:items-center">
             <h3 class="text-sm font-extrabold text-slate-900"><i class="fa-solid fa-users text-violet-500 mr-2"></i>Customer Access Control Panel</h3>
-            <span class="text-[10px] bg-violet-100 text-violet-800 font-bold px-2 py-1 rounded shadow-sm" id="cnt-users text-right">0 Users</span>
+            <div class="flex items-center gap-3">
+              <input type="text" id="user-search-input" placeholder="Search Patients/Customers..." class="px-3 py-1.5 border border-slate-205 border-slate-200 outline-none rounded-lg text-xs font-semibold focus:border-violet-500 bg-white text-slate-800 w-48 shadow-xs">
+              <span class="text-[10px] bg-violet-100 text-violet-800 font-bold px-2 py-1 rounded shadow-sm" id="cnt-users text-right">0 Users</span>
+            </div>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full text-left text-xs border-collapse">
@@ -326,7 +341,7 @@
                   <th class="px-5 py-3">Email Address</th>
                   <th class="px-5 py-3">Phone Line</th>
                   <th class="px-5 py-3">Status Gate</th>
-                  <th class="px-5 py-3 text-right">Block/Unblock Constraint</th>
+                  <th class="px-5 py-3 text-right">Actions Required</th>
                 </tr>
               </thead>
               <tbody id="tbody-customers" class="font-medium text-slate-700">
@@ -1220,8 +1235,403 @@
         </div>
       </section>
 
+      <!-- ================================= PANEL 7: NOTIFICATION CENTER ================================= -->
+      <section id="panel-notifications" class="admin-panel hidden space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+          <div>
+            <h2 class="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+              <i class="fa-solid fa-bullhorn text-teal-500"></i>
+              System-wide Notification Center
+            </h2>
+            <p class="text-xs text-slate-500 font-semibold mt-1">Broadcast real-time push notes, promos, delays, or emergency logs safely to all devices.</p>
+          </div>
+          <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 p-2 rounded-xl text-xs font-mono select-none">
+            <span class="w-2 h-2 rounded-full bg-teal-500 animate-pulse"></span>
+            <span class="text-slate-600 font-bold">Signal Server: Active</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Dispatch Form -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4 lg:col-span-1 h-fit bg-slate-50/10">
+            <h3 class="text-xs font-black text-slate-900 border-b border-slate-100 pb-3 uppercase tracking-wider">
+              <i class="fa-solid fa-paper-plane text-teal-500 mr-2"></i>Draft Broadcast Bulletin
+            </h3>
+            <form id="form-broadcast-panel" class="space-y-4">
+              <div>
+                <label class="block text-[10px] font-black text-slate-500 uppercase mb-1.5">Notification Category</label>
+                <select id="notif-category" required class="w-full px-3 py-2 border border-slate-250 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-teal-500">
+                  <option value="PUSH">Push Alert (General Users)</option>
+                  <option value="ORDER">Order Progress Notification</option>
+                  <option value="PROMOTIONAL">Promotional Coupon Blast</option>
+                  <option value="MAINTENANCE">Scheduled System Maintenance</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-black text-slate-500 uppercase mb-1.5">Target Audience Role</label>
+                <select id="notif-audience" required class="w-full px-3 py-2 border border-slate-250 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-teal-500">
+                  <option value="all">Global Audience (All Registered Users)</option>
+                  <option value="user">Patients & Customers only</option>
+                  <option value="store">Pharma Store Owners only</option>
+                  <option value="delivery">Express Delivery Couriers only</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-black text-slate-500 uppercase mb-1.5">Message Title</label>
+                <input type="text" id="notif-title" placeholder="E.g., Special Weekend Flash Sale!" required class="w-full px-3 py-2 border border-slate-250 rounded-lg text-xs font-bold outline-none focus:border-teal-500 bg-white text-slate-800">
+              </div>
+              <div>
+                <label class="block text-[10px] font-black text-slate-500 uppercase mb-1.5">Detailed Bulletin Content</label>
+                <textarea id="notif-message" placeholder="Type message body content clearly here..." required rows="4" class="w-full px-3 py-2 border border-slate-250 rounded-lg text-xs font-medium outline-none focus:border-teal-500 bg-white text-slate-800"></textarea>
+              </div>
+              <button type="submit" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-2.5 rounded-xl text-xs transition-all tracking-wide shadow shadow-teal-100 flex items-center justify-center gap-2 cursor-pointer border-none z-10">
+                <i class="fa-solid fa-rss animate-pulse"></i>
+                Transmit Network Dispatch
+              </button>
+            </form>
+          </div>
+
+          <!-- Dispatch logs list -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm lg:col-span-2 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3 select-none">
+              <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center">
+                <i class="fa-solid fa-clock-rotate-left text-slate-400 mr-2"></i>Broadcast Delivery History
+              </h3>
+              <span id="notif-count-badge" class="text-[9px] bg-teal-50 text-teal-700 border border-teal-100 py-0.5 px-2 rounded-full font-black">0 Bulletins</span>
+            </div>
+            <div class="space-y-3 max-h-[500px] overflow-y-auto pr-1 divide-y divide-slate-50" id="notif-logs-container">
+              <!-- Dynamically populated from admin.ts -->
+              <p class="text-xs text-slate-400 text-center py-12">Fetching network notification archives...</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================= PANEL 8: REVIEWS & COMPLAINTS ================================= -->
+      <section id="panel-reviews" class="admin-panel hidden space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+          <div>
+            <h2 class="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+              <i class="fa-solid fa-circle-exclamation text-rose-500 animate-pulse"></i>
+              Reviews & Complaints Hub
+            </h2>
+            <p class="text-xs text-slate-500 font-semibold mt-1">Audit customer feed, monitor reviews, resolve delivery disputes, and enforce high quality thresholds.</p>
+          </div>
+          <!-- Tabs switch -->
+          <div class="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl select-none">
+            <button id="tab-btn-reviews" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-white text-slate-805 text-indigo-700 shadow-sm cursor-pointer transition-all">
+              <i class="fa-solid fa-star text-amber-500 mr-1.5"></i>Clinical Reviews
+            </button>
+            <button id="tab-btn-complaints" class="px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:text-slate-800 cursor-pointer transition-all">
+              <i class="fa-solid fa-shield-cat text-rose-500 mr-1.5"></i>Disputes System
+            </button>
+          </div>
+        </div>
+
+        <!-- Section 1: Customer Reviews view -->
+        <div id="subview-reviews-container" class="space-y-4">
+          <div class="bg-white p-4 rounded-xl border border-slate-100 flex flex-col md:flex-row gap-4 items-center justify-between shadow-xs">
+            <div class="relative w-full md:w-96">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                <i class="fa-solid fa-magnifying-glass text-xs"></i>
+              </span>
+              <input id="reviews-search-input" type="text" placeholder="Search reviews by comments, score..." class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-rose-500 focus:outline-none transition-all placeholder:text-slate-400 font-medium bg-white text-slate-800" />
+            </div>
+            <div id="review-stars-filter-container" class="flex items-center gap-1">
+              <span class="text-[10px] font-black text-slate-400 uppercase mr-1">Rating:</span>
+              <button class="review-stars-btn active px-2.5 py-1.5 text-xs font-bold bg-slate-900 text-white rounded-lg transition-all" data-stars="all">All</button>
+              <button class="review-stars-btn px-2.5 py-1.5 text-xs font-bold bg-white text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-all font-mono" data-stars="5">5★</button>
+              <button class="review-stars-btn px-2.5 py-1.5 text-xs font-bold bg-white text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-all font-mono" data-stars="4">4★</button>
+              <button class="review-stars-btn px-2.5 py-1.5 text-xs font-bold bg-white text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-all font-mono" data-stars="3">3★</button>
+              <button class="review-stars-btn px-2.5 py-1.5 text-xs font-bold bg-white text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-all font-mono" data-stars="2">2★</button>
+              <button class="review-stars-btn px-2.5 py-1.5 text-xs font-bold bg-white text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-all font-mono" data-stars="1">1★</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="reviews-global-card-grid">
+            <!-- Loaded dynamically from admin.ts -->
+            <p class="text-xs text-slate-400 text-center py-16 col-span-full">Retrieving client experiences...</p>
+          </div>
+        </div>
+
+        <!-- Section 2: Active User Complaints view -->
+        <div id="subview-complaints-container" class="hidden space-y-4 animate-fade-in">
+          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div class="px-5 py-4 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center select-none">
+              <h3 class="text-xs font-black text-slate-805 uppercase tracking-wider flex items-center gap-1.5"><i class="fa-solid fa-headset text-rose-500"></i> Disputes Clearance Registry</h3>
+              <span class="text-[10px] font-black bg-rose-50 text-rose-800 border border-rose-100 py-0.5 px-2.5 rounded-full" id="complaints-badge-count">0 Open Tickets</span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs border-collapse font-sans">
+                <thead>
+                  <tr class="bg-slate-55 bg-slate-50 border-b border-slate-100 text-slate-500 uppercase font-black tracking-wider text-[10px]">
+                    <th class="px-5 py-4">User Details</th>
+                    <th class="px-5 py-4">Order Ref ID</th>
+                    <th class="px-5 py-4">Subject & Description Details</th>
+                    <th class="px-5 py-4">Filing Date</th>
+                    <th class="px-5 py-4">State</th>
+                    <th class="px-5 py-4 text-right">Actions Required</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-complaints-registry" class="font-medium text-slate-700 divide-y divide-slate-100">
+                  <!-- Loaded dynamically from admin.ts -->
+                  <tr>
+                    <td colspan="6" class="p-12 text-center text-slate-400 font-semibold text-xs">Loading open user tickets...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================= PANEL 9: CLOUDINARY CONTROL ================================= -->
+      <section id="panel-cloudinary" class="admin-panel hidden space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+          <div>
+            <h2 class="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+              <i class="fa-solid fa-cloud text-sky-500"></i>
+              Cloudinary Media Control Hub
+            </h2>
+            <p class="text-xs text-slate-500 font-semibold mt-1">Audit user uploads, verify KYC registration paperwork, examine compliance licenses, or flush corrupted media files dynamically.</p>
+          </div>
+          <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 p-2 rounded-xl text-xs font-mono select-none">
+            <span class="text-slate-500 font-bold">Cloudinary Preset: </span>
+            <span class="text-indigo-600 font-black">med_delivery_upload</span>
+          </div>
+        </div>
+
+        <!-- Cloudinary image direct uploader tool -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4 lg:col-span-1 h-fit bg-slate-50/10">
+            <h3 class="text-xs font-black text-slate-900 border-b border-slate-100 pb-3 uppercase tracking-wider">
+              <i class="fa-solid fa-cloud-arrow-up text-indigo-500 mr-2"></i>Sandbox Media Injector
+            </h3>
+            <div class="space-y-4">
+              <label class="flex flex-col items-center justify-center p-6 border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer hover:border-indigo-500 bg-white hover:bg-slate-50/10 transition-all text-center">
+                <i class="fa-solid fa-image text-3xl text-slate-400 mb-2" id="cld-hub-upload-icon"></i>
+                <span id="cld-hub-upload-txt" class="text-xs font-bold text-slate-500">Upload Asset to Cloudinary</span>
+                <input type="file" id="cld-hub-file" accept="image/*" class="hidden">
+              </label>
+              <div class="space-y-2 hidden" id="cld-hub-progress-block">
+                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                  <div class="bg-indigo-500 h-full w-0 transition-all duration-300" id="cld-hub-progress-bar"></div>
+                </div>
+                <p class="text-[10px] text-center font-bold text-slate-500 animate-pulse">Uploading asset to cloud registry...</p>
+              </div>
+              <div class="space-y-2 hidden" id="cld-hub-success-block">
+                <p class="text-xs font-extrabold text-emerald-600 flex items-center gap-1.5"><i class="fa-solid fa-check-circle"></i> Asset uploaded successfully!</p>
+                <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-[10px] font-bold text-slate-500 break-all select-all outline-none" id="cld-hub-success-url" tabindex="0">https://res.cloudinary.com/djtzg5ou7/...</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm lg:col-span-2 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3 select-none">
+              <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center">
+                <i class="fa-solid fa-photo-film text-slate-400 mr-2"></i>Global Assets & KYC Documents Audit Stream
+              </h3>
+              <span id="cld-assets-count-badge" class="text-[9px] bg-slate-100 text-slate-600 border border-slate-200 py-0.5 px-2 rounded-full font-black">0 Assets</span>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[500px] overflow-y-auto pr-1" id="cld-assets-grid">
+              <!-- Dynamically mapped from all banner images + all riders aadhaar/DL images + store licenses -->
+              <p class="text-xs text-slate-400 text-center py-16 col-span-full">Synthesizing document database file streams...</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================= PANEL 10: PLATFORM SETTINGS ================================= -->
+      <section id="panel-settings" class="admin-panel hidden space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+          <div>
+            <h2 class="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+              <i class="fa-solid fa-gears text-slate-500"></i>
+              Platform Systems & Compliance Console
+            </h2>
+            <p class="text-xs text-slate-500 font-semibold mt-1">Configure brand parameters, edit support contact coordinates, modify legal policies, or adjust auto logout safeguard thresholds.</p>
+          </div>
+          <button id="btn-save-settings-top" class="bg-slate-905 bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 px-5 rounded-xl text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-md shadow-slate-100 border-none">
+            <i class="fa-solid fa-shield-halved text-emerald-400"></i> Save Platform Settings
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2 space-y-6">
+            <!-- Brand Configuration form -->
+            <form id="form-platform-settings" class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+              <h3 class="text-xs font-black text-slate-900 border-b border-slate-100 pb-3 uppercase tracking-wider">
+                <i class="fa-solid fa-signature text-teal-500 mr-2"></i>Primary Identity Configurations
+              </h3>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-[10px] font-black text-slate-500 uppercase mb-1.5">App Domain Name</label>
+                  <input type="text" id="set-app-name" required value="RS Meds Hub Medicine Delivery Network" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-teal-500 bg-white">
+                </div>
+                <div>
+                  <label class="block text-[10px] font-black text-slate-500 uppercase mb-1.5">Systems Support E-mail</label>
+                  <input type="email" id="set-email" required value="support@rsmedshub.com" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-teal-500 bg-white">
+                </div>
+                <div>
+                  <label class="block text-[10px] font-black text-slate-500 uppercase mb-1.5">Official Helpline Contact</label>
+                  <input type="text" id="set-phone" required value="+91-9988776655" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-teal-500 bg-white">
+                </div>
+                <div>
+                  <label class="block text-[10px] font-black text-slate-500 uppercase mb-1.5">Systems Brand Logo (Cloudinary Link)</label>
+                  <div class="flex gap-2">
+                    <input type="text" id="set-logo" placeholder="https://res.cloudinary.com/..." class="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-teal-500 bg-white">
+                    <label class="bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-600 p-2.5 rounded-xl text-xs font-bold cursor-pointer transition-all flex items-center justify-center shrink-0">
+                      <i class="fa-solid fa-cloud-arrow-up"></i>
+                      <input type="file" id="set-logo-file" accept="image/*" class="hidden">
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="space-y-3">
+                <div>
+                  <label class="block text-[10px] font-black text-slate-500 uppercase mb-1.5">Clinical Terms & Patient Conditions (Legal Mandate)</label>
+                  <textarea id="set-terms" rows="4" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 outline-none focus:border-teal-500 bg-white">By accessing RS Meds Hub, pharmacies and riders adhere to standard legal drug sale requirements under Schedule H directives. All listed drugs must represent verified physical batches with active, visible batch numbers.</textarea>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-black text-slate-500 uppercase mb-1.5">Health Privacy Policy & HIPAA Compliance Standards</label>
+                  <textarea id="set-privacy" rows="4" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 outline-none focus:border-teal-500 bg-white">RS Meds Hub takes medical confidentiality seriously. Customer prescription files, health summaries, and pharmaceutical coordinate histories are completely encrypted and strictly inaccessible to third-party ad networks.</textarea>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <div class="space-y-6">
+            <!-- Safeguard security features card -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+              <h3 class="text-xs font-black text-rose-600 border-b border-slate-100 pb-3 uppercase tracking-wider flex items-center gap-1.5">
+                <i class="fa-solid fa-shield-halved text-rose-500 animate-pulse"></i>Inactivity Guard Session Controls
+              </h3>
+              <p class="text-[11px] text-slate-505 leading-normal font-medium leading-relaxed">To protect sensitive physical drugs trade records, enable the automated inactivity supervisor. If the administrator is idle for the selected duration, the session closes automatically.</p>
+              
+              <div class="space-y-4 pt-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-slate-705">Automated Guard Override</span>
+                  <label class="relative inline-flex items-center cursor-pointer select-none">
+                    <input type="checkbox" id="set-autosafeguard-toggle" class="sr-only peer">
+                    <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-rose-500"></div>
+                  </label>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-black text-slate-500 uppercase mb-1.5">Trigger Limit Threshold</label>
+                  <select id="set-autosafeguard-limit" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-rose-500 bg-white">
+                    <option value="180">3 Minutes (High-alert physical security)</option>
+                    <option value="300" selected>5 Minutes (Standard operating protocol)</option>
+                    <option value="600">10 Minutes (Low-threat context)</option>
+                    <option value="1800">30 Minutes (Relaxed state)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Database Node Purge Warning -->
+            <div class="bg-rose-50 border border-rose-100 p-5 rounded-2xl text-xs font-medium space-y-3 shadow-sm select-none">
+              <h4 class="text-rose-900 font-extrabold flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation text-rose-505"></i> Production Purge Protection</h4>
+              <p class="text-[11px] text-rose-800 leading-relaxed font-semibold">Under Schedule III directives, modifying platform charging structures, state service nodes, or deleting candidate documentation records instantly triggers live client sync notifications.</p>
+              <div class="pt-1.5 flex items-center justify-between text-[10px] font-black text-rose-700 uppercase">
+                <span>Database Sync Mode</span>
+                <span class="bg-rose-100 text-rose-800 px-2 py-0.5 rounded border border-rose-200 font-mono">STRICT RTDB SYNC</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
     </div>
   </main>
+
+  <!-- ================================= MODALS: USER ACCESS DETAILS INSPECTOR ================================= -->
+  <div id="user-details-inspect-modal" class="hidden fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-fade-in font-sans">
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-xl max-w-2xl w-full flex flex-col max-h-[90vh] overflow-hidden">
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between select-none">
+        <h3 class="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+          <i class="fa-solid fa-address-card text-violet-500"></i>
+          Patient Profile Dossier
+        </h3>
+        <button onclick="closeUserDetailsInspectModal()" class="text-slate-400 hover:text-slate-600 transition-all font-bold cursor-pointer text-sm">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body (Scrollable) -->
+      <div class="p-6 overflow-y-auto space-y-6 text-xs text-slate-700">
+        <!-- Core info block -->
+        <div class="flex items-start gap-4 p-4 bg-slate-50 border border-slate-100 rounded-xl">
+          <div class="w-12 h-12 rounded-full bg-violet-100/80 text-violet-600 text-lg font-black flex items-center justify-center select-none uppercase shrink-0 shrink-0 shadow-sm" id="usr-inspect-initials">
+            PT
+          </div>
+          <div class="space-y-1.5 flex-1 min-w-0">
+            <h4 class="text-sm font-black text-slate-900 leading-none truncate" id="usr-inspect-name">Harshvardhan Tiwari</h4>
+            <p class="font-mono text-slate-400 font-bold break-all" id="usr-inspect-email">harshvardhantiwari39@gmail.com</p>
+            <div class="flex flex-wrap items-center gap-2 pt-0.5 select-none font-bold text-[10px]">
+              <span class="px-2 py-0.5 bg-violet-50 text-violet-700 border border-violet-100 rounded-md" id="usr-inspect-phone">+91-9988776655</span>
+              <span class="px-2 py-0.5 rounded-md" id="usr-inspect-status-badge">Healthy Status</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Saved Addresses Segment -->
+        <div class="space-y-3">
+          <h4 class="text-[10px] font-black uppercase text-slate-400 tracking-wider flex items-center gap-1.5 border-b border-slate-50 pb-1.5 select-none">
+            <i class="fa-solid fa-map-location text-slate-500"></i>
+            Configured Delivery Coordinates
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="usr-inspect-addresses-grid">
+            <!-- Dynamically populated from admin.ts -->
+            <p class="text-slate-400 text-xs italic py-2">No delivery locations linked to this patient folder.</p>
+          </div>
+        </div>
+
+        <!-- Orders audit history list -->
+        <div class="space-y-3">
+          <h4 class="text-[10px] font-black uppercase text-slate-400 tracking-wider flex items-center gap-1.5 border-b border-slate-50 pb-1.5 select-none">
+            <i class="fa-solid fa-receipt text-slate-500"></i>
+            Historical Medical Orders logs
+          </h4>
+          <div class="overflow-x-auto border border-slate-100 rounded-xl max-h-56">
+            <table class="w-full text-left font-sans text-[11px]">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-100 text-slate-400 font-black uppercase text-[9px] tracking-wider">
+                  <th class="p-2.5">Order ID</th>
+                  <th class="p-2.5">Date</th>
+                  <th class="p-2.5">Items Purchased</th>
+                  <th class="p-2.5 text-right">Invoice Sum</th>
+                  <th class="p-2.5 text-right">Status</th>
+                </tr>
+              </thead>
+              <tbody id="usr-inspect-orders-tbody" class="divide-y divide-slate-50 font-medium">
+                <!-- Dynamically populated from admin.ts -->
+                <tr>
+                  <td colspan="5" class="p-4 text-center text-slate-400 font-medium">No order files synced for this account.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer actions -->
+      <div class="px-6 py-4.5 bg-slate-50 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 select-none">
+        <button id="usr-inspect-btn-delete" class="px-4 py-2 bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 rounded-xl text-xs font-bold font-sans flex items-center gap-1.5 transition-all cursor-pointer">
+          <i class="fa-solid fa-user-minus"></i> Purge Account
+        </button>
+        <div class="flex items-center gap-2">
+          <button id="usr-inspect-btn-block" class="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-all cursor-pointer">
+            Block Client
+          </button>
+          <button onclick="closeUserDetailsInspectModal()" class="px-4 py-2 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl text-xs font-medium font-sans transition-all cursor-pointer">
+            Close Panel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script type="module" src="/src/admin.ts"></script>
 </body>
