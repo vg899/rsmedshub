@@ -7,13 +7,20 @@ import { showToast, uploadToCloudinary, updateLeafletMap, calculateDistance } fr
 let loggedInMerchant: any = null;
 let currentStoreId = "";
 let currentStoreDetail: any = null;
-let activeTab: "orders" | "inventory" = "orders";
+let activeTab: "orders" | "inventory" | "profile" = "orders";
 
 // UI Buttons & Tabs references
 const tabOrders = document.getElementById("tab-store-orders") as HTMLButtonElement;
 const tabInventory = document.getElementById("tab-store-inventory") as HTMLButtonElement;
+const tabProfile = document.getElementById("tab-store-profile") as HTMLButtonElement;
+
 const sectionOrders = document.getElementById("section-store-orders") as HTMLDivElement;
 const sectionInventory = document.getElementById("section-store-inventory") as HTMLDivElement;
+const sectionProfile = document.getElementById("section-store-profile") as HTMLDivElement;
+
+let logoFile: File | null = null;
+let bannerFile: File | null = null;
+let licenseFile: File | null = null;
 
 // Authentication lock
 onAuthStateChanged(auth, (user) => {
@@ -60,18 +67,179 @@ onAuthStateChanged(auth, (user) => {
 tabOrders.addEventListener("click", () => {
   activeTab = "orders";
   tabOrders.className = "flex-1 py-2 text-xs rounded-lg bg-indigo-600 text-white font-bold transition-all cursor-pointer";
-  tabInventory.className = "flex-1 py-2 text-xs rounded-lg text-slate-500 font-semibold transition-all hover:text-slate-755 cursor-pointer";
+  tabInventory.className = "flex-1 py-2 text-xs rounded-lg text-slate-500 font-semibold transition-all hover:text-indigo-700 cursor-pointer";
+  tabProfile.className = "flex-1 py-2 text-xs rounded-lg text-slate-500 font-semibold transition-all hover:text-indigo-700 cursor-pointer";
   sectionOrders.classList.remove("hidden");
   sectionInventory.classList.add("hidden");
+  sectionProfile.classList.add("hidden");
 });
 
 tabInventory.addEventListener("click", () => {
   activeTab = "inventory";
   tabInventory.className = "flex-1 py-2 text-xs rounded-lg bg-indigo-600 text-white font-bold transition-all cursor-pointer";
-  tabOrders.className = "flex-1 py-2 text-xs rounded-lg text-slate-500 font-semibold transition-all hover:text-slate-755 cursor-pointer";
+  tabOrders.className = "flex-1 py-2 text-xs rounded-lg text-slate-500 font-semibold transition-all hover:text-indigo-700 cursor-pointer";
+  tabProfile.className = "flex-1 py-2 text-xs rounded-lg text-slate-500 font-semibold transition-all hover:text-indigo-700 cursor-pointer";
   sectionInventory.classList.remove("hidden");
   sectionOrders.classList.add("hidden");
+  sectionProfile.classList.add("hidden");
 });
+
+tabProfile.addEventListener("click", () => {
+  activeTab = "profile";
+  tabProfile.className = "flex-1 py-2 text-xs rounded-lg bg-indigo-600 text-white font-bold transition-all cursor-pointer";
+  tabOrders.className = "flex-1 py-2 text-xs rounded-lg text-slate-500 font-semibold transition-all hover:text-indigo-700 cursor-pointer";
+  tabInventory.className = "flex-1 py-2 text-xs rounded-lg text-slate-500 font-semibold transition-all hover:text-indigo-700 cursor-pointer";
+  sectionProfile.classList.remove("hidden");
+  sectionOrders.classList.add("hidden");
+  sectionInventory.classList.add("hidden");
+  populateProfileFieldsFromCache();
+});
+
+// File previews for profile
+document.getElementById("inp-store-logo")?.addEventListener("change", (e: any) => {
+  const file = e.target.files?.[0];
+  if (file) {
+    logoFile = file;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const el = document.getElementById("store-logo-preview") as HTMLImageElement;
+      if (el) el.src = ev.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  }
+});
+
+document.getElementById("inp-store-banner")?.addEventListener("change", (e: any) => {
+  const file = e.target.files?.[0];
+  if (file) {
+    bannerFile = file;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const el = document.getElementById("store-banner-preview") as HTMLImageElement;
+      if (el) el.src = ev.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  }
+});
+
+document.getElementById("inp-store-license")?.addEventListener("change", (e: any) => {
+  const file = e.target.files?.[0];
+  if (file) {
+    licenseFile = file;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const licPreview = document.getElementById("store-license-preview") as HTMLImageElement;
+      if (licPreview) {
+        licPreview.src = ev.target?.result as string;
+        licPreview.classList.remove("hidden");
+      }
+      const licIcon = document.getElementById("license-icon");
+      if (licIcon) licIcon.classList.add("hidden");
+    };
+    reader.readAsDataURL(file);
+  }
+});
+
+// Submit Form action
+document.getElementById("form-store-profile")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const name = (document.getElementById("store-profile-name") as HTMLInputElement).value.trim();
+  const ownerName = (document.getElementById("store-profile-owner") as HTMLInputElement).value.trim();
+  const mobile = (document.getElementById("store-profile-mobile") as HTMLInputElement).value.trim();
+  const licenseNumber = (document.getElementById("store-profile-license") as HTMLInputElement).value.trim();
+  const state = (document.getElementById("store-profile-state") as HTMLSelectElement).value;
+  const district = (document.getElementById("store-profile-district") as HTMLInputElement).value.trim();
+  const address = (document.getElementById("store-profile-address") as HTMLTextAreaElement).value.trim();
+
+  const saveBtn = document.getElementById("btn-save-store-profile") as HTMLButtonElement;
+  saveBtn.disabled = true;
+  saveBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Syncing assets with Cloudinary...`;
+
+  try {
+    let logoUrl = currentStoreDetail?.logo || "https://images.unsplash.com/photo-1586015555751-63bb77f4322a?auto=format&fit=crop&q=80&w=200";
+    let bannerUrl = currentStoreDetail?.banner || "https://images.unsplash.com/photo-1628771065518-0d82f1938462?auto=format&fit=crop&q=80&w=400";
+    let licenseUrl = currentStoreDetail?.drugLicenseImage || "https://images.unsplash.com/photo-1586015555751-63bb77f4322a?auto=format&fit=crop&q=80&w=200";
+
+    if (logoFile) {
+      showToast("Uploading store brand logo...", "info");
+      logoUrl = await uploadToCloudinary(logoFile);
+    }
+    if (bannerFile) {
+      showToast("Uploading store billboard banner...", "info");
+      bannerUrl = await uploadToCloudinary(bannerFile);
+    }
+    if (licenseFile) {
+      showToast("Uploading drug regulatory license copy...", "info");
+      licenseUrl = await uploadToCloudinary(licenseFile);
+    }
+
+    const payload = {
+      ...currentStoreDetail,
+      storeId: currentStoreId,
+      name,
+      ownerName,
+      mobile,
+      licenseNumber,
+      drugLicenseNumber: licenseNumber,
+      state,
+      district,
+      address,
+      logo: logoUrl,
+      banner: bannerUrl,
+      drugLicenseImage: licenseUrl
+    };
+
+    await update(ref(db, `stores/${currentStoreId}`), payload);
+    await update(ref(db, `users/${currentStoreId}`), {
+      name,
+      mobile,
+      state,
+      district,
+      address
+    });
+
+    showToast("Profile credentials synchronized globally!", "success");
+    logoFile = null;
+    bannerFile = null;
+    licenseFile = null;
+  } catch (err) {
+    console.error(err);
+    showToast("Operation failed to sync assets.", "error");
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> <span>Save & Publish Profile Details</span>`;
+  }
+});
+
+function populateProfileFieldsFromCache() {
+  if (!currentStoreDetail) return;
+  const nameInp = document.getElementById("store-profile-name") as HTMLInputElement;
+  if (!nameInp) return;
+
+  nameInp.value = currentStoreDetail.name || "";
+  (document.getElementById("store-profile-owner") as HTMLInputElement).value = currentStoreDetail.ownerName || "";
+  (document.getElementById("store-profile-mobile") as HTMLInputElement).value = currentStoreDetail.mobile || "";
+  (document.getElementById("store-profile-license") as HTMLInputElement).value = currentStoreDetail.licenseNumber || currentStoreDetail.drugLicenseNumber || "";
+  (document.getElementById("store-profile-state") as HTMLSelectElement).value = currentStoreDetail.state || "Karnataka";
+  (document.getElementById("store-profile-district") as HTMLInputElement).value = currentStoreDetail.district || "";
+  (document.getElementById("store-profile-address") as HTMLTextAreaElement).value = currentStoreDetail.address || "";
+
+  if (currentStoreDetail.logo) {
+    (document.getElementById("store-logo-preview") as HTMLImageElement).src = currentStoreDetail.logo;
+  }
+  if (currentStoreDetail.banner) {
+    (document.getElementById("store-banner-preview") as HTMLImageElement).src = currentStoreDetail.banner;
+  }
+  if (currentStoreDetail.drugLicenseImage) {
+    const licImg = document.getElementById("store-license-preview") as HTMLImageElement;
+    if (licImg) {
+      licImg.src = currentStoreDetail.drugLicenseImage;
+      licImg.classList.remove("hidden");
+    }
+    const licIcon = document.getElementById("license-icon");
+    if (licIcon) licIcon.classList.add("hidden");
+  }
+}
 
 // Sign out trigger
 document.getElementById("btn-store-signout")?.addEventListener("click", async () => {
@@ -410,9 +578,12 @@ function renderStoreMedicineList() {
           <p class="text-[9px] text-slate-400 font-medium truncate leading-normal" title="${m.description}">${m.description || "N/A"}</p>
           
           <div class="flex items-center justify-between pt-1 flex-wrap gap-1.5">
-            <span class="font-mono text-indigo-700">Price: ₹${m.price}</span>
             <div class="flex items-center gap-1">
-              <span class="text-[9px] ${isLowStock ? "text-rose-600 animate-pulse font-extrabold" : "text-slate-450 text-slate-400"}">On Hand Stock:</span>
+              <span class="text-[9px] text-slate-400">Price: ₹</span>
+              <input type="number" onchange="updateProductPriceValueMode('${m.medicineId}', this.value)" value="${m.price}" min="1" class="w-12 text-center p-0.5 border border-slate-200 rounded text-[10px] font-black focus:border-indigo-500 font-mono">
+            </div>
+            <div class="flex items-center gap-1">
+              <span class="text-[9px] ${isLowStock ? "text-rose-600 animate-pulse font-extrabold" : "text-slate-450 text-slate-400"}">Stock:</span>
               <input type="number" onchange="updateProductStockValueMode('${m.medicineId}', this.value)" value="${m.stock}" min="0" class="w-12 text-center p-0.5 border border-slate-200 rounded text-[10px] font-black focus:border-indigo-500 font-mono">
             </div>
           </div>
@@ -427,7 +598,7 @@ Object.assign(window, {
   deleteProductFromInventory(medId: string) {
     if (confirm("Permanently delete this medicine item from operational catalog?")) {
       remove(ref(db, `medicines/${medId}`))
-        .then(() => showToast("Product removed", "info"));
+        .then(() => showToast("Product removed from inventory Catalog", "info"));
     }
   },
   updateProductStockValueMode(medId: string, valStr: string) {
@@ -440,6 +611,18 @@ Object.assign(window, {
     update(ref(db, `medicines/${medId}`), { stock: nextStock })
       .then(() => {
         showToast("Stock volume synced", "success");
+      });
+  },
+  updateProductPriceValueMode(medId: string, valStr: string) {
+    const nextPrice = parseFloat(valStr);
+    if (isNaN(nextPrice) || nextPrice <= 0) {
+      showToast("Invalid price value entry", "error");
+      return;
+    }
+
+    update(ref(db, `medicines/${medId}`), { price: nextPrice })
+      .then(() => {
+        showToast("Price point synced", "success");
       });
   }
 });

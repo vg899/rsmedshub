@@ -1,7 +1,7 @@
 import { auth, db } from "./firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { ref, onValue, set, update, remove, get } from "firebase/database";
-import { showToast, uploadToCloudinary, getRouteMapUrl, getStaticMapUrl, loadMapplsScript } from "./utils";
+import { showToast, uploadToCloudinary, getRouteMapUrl, getStaticMapUrl, loadMapplsScript, updateLeafletMap, calculateDistance } from "./utils";
 
 // Core Variables
 let activeSection = "panel-overview";
@@ -108,6 +108,7 @@ function initDashboard() {
   checkAndPreloadCategories();
   subscribeToCategories();
   setupCategoryFormListeners();
+  initStoreManagementCenter();
 }
 
 // 1. STATS ENGINE
@@ -2260,6 +2261,816 @@ Object.assign(window, {
         r.verificationStatus = "Approved";
         viewRiderDetailedInspection(id);
       }
+    });
+  }
+});
+
+// =================================== STORE MANAGEMENT CENTER ENGINE ===================================
+// Core state cache for selected store branch details
+let smcStores: any[] = [];
+let smcMedicines: any[] = [];
+let smcOrders: any[] = [];
+let smcReviews: any = {};
+let smcSelectedStoreId = "";
+let smcSelectedTab = "docs";
+
+function initStoreManagementCenter() {
+  // 1. Listen in real-time to Stores
+  onValue(ref(db, "stores"), (snapshot) => {
+    smcStores = [];
+    if (snapshot.exists()) {
+      snapshot.forEach((child) => {
+        const s = child.val();
+        if (s) {
+          if (!s.storeId) s.storeId = child.key;
+          smcStores.push(s);
+        }
+      });
+    }
+    renderSmcStoresTree();
+    
+    // Auto refresh active selected store
+    if (smcSelectedStoreId) {
+      const activeStore = smcStores.find(s => s.storeId === smcSelectedStoreId);
+      if (activeStore) {
+        smcSelectStore(smcSelectedStoreId);
+      } else {
+        smcClearSelection();
+      }
+    }
+  });
+
+  // 2. Listen in real-time to Medicines
+  onValue(ref(db, "medicines"), (snapshot) => {
+    smcMedicines = [];
+    if (snapshot.exists()) {
+      snapshot.forEach((child) => {
+        const m = child.val();
+        if (m) {
+          if (!m.medicineId) m.medicineId = child.key;
+          smcMedicines.push(m);
+        }
+      });
+    }
+    if (smcSelectedStoreId) {
+      renderSmcStoreCatalog();
+      calculateSelectedStoreMetrics();
+    }
+  });
+
+  // 3. Listen in real-time to Orders
+  onValue(ref(db, "orders"), (snapshot) => {
+    smcOrders = [];
+    if (snapshot.exists()) {
+      snapshot.forEach((child) => {
+        const o = child.val();
+        if (o) {
+          if (!o.orderId) o.orderId = child.key;
+          smcOrders.push(o);
+        }
+      });
+    }
+    if (smcSelectedStoreId) {
+      renderSmcStoreOrders();
+      renderSmcStoreAnalytics();
+      calculateSelectedStoreMetrics();
+    }
+  });
+
+  // 4. Listen in real-time to global Reviews
+  onValue(ref(db, "reviews"), (snapshot) => {
+    smcReviews = {};
+    if (snapshot.exists()) {
+      snapshot.forEach((child) => {
+        smcReviews[child.key] = child.val();
+      });
+    }
+    if (smcSelectedStoreId) {
+      renderSmcStoreReviews();
+      calculateSelectedStoreMetrics();
+    }
+  });
+
+  // Setup Sidebar Tree Input Filters
+  document.getElementById("smc-store-search")?.addEventListener("input", renderSmcStoresTree);
+  document.getElementById("smc-status-filter")?.addEventListener("change", renderSmcStoresTree);
+
+  // Bind Cabinet tab switching click event listeners
+  setupSmcCabinetTabListeners();
+
+  // Bind Override form on-submit
+  const overrideForm = document.getElementById("smc-form-override");
+  if (overrideForm) {
+    overrideForm.addEventListener("submit", smcHandleProfileOverrideSubmit);
+  }
+
+  // Bind Core Admin Actions to Selected Store Buttons
+  document.getElementById("smc-btn-approve")?.addEventListener("click", () => smcAdminAction("approve"));
+  document.getElementById("smc-btn-reject")?.addEventListener("click", () => smcAdminAction("reject"));
+  document.getElementById("smc-btn-toggle-active")?.addEventListener("click", () => smcAdminAction("toggle-active"));
+  document.getElementById("smc-btn-edit")?.addEventListener("click", () => smcOpenOverrideModal());
+  document.getElementById("smc-btn-delete")?.addEventListener("click", () => smcAdminAction("delete"));
+}
+
+function renderSmcStoresTree() {
+  const container = document.getElementById("smc-stores-list-tree");
+  if (!container) return;
+
+  const searchInp = document.getElementById("smc-store-search") as HTMLInputElement;
+  const filterSelect = document.getElementById("smc-status-filter") as HTMLSelectElement;
+  const searchVal = searchInp ? searchInp.value.trim().toLowerCase() : "";
+  const filterVal = filterSelect ? filterSelect.value : "ALL";
+
+  // Filter
+  const filtered = smcStores.filter((s) => {
+    const matchesSearch = s.name?.toLowerCase().includes(searchVal) ||
+      s.ownerName?.toLowerCase().includes(searchVal) ||
+      s.licenseNumber?.toLowerCase().includes(searchVal) ||
+      s.district?.toLowerCase().includes(searchVal);
+
+    let matchesStatus = true;
+    if (filterVal === "APPROVED") {
+      matchesStatus = s.approved === true;
+    } else if (filterVal === "PENDING") {
+      matchesStatus = s.approved !== true && s.approved !== false;
+    } else if (filterVal === "SUSPENDED") {
+      matchesStatus = s.active === false;
+    }
+
+    return matchesSearch && matchesStatus;
+  });
+
+  // Update total counts
+  const totalLabel = document.getElementById("smc-registered-cnt");
+  if (totalLabel) totalLabel.innerText = `${filtered.length} Nodes`;
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div class="text-center py-8 text-slate-400 font-medium text-xs">
+        No matching branches found.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = filtered.map((s) => {
+    const isSelected = s.storeId === smcSelectedStoreId;
+    
+    // Compute Badge States
+    const appBadge = s.approved === true 
+      ? `<span class="bg-emerald-50 text-emerald-700 border border-emerald-200 py-0.5 px-1.5 rounded-md text-[8px] font-black uppercase">Approved</span>`
+      : s.approved === false
+      ? `<span class="bg-rose-50 text-rose-700 border border-rose-200 py-0.5 px-1.5 rounded-md text-[8px] font-black uppercase">Rejected</span>`
+      : `<span class="bg-amber-50 text-amber-700 border border-amber-200 py-0.5 px-1.5 rounded-md text-[8px] font-black uppercase">On Hold</span>`;
+
+    const actBadge = s.active === false 
+      ? `<span class="bg-stone-100 text-stone-600 py-0.5 px-1.5 rounded-md text-[8px] font-black uppercase">Suspended</span>`
+      : `<span class="bg-indigo-50 text-indigo-700 py-0.5 px-1.5 rounded-md text-[8px] font-black uppercase">Active</span>`;
+
+    return `
+      <div onclick="smcSelectStore('${s.storeId}')" class="p-3 bg-white rounded-xl border cursor-pointer hover:border-indigo-400 transition-all duration-150 space-y-1.5 ${
+        isSelected ? "border-indigo-500 bg-indigo-50/10 shadow-sm" : "border-slate-100"
+      }">
+        <div class="flex items-center gap-2">
+          <img src="${s.logo || 'https://images.unsplash.com/photo-1586015555751-63bb77f4322a?auto=format&fit=crop&q=80&w=200'}" class="w-8 h-8 rounded-lg object-cover bg-slate-50 border border-slate-100 shrink-0" referrerPolicy="no-referrer">
+          <div class="min-w-0 flex-1">
+            <h5 class="text-slate-800 font-extrabold truncate leading-tight">${s.name || "Apothecary Retail Branch"}</h5>
+            <p class="text-[9px] text-slate-400 font-bold truncate leading-snug">Owner: ${s.ownerName || "Merchant Name"}</p>
+          </div>
+        </div>
+        <div class="flex justify-between items-center gap-1 flex-wrap pt-1 border-t border-slate-50 select-none">
+          <span class="text-[9px] text-slate-400 font-extrabold truncate w-[45%]">${s.district || "Bengaluru"}, ${s.state || "KA"}</span>
+          <div class="flex gap-1 shrink-0">
+            ${appBadge}
+            ${actBadge}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function smcSelectStore(storeId: string) {
+  smcSelectedStoreId = storeId;
+  const store = smcStores.find(s => s.storeId === storeId);
+  if (!store) return;
+
+  // Switch View Container state
+  const emptyState = document.getElementById("smc-cabinet-empty-state");
+  const dataView = document.getElementById("smc-cabinet-data-viewport");
+  if (emptyState) emptyState.classList.add("hidden");
+  if (dataView) dataView.classList.remove("hidden");
+
+  // Load Hero
+  const bannerImg = document.getElementById("smc-disp-banner") as HTMLImageElement;
+  const logoImg = document.getElementById("smc-disp-logo") as HTMLImageElement;
+  if (bannerImg) bannerImg.src = store.banner || "https://images.unsplash.com/photo-1628771065518-0d82f1938462?auto=format&fit=crop&q=80&w=400";
+  if (logoImg) logoImg.src = store.logo || "https://images.unsplash.com/photo-1586015555751-63bb77f4322a?auto=format&fit=crop&q=80&w=200";
+  
+  const dName = document.getElementById("smc-disp-name");
+  const dOwner = document.getElementById("smc-disp-owner-city");
+  if (dName) dName.innerText = store.name || "Retailing Pharmacy Outlet";
+  if (dOwner) dOwner.innerText = `${store.ownerName || 'Unknown Merchant Owner'} • ${store.district || 'District area'}, ${store.state || 'Karnataka'}`;
+
+  // Approval status indicators
+  const appEl = document.getElementById("smc-disp-status-app")!;
+  if (appEl) {
+    if (store.approved === true) {
+      appEl.className = "text-[8px] px-2 py-0.5 rounded font-black uppercase text-white bg-emerald-500";
+      appEl.innerText = "Approved Node";
+    } else if (store.approved === false) {
+      appEl.className = "text-[8px] px-2 py-0.5 rounded font-black uppercase text-white bg-rose-500";
+      appEl.innerText = "Rejected App";
+    } else {
+      appEl.className = "text-[8px] px-2 py-0.5 rounded font-black uppercase text-white bg-amber-500";
+      appEl.innerText = "Review Pending";
+    }
+  }
+
+  // Active status indicators
+  const actEl = document.getElementById("smc-disp-status-act")!;
+  if (actEl) {
+    if (store.active === false) {
+      actEl.className = "text-[8px] px-2 py-0.5 rounded font-black uppercase text-white bg-rose-500";
+      actEl.innerText = "Suspended";
+    } else {
+      actEl.className = "text-[8px] px-2 py-0.5 rounded font-black uppercase text-white bg-emerald-500";
+      actEl.innerText = "Active";
+    }
+  }
+
+  // Configure Suspend Button Toggle
+  const toggleBtn = document.getElementById("smc-btn-toggle-active")!;
+  if (toggleBtn) {
+    if (store.active === false) {
+      toggleBtn.innerHTML = `<i class="fa-solid fa-play"></i> Activate Node`;
+      toggleBtn.className = "bg-emerald-50 border border-emerald-250 text-emerald-700 hover:bg-emerald-100 text-[10px] font-black px-2.5 py-1.5 rounded-lg cursor-pointer flex items-center gap-1.5 transition-all";
+    } else {
+      toggleBtn.innerHTML = `<i class="fa-solid fa-hand text-rose-500"></i> Suspend Node`;
+      toggleBtn.className = "bg-rose-50 border border-rose-150 text-rose-600 hover:bg-rose-100 text-[10px] font-black px-2.5 py-1.5 rounded-lg cursor-pointer flex items-center gap-1.5 transition-all";
+    }
+  }
+
+  // Populate docs and licenses view details
+  const licDocImg = document.getElementById("smc-license-doc-img") as HTMLImageElement;
+  if (licDocImg) licDocImg.src = store.drugLicenseImage || store.licenseImage || "https://images.unsplash.com/photo-1586015555751-63bb77f4322a?auto=format&fit=crop&q=80&w=200";
+  
+  const pDl = document.getElementById("smc-p-dl");
+  const pEmail = document.getElementById("smc-p-email");
+  const pMobile = document.getElementById("smc-p-mobile");
+  const pLocality = document.getElementById("smc-p-locality");
+  const pAddress = document.getElementById("smc-p-address");
+  const lblReg = document.getElementById("smc-lbl-reg-date");
+
+  if (pDl) pDl.innerText = store.licenseNumber || store.drugLicenseNumber || "N/A Not Provided";
+  if (pEmail) pEmail.innerText = store.email || "No credential email";
+  if (pMobile) pMobile.innerText = store.mobile || "No phone line registered";
+  if (pLocality) pLocality.innerText = `${store.state || 'Karnataka'} • ${store.district || 'District Urban'}`;
+  if (pAddress) pAddress.innerText = store.address || "No address submitted";
+  if (lblReg) {
+    lblReg.innerText = store.createdAt 
+      ? `Enrolled: ${new Date(store.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`
+      : "Verified Branch";
+  }
+
+  // Re-run dynamic rendering of other tab panes
+  renderSmcStoreCatalog();
+  renderSmcStoreOrders();
+  renderSmcStoreAnalytics();
+  renderSmcStoreReviews();
+  calculateSelectedStoreMetrics();
+}
+
+function calculateSelectedStoreMetrics() {
+  if (!smcSelectedStoreId) return;
+
+  const medicines = smcMedicines.filter((m) => m.storeId === smcSelectedStoreId);
+  const orders = smcOrders.filter((o) => o.storeId === smcSelectedStoreId);
+  const storeReviews = smcReviews[smcSelectedStoreId] ? Object.values(smcReviews[smcSelectedStoreId]) : [];
+
+  // 1. Catalog Count
+  const medTotalVal = document.getElementById("smc-val-total-meds");
+  if (medTotalVal) medTotalVal.innerText = medicines.length.toString();
+  
+  const lowStockCount = medicines.filter((m) => m.stock < 10).length;
+  const outOfStockCount = medicines.filter((m) => m.stock === 0).length;
+  
+  const subLowStock = document.getElementById("smc-sub-low-stock");
+  if (subLowStock) {
+    subLowStock.innerText = `${lowStockCount} Low stock | ${outOfStockCount} Out of stock`;
+    if (lowStockCount > 0 || outOfStockCount > 0) {
+      subLowStock.className = "text-[9px] text-rose-500 font-extrabold animate-pulse block mt-1";
+    } else {
+      subLowStock.className = "text-[9px] text-slate-400 font-semibold block mt-1";
+    }
+  }
+
+  // 2. Gross revenue Calculation
+  const compOrders = orders.filter((o) => o.status === "delivered");
+  const totalRevenue = compOrders.reduce((sum, o) => sum + (o.subtotal || o.total || 0), 0);
+  
+  const valSales = document.getElementById("smc-val-sales");
+  if (valSales) valSales.innerText = `₹${totalRevenue.toLocaleString()}`;
+
+  const now = Date.now();
+  const oneDay = 24 * 60 * 60 * 1000;
+  const dailyTotal = compOrders.filter((o) => (o.createdAt || now) > (now - oneDay)).reduce((sum, o) => sum + (o.subtotal || o.total || 0), 0);
+  const weeklyTotal = compOrders.filter((o) => (o.createdAt || now) > (now - (7 * oneDay))).reduce((sum, o) => sum + (o.subtotal || o.total || 0), 0);
+  const monthlyTotal = compOrders.filter((o) => (o.createdAt || now) > (now - (30 * oneDay))).reduce((sum, o) => sum + (o.subtotal || o.total || 0), 0);
+
+  const subSales = document.getElementById("smc-sub-sales");
+  if (subSales) subSales.innerText = `₹${weeklyTotal.toLocaleString()} Weekly | ₹${monthlyTotal.toLocaleString()} Monthly`;
+  
+  const cDaily = document.getElementById("smc-calc-daily");
+  const cWeekly = document.getElementById("smc-calc-weekly");
+  const cMonthly = document.getElementById("smc-calc-monthly");
+  const cWeeklyOrd = document.getElementById("smc-cnt-weekly-orders");
+
+  if (cDaily) cDaily.innerText = `₹${dailyTotal.toLocaleString()}`;
+  if (cWeekly) cWeekly.innerText = `₹${weeklyTotal.toLocaleString()}`;
+  if (cMonthly) cMonthly.innerText = `₹${monthlyTotal.toLocaleString()}`;
+  if (cWeeklyOrd) cWeeklyOrd.innerText = `${compOrders.filter((o) => (o.createdAt || now) > (now - (7 * oneDay))).length} Weeks completed`;
+
+  // 3. Clinical performance Rating Average
+  const valRate = document.getElementById("smc-val-rating");
+  const subRev = document.getElementById("smc-sub-reviews");
+  if (valRate && subRev) {
+    if (storeReviews.length > 0) {
+      let ratingSum = 0;
+      storeReviews.forEach((r: any) => {
+        ratingSum += parseFloat(r.rating || 5);
+      });
+      const avgScore = ratingSum / storeReviews.length;
+      valRate.innerText = `${avgScore.toFixed(1)} / 5`;
+      subRev.innerText = `${storeReviews.length} patient clinical reviews`;
+    } else {
+      valRate.innerText = `5.0 / 5`;
+      subRev.innerText = `No rating scores yet`;
+    }
+  }
+
+  // 4. Operations Load Card
+  const valOrd = document.getElementById("smc-val-orders");
+  const subOrd = document.getElementById("smc-sub-orders");
+  if (valOrd && subOrd) {
+    valOrd.innerText = `${orders.length} Bookings`;
+    const newOrdersCount = orders.filter((o) => o.status === "placed" || o.status === "new").length;
+    const procOrdersCount = orders.filter((o) => o.status === "accepted" || o.status === "processing").length;
+    subOrd.innerText = `${newOrdersCount} New alerts | ${procOrdersCount} Processing`;
+  }
+}
+
+function renderSmcStoreCatalog() {
+  const container = document.getElementById("smc-med-grid");
+  if (!container) return;
+
+  const medicines = smcMedicines.filter((m) => m.storeId === smcSelectedStoreId);
+  const lblCnt = document.getElementById("smc-lbl-med-cnt");
+  if (lblCnt) lblCnt.innerText = `${medicines.length} Medicines cataloged`;
+
+  if (medicines.length === 0) {
+    container.innerHTML = `
+      <div class="col-span-2 text-center py-12 text-slate-400 bg-white border border-slate-100 rounded-xl">
+        This pharmacy catalog is completely empty.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = medicines.map((m) => {
+    const isLow = m.stock < 10;
+    return `
+      <div id="smc_med_card_${m.medicineId}" class="bg-white p-3 border rounded-xl select-none flex gap-2.5 text-xs font-semibold relative ${
+        isLow ? "border-rose-150 bg-rose-50/5" : "border-slate-100"
+      }">
+        <img class="w-12 h-12 rounded-lg object-cover shrink-0 border border-slate-100 bg-slate-50" src="${m.image || 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&q=80&w=200'}" referrerPolicy="no-referrer">
+        <div class="flex-1 min-w-0 space-y-1">
+          <div class="flex items-start justify-between">
+            <h5 class="font-extrabold text-slate-800 truncate pr-4 leading-tight">${m.name}</h5>
+            <button onclick="smcDeleteMedicine('${m.medicineId}')" class="text-rose-500 absolute top-2 right-2 text-xs hover:scale-110 transition-all cursor-pointer">
+              <i class="fa-regular fa-trash-can"></i>
+            </button>
+          </div>
+          <p class="text-[8px] text-indigo-600 uppercase font-bold tracking-wider leading-none">${m.category || "General General"}</p>
+          
+          <div class="flex items-center justify-between pt-1 gap-1 flex-wrap">
+            <div class="flex items-center gap-0.5 flex-wrap">
+              <span class="text-[8px] text-slate-400 font-bold">₹</span>
+              <input type="number" onchange="smcUpdatePrice('${m.medicineId}', this.value)" value="${m.price}" min="1" class="w-10 text-center text-[10px] p-0.5 border border-slate-200 rounded font-black font-mono focus:border-indigo-500 outline-none bg-slate-50 text-slate-800">
+            </div>
+            <div class="flex items-center gap-0.5 flex-wrap">
+              <span class="text-[8px] ${isLow ? "text-rose-600 animate-pulse font-extrabold" : "text-slate-400 font-extrabold"}">Stock:</span>
+              <input type="number" onchange="smcUpdateStock('${m.medicineId}', this.value)" value="${m.stock}" min="0" class="w-10 text-center text-[10px] p-0.5 border border-slate-200 rounded font-black font-mono focus:border-indigo-500 outline-none bg-slate-50 text-slate-800">
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderSmcStoreOrders() {
+  const container = document.getElementById("smc-orders-list");
+  if (!container) return;
+
+  const orders = smcOrders.filter((o) => o.storeId === smcSelectedStoreId);
+
+  if (orders.length === 0) {
+    container.innerHTML = `
+      <div class="text-center py-10 bg-white border border-slate-100 rounded-xl text-slate-400 font-medium">
+        No patient booking records found for this branch.
+      </div>
+    `;
+    return;
+  }
+
+  const sorted = orders.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+  container.innerHTML = sorted.map((o) => {
+    let statusClass = "bg-slate-200 text-slate-800";
+    if (o.status === "placed" || o.status === "new") statusClass = "bg-amber-100 text-amber-800 border-amber-305";
+    else if (o.status === "accepted" || o.status === "accepted_by_store") statusClass = "bg-indigo-100 text-indigo-800 border-indigo-355";
+    else if (o.status === "packed" || o.status === "in_transit") statusClass = "bg-teal-100 text-teal-800 border-teal-355";
+    else if (o.status === "delivered") statusClass = "bg-emerald-100 text-emerald-800 border-emerald-355";
+    else if (o.status === "rejected" || o.status === "cancelled") statusClass = "bg-rose-100 text-rose-800 border-rose-355";
+
+    const labelStr = o.status ? o.status.toUpperCase() : "PLACED";
+
+    return `
+      <div class="bg-white p-3.5 border border-slate-100 rounded-xl shadow-xs text-xs font-semibold space-y-2.5">
+        <div class="flex items-center justify-between border-b border-slate-50 pb-2">
+          <div>
+            <h5 class="text-slate-900 font-extrabold text-[11px]">Booking ID: #${o.orderId.substring(0, 8).toUpperCase()}</h5>
+            <p class="text-[8px] text-slate-400 font-bold mt-0.5">${
+              o.createdAt ? new Date(o.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "N/A"
+            }</p>
+          </div>
+          <span class="px-2 py-0.5 rounded font-black text-[9px] uppercase border ${statusClass}">${labelStr}</span>
+        </div>
+
+        <div class="space-y-1">
+          <p class="text-[8px] uppercase tracking-wider text-slate-400 font-black">Prescription Sets</p>
+          <div class="text-[10px] text-slate-600 space-y-0.5">
+            ${
+              o.items ? o.items.map((it: any) => `
+                <div class="flex justify-between font-medium">
+                  <span>• ${it.name} <span class="font-bold text-slate-400">x${it.quantity}</span></span>
+                  <span class="font-mono text-slate-500">₹${(it.price * it.quantity).toFixed(1)}</span>
+                </div>
+              `).join("") : "N/A"
+            }
+          </div>
+        </div>
+
+        <div class="flex justify-between items-center bg-slate-50 p-2 rounded-lg">
+          <div class="text-[9px] font-bold text-slate-500 flex flex-col">
+            <span>Patient: ${o.userName || "Subscriber Client"}</span>
+            <span class="font-mono mt-0.5">Phone: ${o.userMobile || "N/A Line"}</span>
+          </div>
+          <div class="text-right">
+            <p class="text-[8px] text-slate-400 uppercase font-black">Bill Sum</p>
+            <p class="font-mono font-black text-indigo-705 text-indigo-700 text-xs">₹${o.total || o.subtotal || 0}</p>
+          </div>
+        </div>
+
+        <button onclick="smcFocusDeliveryRoute('${o.orderId}')" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-705 text-[10px] uppercase font-black py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-slate-100">
+          <i class="fa-solid fa-map-location-dot text-indigo-500 text-indigo-600"></i>
+          <span>Locate & Track Delivery Route</span>
+        </button>
+      </div>
+    `;
+  }).join("");
+}
+
+function smcFocusDeliveryRoute(orderId: string) {
+  const o = smcOrders.find((ord) => ord.orderId === orderId);
+  if (!o) return;
+
+  const store = smcStores.find((s) => s.storeId === smcSelectedStoreId);
+  if (!store) return;
+
+  showToast("Plotting operational route maps...", "info");
+
+  const storeLat = store.location?.lat || 12.9716;
+  const storeLng = store.location?.lng || 77.5946;
+
+  const userLat = o.userLocation?.lat || o.location?.lat || 12.9716;
+  const userLng = o.userLocation?.lng || o.location?.lng || 77.5946;
+
+  if (o.deliveryId) {
+    get(ref(db, `deliveryboy1/${o.deliveryId}`)).then((snapshot) => {
+      let rLat = storeLat;
+      let rLng = storeLng;
+      if (snapshot.exists()) {
+        const val = snapshot.val();
+        rLat = val.location?.lat || storeLat;
+        rLng = val.location?.lng || storeLng;
+      }
+      updateLeafletMap("smc-route-map", storeLat, storeLng, userLat, userLng, false, "marker-store", "fa-prescription-bottle-medical", "marker-user", "fa-house-chimney-medical", rLat, rLng, "marker-rider", "fa-motorcycle");
+    });
+  } else {
+    updateLeafletMap("smc-route-map", storeLat, storeLng, userLat, userLng, false);
+  }
+}
+
+function renderSmcStoreAnalytics() {
+  const container = document.getElementById("smc-best-sellers-list");
+  if (!container) return;
+
+  const orders = smcOrders.filter((o) => o.storeId === smcSelectedStoreId);
+  const compOrders = orders.filter((o) => o.status === "delivered");
+
+  const records: any = {};
+  compOrders.forEach((o) => {
+    if (o.items) {
+      o.items.forEach((it: any) => {
+        if (!records[it.name]) {
+          records[it.name] = { qty: 0, revenue: 0 };
+        }
+        records[it.name].qty += it.quantity;
+        records[it.name].revenue += (it.price * it.quantity);
+      });
+    }
+  });
+
+  const bestSellers = Object.keys(records).map((k) => ({
+    name: k,
+    qty: records[k].qty,
+    revenue: records[k].revenue
+  })).sort((a,b) => b.qty - a.qty).slice(0, 5);
+
+  if (bestSellers.length === 0) {
+    container.innerHTML = `<div class="text-slate-400 text-center py-6 text-xs font-semibold">No completed orders yet.</div>`;
+  } else {
+    container.innerHTML = bestSellers.map((item, idx) => `
+      <div class="flex items-center justify-between py-2.5 font-semibold text-xs text-slate-700">
+        <div>
+          <span class="text-indigo-600 font-extrabold mr-1.5 font-mono">#${idx+1}</span>
+          <span>${item.name}</span>
+        </div>
+        <div class="text-right select-none">
+          <p class="text-[9px] text-slate-500 font-bold">Sold: <span class="font-black text-slate-700">${item.qty} units</span></p>
+          <p class="text-[10px] font-bold font-mono text-emerald-600">₹${item.revenue}</p>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  const perfContainer = document.getElementById("smc-rider-perf-list");
+  if (perfContainer) {
+    const ridersMap: any = {};
+    orders.forEach((o) => {
+      if (o.deliveryId && o.status === "delivered") {
+        if (!ridersMap[o.deliveryId]) {
+          ridersMap[o.deliveryId] = { name: o.deliveryName || "Express Courier Rider", count: 0 };
+        }
+        ridersMap[o.deliveryId].count++;
+      }
+    });
+
+    const matchedRiders = Object.values(ridersMap).sort((a: any, b: any) => b.count - a.count);
+    if (matchedRiders.length === 0) {
+      perfContainer.innerHTML = `<div class="text-slate-400 text-center py-6 text-xs font-semibold">No delivery completed courier yet.</div>`;
+    } else {
+      perfContainer.innerHTML = matchedRiders.map((r: any) => `
+        <div class="flex items-center justify-between p-2 bg-slate-50 border border-slate-100 rounded-lg text-xs font-semibold text-slate-700">
+          <div class="flex items-center gap-1.5">
+            <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+            <span>${r.name}</span>
+          </div>
+          <span class="text-[9px] bg-slate-205 bg-slate-200 px-2 py-0.5 rounded font-black">${r.count} Dispatches</span>
+        </div>
+      `).join("");
+    }
+  }
+}
+
+function renderSmcStoreReviews() {
+  const container = document.getElementById("smc-reviews-list");
+  if (!container) return;
+
+  const storeReviews = smcReviews[smcSelectedStoreId] ? Object.values(smcReviews[smcSelectedStoreId]) : [];
+  const lblRev = document.getElementById("smc-lbl-review-cnt");
+  if (lblRev) lblRev.innerText = `${storeReviews.length} Reviews synced`;
+
+  if (storeReviews.length === 0) {
+    container.innerHTML = `
+      <div class="text-center py-8 bg-white border border-slate-100 rounded-xl text-slate-400 text-xs shadow-xs font-medium">
+        No patient reviews logs recorded for this store branch.
+      </div>
+    `;
+    return;
+  }
+
+  const sorted = storeReviews.sort((a: any, b: any) => (b.timestamp || 0) - (a.timestamp || 0));
+
+  container.innerHTML = sorted.map((r: any) => {
+    let starsHtml = "";
+    for (let s = 1; s <= 5; s++) {
+      starsHtml += `<i class="fa-solid fa-star ${s <= (r.rating || 5) ? "text-amber-400" : "text-slate-200"}"></i>`;
+    }
+
+    const reviewerName = r.reviewerName || "Patient Subscriber";
+    const dateStr = r.timestamp 
+      ? new Date(r.timestamp).toLocaleString("en-US", { month: "short", day: "numeric" })
+      : "Clinical Feedback";
+
+    return `
+      <div class="bg-white p-3.5 border border-slate-100 rounded-xl shadow-xs space-y-2 text-xs font-semibold">
+        <div class="flex justify-between items-center">
+          <div class="flex flex-col gap-0.5">
+            <span class="font-extrabold text-slate-800">${reviewerName}</span>
+            <span class="text-[8px] text-slate-400 font-bold">${dateStr}</span>
+          </div>
+          <div class="flex gap-0.5 text-[9px]">
+            ${starsHtml}
+          </div>
+        </div>
+        <p class="text-[10px] text-slate-500 bg-slate-50 p-2.5 rounded-lg italic font-medium leading-relaxed">"${r.comment || 'No text review comments'}"</p>
+      </div>
+    `;
+  }).join("");
+}
+
+function setupSmcCabinetTabListeners() {
+  const tabs = {
+    docs: { btn: "smc-tab-docs", view: "smc-view-docs" },
+    inventory: { btn: "smc-tab-inventory", view: "smc-view-inventory" },
+    orders: { btn: "smc-tab-orders", view: "smc-view-orders" },
+    analytics: { btn: "smc-tab-analytics", view: "smc-view-analytics" },
+    reviews: { btn: "smc-tab-reviews", view: "smc-view-reviews" }
+  };
+
+  Object.entries(tabs).forEach(([key, config]) => {
+    const btnEl = document.getElementById(config.btn);
+    btnEl?.addEventListener("click", () => {
+      smcSelectedTab = key as any;
+      
+      Object.values(tabs).forEach((cfg) => {
+        const b = document.getElementById(cfg.btn);
+        if (b) {
+          b.className = "flex-1 py-2.5 border-b-2 border-transparent text-slate-500 transition-all hover:text-indigo-600 cursor-pointer";
+        }
+        const v = document.getElementById(cfg.view);
+        if (v) v.classList.add("hidden");
+      });
+
+      if (btnEl) {
+        btnEl.className = "flex-1 py-2.5 border-b-2 border-indigo-600 text-indigo-600 transition-all cursor-pointer";
+      }
+      
+      const targetView = document.getElementById(config.view);
+      if (targetView) targetView.classList.remove("hidden");
+    });
+  });
+}
+
+function smcAdminAction(action: "approve" | "reject" | "toggle-active" | "delete") {
+  if (!smcSelectedStoreId) return;
+  const store = smcStores.find(s => s.storeId === smcSelectedStoreId);
+  if (!store) return;
+
+  if (action === "approve") {
+    if (confirm(`Approve Drug License and authorize trading for ${store.name || "selected store"}?`)) {
+      update(ref(db, `stores/${smcSelectedStoreId}`), { approved: true });
+      update(ref(db, `users/${smcSelectedStoreId}`), { approved: true });
+      showToast("Pharmacy node authorized & active globally!", "success");
+    }
+  } else if (action === "reject") {
+    const reason = prompt("Enter drug regulatory non-compliance/rejection reasoning:")?.trim();
+    if (reason === undefined) return;
+    if (!reason) {
+      showToast("Rejection reasoning is clinical mandate.", "error");
+      return;
+    }
+    update(ref(db, `stores/${smcSelectedStoreId}`), { approved: false, rejectionReason: reason });
+    update(ref(db, `users/${smcSelectedStoreId}`), { approved: false });
+    showToast("Application rejected & feedback sent", "info");
+  } else if (action === "toggle-active") {
+    const isDeactivating = (store.active !== false);
+    const nextStatus = !isDeactivating;
+    const promptStr = isDeactivating
+      ? "Deactivating this store suspends all user catalog bookings immediately. Confirm deactivation?"
+      : "Reactivate this store branch for immediate patient listing?";
+
+    if (confirm(promptStr)) {
+      update(ref(db, `stores/${smcSelectedStoreId}`), { active: nextStatus });
+      update(ref(db, `users/${smcSelectedStoreId}`), { active: nextStatus });
+      showToast(isDeactivating ? "Pharmacy node suspended" : "Pharmacy node reactivated!", isDeactivating ? "info" : "success");
+    }
+  } else if (action === "delete") {
+    if (confirm(`This is an IRREVERSIBLE operation! Delete ${store.name || "selected store"} permanently?`)) {
+      remove(ref(db, `stores/${smcSelectedStoreId}`));
+      remove(ref(db, `users/${smcSelectedStoreId}`));
+      showToast("Pharmacy node purged from records", "error");
+      smcClearSelection();
+    }
+  }
+}
+
+function smcClearSelection() {
+  smcSelectedStoreId = "";
+  const viewPort = document.getElementById("smc-cabinet-data-viewport");
+  const emptyState = document.getElementById("smc-cabinet-empty-state");
+  if (viewPort) viewPort.classList.add("hidden");
+  if (emptyState) emptyState.classList.remove("hidden");
+  renderSmcStoresTree();
+}
+
+function smcOpenOverrideModal() {
+  if (!smcSelectedStoreId) return;
+  const store = smcStores.find(s => s.storeId === smcSelectedStoreId);
+  if (!store) return;
+
+  (document.getElementById("smc-edt-name") as HTMLInputElement).value = store.name || "";
+  (document.getElementById("smc-edt-owner") as HTMLInputElement).value = store.ownerName || "";
+  (document.getElementById("smc-edt-mobile") as HTMLInputElement).value = store.mobile || "";
+  (document.getElementById("smc-edt-license") as HTMLInputElement).value = store.licenseNumber || store.drugLicenseNumber || "";
+  (document.getElementById("smc-edt-state") as HTMLSelectElement).value = store.state || "Karnataka";
+  (document.getElementById("smc-edt-district") as HTMLInputElement).value = store.district || "";
+  (document.getElementById("smc-edt-address") as HTMLTextAreaElement).value = store.address || "";
+
+  const modalEl = document.getElementById("smc-edit-store-modal");
+  if (modalEl) modalEl.classList.remove("hidden");
+}
+
+function closeSmcEditModal() {
+  const modalEl = document.getElementById("smc-edit-store-modal");
+  if (modalEl) modalEl.classList.add("hidden");
+}
+
+async function smcHandleProfileOverrideSubmit(e: any) {
+  e.preventDefault();
+  if (!smcSelectedStoreId) return;
+
+  const name = (document.getElementById("smc-edt-name") as HTMLInputElement).value.trim();
+  const ownerName = (document.getElementById("smc-edt-owner") as HTMLInputElement).value.trim();
+  const mobile = (document.getElementById("smc-edt-mobile") as HTMLInputElement).value.trim();
+  const licenseNumber = (document.getElementById("smc-edt-license") as HTMLInputElement).value.trim();
+  const state = (document.getElementById("smc-edt-state") as HTMLSelectElement).value;
+  const district = (document.getElementById("smc-edt-district") as HTMLInputElement).value.trim();
+  const address = (document.getElementById("smc-edt-address") as HTMLTextAreaElement).value.trim();
+
+  try {
+    const store = smcStores.find(s => s.storeId === smcSelectedStoreId);
+    const payload = {
+      ...store,
+      name,
+      ownerName,
+      mobile,
+      licenseNumber,
+      drugLicenseNumber: licenseNumber,
+      state,
+      district,
+      address
+    };
+
+    await update(ref(db, `stores/${smcSelectedStoreId}`), payload);
+    await update(ref(db, `users/${smcSelectedStoreId}`), {
+      name,
+      mobile,
+      state,
+      district,
+      address
+    });
+
+    showToast("Pharmacy profile details successfully updated!", "success");
+    closeSmcEditModal();
+  } catch (err) {
+    showToast("Failed overriding store parameters in DB", "error");
+  }
+}
+
+// Window bindings helper
+Object.assign(window, {
+  smcSelectStore,
+  closeSmcEditModal,
+  smcFocusDeliveryRoute,
+  smcDeleteMedicine(medId: string) {
+    if (confirm("Clinical Mandate: Permanently remove this medicine on behalf of the store?")) {
+      remove(ref(db, `medicines/${medId}`)).then(() => {
+        showToast("Medicine cleared successfully", "info");
+      });
+    }
+  },
+  smcUpdatePrice(medId: string, valStr: string) {
+    const nextP = parseFloat(valStr);
+    if (isNaN(nextP) || nextP <= 0) {
+      showToast("Invalid price format", "error");
+      return;
+    }
+    update(ref(db, `medicines/${medId}`), { price: nextP }).then(() => {
+      showToast("Store shelf price overrides synced in db!", "success");
+    });
+  },
+  smcUpdateStock(medId: string, valStr: string) {
+    const nextS = parseInt(valStr);
+    if (isNaN(nextS) || nextS < 0) {
+      showToast("Invalid stock volume", "error");
+      return;
+    }
+    update(ref(db, `medicines/${medId}`), { stock: nextS }).then(() => {
+      showToast("Store stock volume overrides synced in db!", "success");
     });
   }
 });

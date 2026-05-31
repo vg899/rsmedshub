@@ -58,13 +58,16 @@
         </div>
       </div>
 
-      <!-- OPERATIONAL TABS (Orders vs Inventory) -->
+      <!-- OPERATIONAL TABS (Orders vs Inventory vs Profile) -->
       <div id="store-ops-tabs" class="flex border-b border-slate-100 bg-white rounded-xl p-1 shadow-xs font-semibold">
         <button id="tab-store-orders" class="flex-1 py-2 text-xs rounded-lg bg-indigo-600 text-white font-bold transition-all cursor-pointer">
-          <i class="fa-solid fa-bell-concierge mr-1"></i>Order Requests
+          <i class="fa-solid fa-bell-concierge mr-1"></i>Orders
         </button>
-        <button id="tab-store-inventory" class="flex-1 py-2 text-xs rounded-lg text-slate-500 font-semibold transition-all hover:text-slate-700 cursor-pointer">
-          <i class="fa-solid fa-box-archive mr-1"></i>Apothecary Inventory
+        <button id="tab-store-inventory" class="flex-1 py-2 text-xs rounded-lg text-slate-500 font-semibold transition-all hover:text-indigo-700 cursor-pointer">
+          <i class="fa-solid fa-box-archive mr-1"></i>Inventory
+        </button>
+        <button id="tab-store-profile" class="flex-1 py-2 text-xs rounded-lg text-slate-500 font-semibold transition-all hover:text-indigo-700 cursor-pointer">
+          <i class="fa-solid fa-store mr-1"></i>Profile Admin
         </button>
       </div>
 
@@ -151,6 +154,107 @@
           </div>
         </div>
 
+      </div>
+
+      <!-- ================== SECTION C: STORE PROFILE MANAGEMENT ================== -->
+      <div id="section-store-profile" class="hidden space-y-4">
+        <!-- Store Settings Card -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-xs p-4 space-y-4">
+          <div class="border-b border-slate-50 pb-2">
+            <h4 class="text-xs font-black text-slate-800 uppercase"><i class="fa-solid fa-gears text-indigo-500 mr-1"></i>Update Store Profile</h4>
+            <p class="text-[9px] text-slate-400 mt-0.5 font-bold">Provide official business details for admin review & public listing</p>
+          </div>
+
+          <!-- Store Logo & Banner Preview Blocks -->
+          <div class="grid grid-cols-2 gap-3 pb-2">
+            <div class="space-y-1">
+              <span class="block text-[8px] uppercase text-slate-400 font-black">Store Logo</span>
+              <div class="w-18 h-18 rounded-xl border border-slate-200 overflow-hidden bg-slate-50 relative flex items-center justify-center">
+                <img id="store-logo-preview" src="https://images.unsplash.com/photo-1586015555751-63bb77f4322a?auto=format&fit=crop&q=80&w=200" class="w-full h-full object-cover text-[8px]" alt="No Logo">
+              </div>
+              <label class="block mt-1">
+                <span class="inline-block bg-slate-100 hover:bg-slate-200 text-slate-700 text-[9px] px-2.5 py-1.5 rounded-lg cursor-pointer font-bold">Pick Logo</span>
+                <input type="file" id="inp-store-logo" accept="image/*" class="hidden">
+              </label>
+            </div>
+
+            <div class="space-y-1">
+              <span class="block text-[8px] uppercase text-slate-400 font-black">Store Banner</span>
+              <div class="w-full h-18 rounded-xl border border-slate-200 overflow-hidden bg-slate-50 relative flex items-center justify-center">
+                <img id="store-banner-preview" src="https://images.unsplash.com/photo-1628771065518-0d82f1938462?auto=format&fit=crop&q=80&w=400" class="w-full h-full object-cover text-[8px]" alt="No Banner">
+              </div>
+              <label class="block mt-1">
+                <span class="inline-block bg-slate-100 hover:bg-slate-200 text-slate-700 text-[9px] px-2.5 py-1.5 rounded-lg cursor-pointer font-bold">Pick Banner</span>
+                <input type="file" id="inp-store-banner" accept="image/*" class="hidden">
+              </label>
+            </div>
+          </div>
+
+          <form id="form-store-profile" class="space-y-3.5 text-xs font-semibold">
+            <div>
+              <label class="block text-[9px] text-slate-500 font-bold uppercase mb-1">Store / Pharmacy Name</label>
+              <input type="text" id="store-profile-name" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-indigo-500">
+            </div>
+
+            <div>
+              <label class="block text-[9px] text-slate-500 font-bold uppercase mb-1">Owner Name</label>
+              <input type="text" id="store-profile-owner" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-indigo-500">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[9px] text-slate-400 font-bold uppercase mb-1">Mobile Contact</label>
+                <input type="text" id="store-profile-mobile" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-indigo-500">
+              </div>
+              <div>
+                <label class="block text-[9px] text-slate-400 font-bold uppercase mb-1">Drug License Details</label>
+                <input type="text" id="store-profile-license" required placeholder="DL-XXXX-YYYY" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-indigo-500">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[9px] text-slate-400 font-bold uppercase mb-1">State</label>
+                <select id="store-profile-state" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-indigo-500">
+                  <option value="Karnataka">Karnataka</option>
+                  <option value="Goa">Goa</option>
+                  <option value="Maharashtra">Maharashtra</option>
+                  <option value="Tamil Nadu">Tamil Nadu</option>
+                  <option value="Delhi">Delhi</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[9px] text-slate-400 font-bold uppercase mb-1">District</label>
+                <input type="text" id="store-profile-district" required placeholder="Bengaluru Central" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-indigo-500">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-[9px] text-slate-500 font-bold uppercase mb-1">Full Store Address</label>
+              <textarea id="store-profile-address" rows="2" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-indigo-500 resize-none"></textarea>
+            </div>
+
+            <!-- Drug License Upload Segment -->
+            <div class="border-t border-slate-150 pt-3">
+              <span class="block text-[9px] text-slate-500 font-bold uppercase mb-1">Drug License Copy (Document Image)</span>
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-slate-50 border border-slate-200 rounded-lg overflow-hidden flex items-center justify-center text-slate-400 font-medium">
+                  <img id="store-license-preview" src="" class="w-full h-full object-cover hidden">
+                  <i id="license-icon" class="fa-solid fa-file-pdf text-lg"></i>
+                </div>
+                <label class="cursor-pointer">
+                  <span class="bg-indigo-50 text-indigo-700 text-[10px] px-3 py-2 rounded-xl font-bold hover:bg-indigo-100 transition-all inline-block">Upload Document</span>
+                  <input type="file" id="inp-store-license" accept="image/*" class="hidden">
+                </label>
+              </div>
+            </div>
+
+            <button type="submit" id="btn-save-store-profile" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition-all shadow shadow-indigo-100 flex items-center justify-center gap-1.5 cursor-pointer">
+              <i class="fa-solid fa-cloud-arrow-up"></i>
+              <span>Save & Publish Profile Details</span>
+            </button>
+          </form>
+        </div>
       </div>
 
     </section>

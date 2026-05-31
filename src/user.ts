@@ -1701,11 +1701,41 @@ function openRatingsSelector() {
     }
 
     try {
-      await set(ref(db, `users/${loggedInUser.uid}/reviews/${Date.now()}`), {
+      // Find latest order storeId to mirror review
+      let targetStoreId = "all";
+      let targetStoreName = "MedsHub Platform";
+      try {
+        const ordersSnap = await get(ref(db, "orders"));
+        if (ordersSnap.exists()) {
+          const sorted = Object.values(ordersSnap.val())
+            .filter((o: any) => o.customerId === loggedInUser.uid)
+            .sort((a: any, b: any) => b.createdAt - a.createdAt);
+          if (sorted.length > 0) {
+            targetStoreId = (sorted[0] as any).storeId || "all";
+            targetStoreName = (sorted[0] as any).storeName || "MedsHub Platform";
+          }
+        }
+      } catch (e) {}
+
+      const revId = `${Date.now()}`;
+      await set(ref(db, `users/${loggedInUser.uid}/reviews/${revId}`), {
         rating: activeStarsSelected,
         comment: feedbackText,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        storeId: targetStoreId,
+        storeName: targetStoreName
       });
+
+      if (targetStoreId && targetStoreId !== "all") {
+        await set(ref(db, `reviews/${targetStoreId}/${revId}`), {
+          rating: activeStarsSelected,
+          comment: feedbackText,
+          timestamp: Date.now(),
+          reviewerName: profileData.name || loggedInUser.displayName || "Patient User",
+          reviewerId: loggedInUser.uid
+        });
+      }
+
       showToast("Thank you for your valuable rating suggestion!", "success");
       profileDrawer.classList.add("hidden");
     } catch (err) {

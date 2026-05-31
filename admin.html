@@ -43,6 +43,9 @@
       <button data-target="panel-partners" class="admin-nav-btn flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left whitespace-nowrap cursor-pointer">
         <i class="fa-solid fa-store-slash text-lg w-5"></i>Partners & Users
       </button>
+      <button data-target="panel-store-management" class="admin-nav-btn flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left whitespace-nowrap cursor-pointer hover:bg-slate-100">
+        <i class="fa-solid fa-hotel text-lg w-5 text-indigo-600"></i>Store Management Center
+      </button>
       <button data-target="panel-rider-verification" class="admin-nav-btn flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left whitespace-nowrap cursor-pointer">
         <i class="fa-solid fa-id-card-clip text-lg w-5 text-amber-500"></i>Delivery Boy Verification Center
       </button>
@@ -333,6 +336,373 @@
           </div>
         </div>
       </section>
+
+      <!-- ================================= PANEL 2.5: STORE MANAGEMENT CENTER ================================= -->
+      <section id="panel-store-management" class="admin-panel hidden space-y-6 animate-fade-in text-sans text-xs">
+        
+        <!-- Live Global Metrics Row for Selected Pharmacy -->
+        <div class="grid grid-cols-4 gap-4" id="smc-metric-row">
+          <!-- Total stock card -->
+          <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+            <div>
+              <p class="text-[9px] font-black text-slate-400 uppercase tracking-wider">Pharmacy Catalog Size</p>
+              <h2 id="smc-val-total-meds" class="text-xl font-extrabold text-indigo-700 mt-1">0</h2>
+              <span id="smc-sub-low-stock" class="text-[9px] text-rose-500 font-bold block mt-1">0 Low stock items</span>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg shadow-inner">
+              <i class="fa-solid fa-pills"></i>
+            </div>
+          </div>
+
+          <!-- Total Sales card -->
+          <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+            <div>
+              <p class="text-[9px] font-black text-slate-400 uppercase tracking-wider">Gross Revenue Collected</p>
+              <h2 id="smc-val-sales" class="text-xl font-extrabold text-emerald-700 mt-1">₹0</h2>
+              <span id="smc-sub-sales" class="text-[9px] text-slate-400 font-bold block mt-1">₹0 Weekly | ₹0 Monthly</span>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg shadow-inner">
+              <i class="fa-solid fa-sack-dollar"></i>
+            </div>
+          </div>
+
+          <!-- Clinical Performance Card -->
+          <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+            <div>
+              <p class="text-[9px] font-black text-slate-400 uppercase tracking-wider">Clinical Trust Rating</p>
+              <h2 id="smc-val-rating" class="text-xl font-extrabold text-amber-500 mt-1">5.0 / 5</h2>
+              <span id="smc-sub-reviews" class="text-[9px] text-slate-400 font-bold block mt-1">0 patient reviews</span>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg shadow-inner">
+              <i class="fa-solid fa-star-half-stroke"></i>
+            </div>
+          </div>
+
+          <!-- Operations Load Card -->
+          <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+            <div>
+              <p class="text-[9px] font-black text-slate-400 uppercase tracking-wider">Total Operations Lodged</p>
+              <h2 id="smc-val-orders" class="text-xl font-extrabold text-violet-700 mt-1">0 Sets</h2>
+              <span id="smc-sub-orders" class="text-[9px] text-violet-600 font-bold block mt-1">0 New | 0 Processing</span>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center text-lg shadow-inner">
+              <i class="fa-solid fa-bell"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Split Grid Panes: Pharmacy Selection vs Operations Hub -->
+        <div class="grid grid-cols-12 gap-5 min-h-[500px]">
+          
+          <!-- LEFT SIDE: ACTIVE STORES SELECTION TREE -->
+          <div class="col-span-12 lg:col-span-4 bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col overflow-hidden max-h-[650px]">
+            <div class="px-5 py-4 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center shrink-0">
+              <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1"><i class="fa-solid fa-hospital-user text-indigo-500"></i>Pharmacy Nodes Registry</h3>
+              <span id="smc-registered-cnt" class="text-[9px] font-black bg-indigo-50 text-indigo-700 py-0.5 px-2 rounded-full border border-indigo-100">0 Nodes</span>
+            </div>
+            
+            <!-- Real-time Filter Selector -->
+            <div class="p-3 bg-slate-50 border-b border-slate-100 flex gap-2 shrink-0">
+              <input type="text" id="smc-store-search" placeholder="Search branch, owner name, DL..." class="flex-1 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-indigo-500 font-semibold text-slate-700">
+              <select id="smc-status-filter" class="px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-indigo-500 font-bold text-slate-700">
+                <option value="ALL">All Nodes</option>
+                <option value="APPROVED">Approved Only</option>
+                <option value="PENDING">Pending Approval</option>
+                <option value="SUSPENDED">Suspended Only</option>
+              </select>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-3 space-y-2.5 bg-slate-50/30 font-semibold" id="smc-stores-list-tree">
+              <!-- Active Store nodes loaded dynamically in real-time -->
+            </div>
+          </div>
+
+          <!-- RIGHT SIDE: PHARMACY DETAILED CONTROL CABINET -->
+          <div class="col-span-12 lg:col-span-8 bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col overflow-hidden min-h-[550px]" id="smc-control-cabinet">
+            <!-- Empty state standby if no store selected -->
+            <div class="flex-1 flex flex-col items-center justify-center p-12 text-slate-400 text-center space-y-3" id="smc-cabinet-empty-state">
+              <i class="fa-solid fa-hospital-flag text-5xl text-slate-200 animate-pulse"></i>
+              <div>
+                <h4 class="text-xs font-extrabold text-slate-700 uppercase">Awaiting Node Inspection</h4>
+                <p class="text-[10px] text-slate-400 mt-1 max-w-xs font-medium leading-relaxed">Select a Pharmacy Node branch from the registry tree to inspect Drug Licenses, configure inventories, track clinical reviews, and load real-time Mappls delivery dispatches.</p>
+              </div>
+            </div>
+
+            <!-- Full Inspection Cabinet Panel (Hidden by default) -->
+            <div class="flex-1 flex flex-col hidden" id="smc-cabinet-data-viewport">
+              <!-- Pharmacy Hero banner & details -->
+              <div class="relative h-28 bg-slate-100 shrink-0 select-none overflow-hidden">
+                <img id="smc-disp-banner" src="" class="w-full h-full object-cover" alt="Banner">
+                <div class="absolute inset-0 bg-gradient-to-t from-slate-950/85 to-transparent"></div>
+                
+                <!-- Overlay Store Details -->
+                <div class="absolute bottom-3 left-4 right-4 flex items-center justify-between text-white">
+                  <div class="flex items-center gap-3">
+                    <img id="smc-disp-logo" src="" class="w-12 h-12 bg-white object-cover border-2 border-white rounded-xl shadow-lg" alt="Logo">
+                    <div>
+                      <h3 id="smc-disp-name" class="text-xs font-extrabold tracking-tight leading-tight">Branch Target Name</h3>
+                      <p id="smc-disp-owner-city" class="text-[10px] font-bold text-slate-300 mt-0.5">Owner • Bengaluru, Karnataka</p>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-1.5 flex-wrap font-sans">
+                    <span id="smc-disp-status-app" class="text-[9px] px-2 py-0.5 rounded font-black uppercase text-white bg-slate-600">Pending Approval</span>
+                    <span id="smc-disp-status-act" class="text-[9px] px-2 py-0.5 rounded font-black uppercase text-white bg-slate-600">Deactivated</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Admin Action Command Center Strip -->
+              <div class="px-5 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between gap-3 shrink-0 select-none flex-wrap">
+                <div class="flex items-center gap-2">
+                  <button id="smc-btn-approve" class="bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black px-2.5 py-1.5 rounded-lg cursor-pointer flex items-center gap-1.5 transition-all">
+                    <i class="fa-solid fa-file-circle-check"></i> Approve Node
+                  </button>
+                  <button id="smc-btn-reject" class="bg-rose-500 hover:bg-rose-600 text-white text-[10px] font-black px-2.5 py-1.5 rounded-lg cursor-pointer flex items-center gap-1.5 transition-all">
+                    <i class="fa-solid fa-file-circle-xmark"></i> Reject Application
+                  </button>
+                  <button id="smc-btn-toggle-active" class="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-[10px] font-black px-2.5 py-1.5 rounded-lg cursor-pointer flex items-center gap-1.5 transition-all">
+                    <i class="fa-solid fa-shield-halved"></i> Suspend Node
+                  </button>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button id="smc-btn-edit" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-black px-2.5 py-1.5 rounded-lg cursor-pointer flex items-center gap-1.5 transition-all">
+                    <i class="fa-solid fa-user-pen"></i> Edit Profile
+                  </button>
+                  <button id="smc-btn-delete" class="bg-rose-50 hover:bg-rose-100 text-rose-600 text-[10px] font-black px-2.5 py-1.5 rounded-lg cursor-pointer flex items-center gap-1.5 transition-all">
+                    <i class="fa-regular fa-trash-can"></i> Delete Store
+                  </button>
+                </div>
+              </div>
+
+              <!-- Inner Dashboard Tabs for selected store -->
+              <div class="flex border-b border-slate-100 bg-white font-bold select-none text-[9px] uppercase tracking-wider shrink-0 flex-wrap">
+                <button id="smc-tab-docs" class="flex-1 py-2.5 border-b-2 border-indigo-600 text-indigo-600 transition-all cursor-pointer">
+                  <i class="fa-solid fa-passport mr-1"></i>Docs & Profile
+                </button>
+                <button id="smc-tab-inventory" class="flex-1 py-2.5 border-b-2 border-transparent text-slate-500 transition-all hover:text-indigo-600 cursor-pointer">
+                  <i class="fa-solid fa-prescription-bottle-medical mr-1"></i>Medicines
+                </button>
+                <button id="smc-tab-orders" class="flex-1 py-2.5 border-b-2 border-transparent text-slate-500 transition-all hover:text-indigo-600 cursor-pointer">
+                  <i class="fa-solid fa-list-check mr-1"></i>Live Orders
+                </button>
+                <button id="smc-tab-analytics" class="flex-1 py-2.5 border-b-2 border-transparent text-slate-500 transition-all hover:text-indigo-600 cursor-pointer">
+                  <i class="fa-solid fa-square-poll-vertical mr-1"></i>Sales Analytics
+                </button>
+                <button id="smc-tab-reviews" class="flex-1 py-2.5 border-b-2 border-transparent text-slate-500 transition-all hover:text-indigo-600 cursor-pointer">
+                  <i class="fa-solid fa-ranking-star mr-1"></i>Reviews
+                </button>
+              </div>
+
+              <!-- Detailed Inspector Views Area -->
+              <div class="flex-1 overflow-y-auto p-4 no-scrollbar bg-slate-50/20 font-semibold text-slate-700">
+                
+                <!-- VIEW 1: DRUG LICENSE & PROFILE DOCUMENTS -->
+                <div id="smc-view-docs" class="space-y-4 animate-fade-in">
+                  <!-- Address & Profile Details -->
+                  <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-xs grid grid-cols-2 gap-4">
+                    <div class="col-span-2 border-b border-slate-50 pb-2 flex justify-between items-center select-none">
+                      <h4 class="text-[10px] font-black text-slate-405 uppercase">Pharmacy Profile Credentials</h4>
+                      <span class="text-[9px] font-extrabold text-indigo-600" id="smc-lbl-reg-date">Verified Node</span>
+                    </div>
+                    <div>
+                      <span class="block text-[8px] uppercase text-slate-400 font-extrabold mb-0.5">Drug License Details</span>
+                      <p id="smc-p-dl" class="text-xs font-bold text-slate-800 font-mono">DL-12344-KARNATAKA</p>
+                    </div>
+                    <div>
+                      <span class="block text-[8px] uppercase text-slate-400 font-extrabold mb-0.5">Pharmacy Contact Email</span>
+                      <p id="smc-p-email" class="text-xs font-bold text-slate-800">m_branch@gmail.com</p>
+                    </div>
+                    <div>
+                      <span class="block text-[8px] uppercase text-slate-400 font-extrabold mb-0.5">Enrolled Mobile Contact</span>
+                      <p id="smc-p-mobile" class="text-xs font-bold text-slate-800 font-mono">+91 9988 XXXXX</p>
+                    </div>
+                    <div>
+                      <span class="block text-[8px] uppercase text-slate-400 font-extrabold mb-0.5">State & Operating District</span>
+                      <p id="smc-p-locality" class="text-xs font-bold text-slate-800">Karnataka • Bengaluru Urban</p>
+                    </div>
+                    <div class="col-span-2">
+                      <span class="block text-[8px] uppercase text-slate-400 font-extrabold mb-0.5">Full Physical Corporate Address</span>
+                      <p id="smc-p-address" class="text-xs font-bold text-slate-800 select-all">Sector-1, Whitefield, Bengaluru</p>
+                    </div>
+                  </div>
+
+                  <!-- Drug License Image Document View -->
+                  <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-xs space-y-3">
+                    <div class="flex justify-between items-center select-none border-b border-slate-50 pb-1.5">
+                      <h4 class="text-[10px] font-black text-slate-450 uppercase">Drug Regulatory License Document Copy</h4>
+                      <span class="text-[8px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-black font-mono">KYC IMAGE COPY</span>
+                    </div>
+
+                    <!-- Sandbox Preview Container -->
+                    <div class="relative rounded-xl border border-slate-100 overflow-hidden bg-slate-100 flex items-center justify-center p-2 cursor-pointer max-h-56">
+                      <img id="smc-license-doc-img" src="" class="max-h-48 object-contain rounded-lg hover:scale-[1.01] transition-transform duration-200" alt="Drug License Copy image" referrerPolicy="no-referrer">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- VIEW 2: MEDICINES CATALOG & INVENTORY INLINE MANAGEMENT -->
+                <div id="smc-view-inventory" class="hidden space-y-3 animate-fade-in">
+                  <div class="flex items-center justify-between select-none p-1 bg-indigo-50/30 rounded-lg px-2">
+                    <h4 class="text-[10px] font-black text-indigo-700 uppercase">Live Medicine Stock Manager</h4>
+                    <span id="smc-lbl-med-cnt" class="text-[10px] text-slate-550 font-bold">0 Medicines catalogued</span>
+                  </div>
+
+                  <div id="smc-med-grid" class="grid grid-cols-2 gap-3">
+                    <!-- Loaded dynamically under each store -->
+                  </div>
+                </div>
+
+                <!-- VIEW 3: LIVE ORDERS & MAP INTEGRATION DISPATCH -->
+                <div id="smc-view-orders" class="hidden space-y-4 animate-fade-in">
+                  
+                  <!-- live map element -->
+                  <div class="bg-white rounded-xl border border-slate-100 p-2.5 overflow-hidden shadow-xs space-y-2.5">
+                    <div class="flex justify-between items-center select-none">
+                      <h4 class="text-[10px] font-black text-slate-550 uppercase"><i class="fa-solid fa-map-location-dot text-indigo-500 mr-1 animate-bounce"></i>Store Mappls Operations tracker</h4>
+                      <span class="text-[9px] font-bold text-indigo-600 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span> Live Rider Routes</span>
+                    </div>
+                    <div id="smc-route-map" class="w-full h-52 rounded-xl bg-slate-50 border border-slate-105 relative z-10">
+                      <!-- Map Canvas -->
+                    </div>
+                    <div id="smc-map-rider-legend" class="text-[8px] text-slate-400 font-extrabold flex items-center justify-between gap-2 flex-wrap uppercase select-none">
+                      <span class="flex items-center gap-1"><i class="fa-solid fa-circle text-teal-500"></i> Store Branch</span>
+                      <span class="flex items-center gap-1"><i class="fa-solid fa-circle text-indigo-500"></i> Delivery Boy position</span>
+                      <span class="flex items-center gap-1"><i class="fa-solid fa-circle text-rose-500"></i> Patient Destination</span>
+                    </div>
+                  </div>
+
+                  <!-- orders table listing -->
+                  <div class="space-y-2.5">
+                    <h4 class="text-[10px] font-black text-slate-500 uppercase select-none">Live Order Status feeds</h4>
+                    <div id="smc-orders-list" class="space-y-3">
+                      <!-- Active orders lists -->
+                    </div>
+                  </div>
+
+                </div>
+
+                <!-- VIEW 4: STORE SALES ANALYTICS CABINET -->
+                <div id="smc-view-analytics" class="hidden space-y-4 animate-fade-in">
+                  <!-- Sales Intervals grid -->
+                  <div class="grid grid-cols-3 gap-2 px-1">
+                    <div class="bg-white border border-slate-100 p-3 rounded-xl shadow-xs">
+                      <p class="text-[8px] uppercase text-slate-400 font-extrabold">daily sales (24h)</p>
+                      <h4 id="smc-calc-daily" class="text-base font-extrabold text-indigo-600 mt-1">₹0</h4>
+                      <span class="text-[8px] text-slate-400 mt-0.5 block leading-normal font-semibold">Processed today</span>
+                    </div>
+                    <div class="bg-white border border-slate-100 p-3 rounded-xl shadow-xs">
+                      <p class="text-[8px] uppercase text-slate-400 font-extrabold">weekly sales (7d)</p>
+                      <h4 id="smc-calc-weekly" class="text-base font-extrabold text-teal-600 mt-1">₹0</h4>
+                      <span class="text-[8px] text-slate-450 mt-0.5 block leading-normal font-bold" id="smc-cnt-weekly-orders">0 Completed Orders</span>
+                    </div>
+                    <div class="bg-white border border-slate-100 p-3 rounded-xl shadow-xs">
+                      <p class="text-[8px] uppercase text-slate-400 font-extrabold">monthly sales (30d)</p>
+                      <h4 id="smc-calc-monthly" class="text-base font-extrabold text-emerald-600 mt-1">₹0</h4>
+                      <span class="text-[8px] text-slate-400 mt-0.5 block leading-normal font-semibold font-mono">Payout volume basis</span>
+                    </div>
+                  </div>
+
+                  <!-- Best Selling Products List -->
+                  <div class="bg-white border border-slate-150 rounded-xl p-4 shadow-xs space-y-3">
+                    <h4 class="text-[10px] uppercase text-slate-500 font-black tracking-wider border-b border-slate-50 pb-2">Best Selling Medicines Catalogue</h4>
+                    <div id="smc-best-sellers-list" class="divide-y divide-slate-100 text-xs">
+                      <!-- dynamically aggregated based on completed orders contents -->
+                      <div class="text-slate-400 text-center py-6 text-xs">No analytics data logs yet.</div>
+                    </div>
+                  </div>
+
+                  <!-- Delivery Boys Performance Logs -->
+                  <div class="bg-white border border-slate-150 rounded-xl p-4 shadow-xs space-y-3">
+                    <h4 class="text-[10px] uppercase text-slate-500 font-black tracking-wider border-b border-slate-50 pb-2">Delivery Courier Performance Levels</h4>
+                    <div id="smc-rider-perf-list" class="space-y-2 font-semibold text-xs text-slate-705">
+                      <!-- dynamically fetched rider metrics lists -->
+                      <div class="text-slate-400 text-center py-6 text-xs">No delivery rider statistics logs yet.</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- VIEW 5: CUSTOMER TRUST RATINGS & CLINICAL REVIEWS -->
+                <div id="smc-view-reviews" class="hidden space-y-4 animate-fade-in">
+                  <div class="flex items-center justify-between select-none">
+                    <h4 class="text-[10px] font-black text-rose-550 uppercase">Clinical Experience reviews</h4>
+                    <span id="smc-lbl-review-cnt" class="text-[10px] text-slate-400 font-bold">0 reviews synced</span>
+                  </div>
+
+                  <div id="smc-reviews-list" class="space-y-3">
+                    <!-- Dynamic review cards loaded via JS -->
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- DIALOG: ADMIN MODAL FOR EDITING STORE PROFILE -->
+      <div id="smc-edit-store-modal" class="hidden fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-fade-in font-sans text-xs">
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-xl overflow-hidden w-full max-w-md flex flex-col max-h-[90vh]">
+          <div class="px-5 py-4 border-b border-slate-100 bg-indigo-600 text-white flex justify-between items-center">
+            <h4 class="text-xs font-black uppercase tracking-wider flex items-center gap-1.5"><i class="fa-solid fa-user-gear animate-spin"></i>Override Store Onboarding Profile</h4>
+            <button onclick="closeSmcEditModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer hover:rotate-90 transition-all">
+              <i class="fa-solid fa-xmark font-bold"></i>
+            </button>
+          </div>
+          <div class="flex-1 overflow-y-auto p-5 space-y-4 font-semibold text-slate-700 text-xs shadow-inner">
+            <form id="smc-form-override" class="space-y-3">
+              <div>
+                <label class="block text-[9px] uppercase font-bold text-slate-400 mb-1">Store / Pharmacy Name</label>
+                <input type="text" id="smc-edt-name" required class="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 bg-slate-50 font-semibold text-slate-800">
+              </div>
+              <div>
+                <label class="block text-[9px] uppercase font-bold text-slate-400 mb-1">Owner Name</label>
+                <input type="text" id="smc-edt-owner" required class="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 bg-slate-50 font-semibold text-slate-800">
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[9px] uppercase font-bold text-slate-400 mb-1">Mobile Contact Phone</label>
+                  <input type="text" id="smc-edt-mobile" required class="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 bg-slate-50 font-mono font-bold text-slate-850">
+                </div>
+                <div>
+                  <label class="block text-[9px] uppercase font-bold text-slate-400 mb-1">Drug License Details</label>
+                  <input type="text" id="smc-edt-license" required class="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 bg-slate-50 font-mono font-bold text-slate-850">
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[9px] uppercase font-bold text-slate-400 mb-1">State Area</label>
+                  <select id="smc-edt-state" required class="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 bg-slate-50 font-bold text-slate-800">
+                    <option value="Karnataka">Karnataka</option>
+                    <option value="Goa">Goa</option>
+                    <option value="Maharashtra">Maharashtra</option>
+                    <option value="Tamil Nadu">Tamil Nadu</option>
+                    <option value="Delhi">Delhi</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[9px] uppercase font-bold text-slate-400 mb-1">Operating District</label>
+                  <input type="text" id="smc-edt-district" required class="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 bg-slate-50 font-semibold text-slate-800">
+                </div>
+              </div>
+              <div>
+                <label class="block text-[9px] uppercase font-bold text-slate-400 mb-1">Complete Physical Address</label>
+                <textarea id="smc-edt-address" rows="3" required class="w-full p-3 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 bg-slate-50 resize-none font-semibold text-slate-800"></textarea>
+              </div>
+
+              <!-- Action buttons inside modal footer -->
+              <div class="border-t border-slate-100 pt-4 flex gap-2 select-none text-[11px]">
+                <button type="button" onclick="closeSmcEditModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2.5 rounded-xl cursor-pointer transition-all">Cancel</button>
+                <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl cursor-pointer transition-all flex items-center justify-center gap-1.5 shadow shadow-indigo-150">
+                  <i class="fa-solid fa-save bg-transparent"></i> Save Override Settings
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
 
       <!-- ================================= PANEL 3: ORDERS MONITOR ================================= -->
       <section id="panel-orders" class="admin-panel hidden space-y-6">
