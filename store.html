@@ -6,6 +6,8 @@
   <title>MedsHub - Pharmacy Store Merchant Panel</title>
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Mappls Web Maps API SDK -->
+  <script src="https://apis.mappls.com/advancedmaps/api/3d8330747c66c6f01c3c680f12d5298d/map_sdk?v=3.0&layer=vector"></script>
   <!-- Global Stylesheet -->
   <link rel="stylesheet" href="/src/index.css">
 </head>
@@ -156,6 +158,34 @@
     <!-- ACTIVE VIEW SEGMENT: NOTIFICATION CENTER OVERLAYS -->
     <div id="toast-container" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-full max-w-xs px-4"></div>
 
+  </div>
+
+  <!-- Live Rider Tracking Modal -->
+  <div id="store-tracking-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-end justify-center z-50 hidden transition-all duration-300">
+    <div class="w-full max-w-md bg-white rounded-t-3xl shadow-xl flex flex-col h-[500px] overflow-hidden transform translate-y-full transition-transform duration-300" id="store-tracking-modal-content">
+      <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-indigo-600 text-white">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-motorcycle text-lg animate-bounce"></i>
+          <div>
+            <h4 class="font-extrabold text-xs uppercase tracking-wider" id="store-track-rider-name">Rider Live Tracking</h4>
+            <p class="text-[9px] text-indigo-200 font-bold" id="store-track-order-id">Order ID: #ORD</p>
+          </div>
+        </div>
+        <button id="btn-close-store-tracking" class="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center text-white cursor-pointer hover:scale-105 transition-all">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="flex-1 relative bg-slate-100">
+        <div id="store-tracking-map" class="w-full h-full"></div>
+        <div class="absolute bottom-3 left-3 right-3 bg-slate-950/80 backdrop-blur-sm p-3 rounded-2xl text-white text-[10px] font-semibold shadow z-10 space-y-1">
+          <div class="flex justify-between items-center text-[10px] font-bold text-amber-400">
+            <span>RIDER COURIER TRANSIT</span>
+            <span id="store-track-eta" class="font-mono">Calculating...</span>
+          </div>
+          <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span> <span id="store-track-rider-status">Rider is delivering prescription sets to customer...</span></div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script type="module" src="/src/store.ts"></script>

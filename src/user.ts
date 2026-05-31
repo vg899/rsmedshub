@@ -954,7 +954,7 @@ function setActiveOrderTracking(orderId: string) {
     const userLat = o.userLocation?.lat || 12.9716;
     const userLng = o.userLocation?.lng || 77.5946;
 
-    if (o.status === "out" && o.deliveryId) {
+    if ((o.status === "packed" || o.status === "out") && o.deliveryId) {
       // Subscribe and calculate maps parameters relative to real rider locations from DB!
       onValue(ref(db, `deliveryboy1/${o.deliveryId}`), (riderSnap) => {
         if (!riderSnap.exists()) return;
@@ -967,18 +967,32 @@ function setActiveOrderTracking(orderId: string) {
         const riderLat = r.location?.lat || 12.9716;
         const riderLng = r.location?.lng || 77.5946;
 
-        const distance = calculateDistance(riderLat, riderLng, userLat, userLng);
-        // ETA Speed (Assume average 35 KM/H city pacing)
-        const eta = Math.ceil((distance / 35) * 60) + 5; // Distance time + packing buffering
+        let targetLat = userLat;
+        let targetLng = userLng;
+        let middleLat: number | undefined = undefined;
+        let middleLng: number | undefined = undefined;
+        let phaseText = "Delivery Headed";
 
-        etaBadge.innerText = `ETA: ${eta} Mins (${distance} KM)`;
-        updateLeafletMap("tracker-map-div", riderLat, riderLng, userLat, userLng, false);
+        if (o.status === "packed") {
+          middleLat = o.storeLat || 12.9716;
+          middleLng = o.storeLng || 77.5946;
+          targetLat = middleLat;
+          targetLng = middleLng;
+          phaseText = "Heading to Apothecary";
+        }
+
+        const distance = calculateDistance(riderLat, riderLng, targetLat, targetLng);
+        // ETA Speed (Assume average 35 KM/H city pacing)
+        const eta = Math.ceil((distance / 35) * 60) + 3;
+
+        etaBadge.innerText = `${phaseText} - ETA: ${eta} Mins (${distance.toFixed(1)} KM)`;
+        updateLeafletMap("tracker-map-div", riderLat, riderLng, userLat, userLng, false, "marker-rider", "fa-motorcycle", "marker-user", "fa-house-chimney-medical", middleLat, middleLng, "marker-store", "fa-prescription-bottle-medical");
       });
     } else {
       riderName.innerText = o.deliveryName || "Agent not assigned yet";
       riderPhone.innerText = "Standby process queue";
       callRider.removeAttribute("href");
-      etaBadge.innerText = "Standby Status";
+      etaBadge.innerText = o.status === "delivered" ? "Delivered ✓" : "Standby Status";
       updateLeafletMap("tracker-map-div", userLat, userLng, userLat, userLng, true);
     }
   });

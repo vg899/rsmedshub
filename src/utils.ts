@@ -342,15 +342,19 @@ export function updateLeafletMap(
   endLng: number,
   isSingleMarker: boolean = false,
   startIconClass: string = "marker-rider",
-  startIconAwesome: string = "fa-truck-motorcycle",
+  startIconAwesome: string = "fa-motorcycle",
   endIconClass: string = "marker-user",
-  endIconAwesome: string = "fa-house-chimney-medical"
+  endIconAwesome: string = "fa-house-chimney-medical",
+  middleLat?: number,
+  middleLng?: number,
+  middleIconClass: string = "marker-store",
+  middleIconAwesome: string = "fa-prescription-bottle-medical"
 ) {
   const mappls = (window as any).mappls;
   if (!mappls) {
     console.warn("Mappls JS SDK not loaded yet. Fetching script...");
     loadMapplsScript(() => {
-      updateLeafletMap(containerId, startLat, startLng, endLat, endLng, isSingleMarker, startIconClass, startIconAwesome, endIconClass, endIconAwesome);
+      updateLeafletMap(containerId, startLat, startLng, endLat, endLng, isSingleMarker, startIconClass, startIconAwesome, endIconClass, endIconAwesome, middleLat, middleLng, middleIconClass, middleIconAwesome);
     });
     return;
   }
@@ -403,44 +407,102 @@ export function updateLeafletMap(
       const marker = new mappls.Marker({
         map: mapInstance,
         position: { lat: endLat, lng: endLng },
-        html: `<div class="mappls-custom-marker ${endIconClass} w-8 h-8 rounded-full shadow border-2 border-white flex items-center justify-center bg-teal-500 text-white"><i class="fa-solid ${endIconAwesome} text-xs"></i></div>`
+        html: `<div class="mappls-custom-marker ${endIconClass} w-8.5 h-8.5 rounded-full shadow border-2 border-white flex items-center justify-center bg-teal-500 text-white"><i class="fa-solid ${endIconAwesome} text-xs"></i></div>`
       });
       activeOverlays.push(marker);
       mapInstance.setCenter([endLat, endLng]);
+      mapInstance.setZoom(14);
     } else {
-      // Dual Pin Routing Map View
+      // Dual/Triple Pin Routing Map View
       const riderMarker = new mappls.Marker({
         map: mapInstance,
         position: { lat: startLat, lng: startLng },
-        html: `<div class="mappls-custom-marker ${startIconClass} w-8 m-8 rounded-full shadow border-2 border-white flex items-center justify-center bg-indigo-500 text-white"><i class="fa-solid ${startIconAwesome} text-xs"></i></div>`
+        html: `<div class="mappls-custom-marker ${startIconClass} w-8.5 h-8.5 rounded-full shadow border-2 border-white flex items-center justify-center bg-indigo-500 text-white"><i class="fa-solid ${startIconAwesome} text-xs"></i></div>`
       });
+      activeOverlays.push(riderMarker);
+
       const userMarker = new mappls.Marker({
         map: mapInstance,
         position: { lat: endLat, lng: endLng },
-        html: `<div class="mappls-custom-marker ${endIconClass} w-8 h-8 rounded-full shadow border-2 border-white flex items-center justify-center bg-teal-500 text-white"><i class="fa-solid ${endIconAwesome} text-xs"></i></div>`
+        html: `<div class="mappls-custom-marker ${endIconClass} w-8.5 h-8.5 rounded-full shadow border-2 border-white flex items-center justify-center bg-teal-500 text-white"><i class="fa-solid ${endIconAwesome} text-xs"></i></div>`
       });
-      activeOverlays.push(riderMarker);
       activeOverlays.push(userMarker);
 
-      // Extract route using getMapplsRoute
-      getMapplsRoute(startLat, startLng, endLat, endLng).then((res) => {
-        try {
-          const polyline = new mappls.Polyline({
-            map: mapInstance,
-            paths: res.polyline.map((p: any) => ({ lat: p[0], lng: p[1] })),
-            strokeColor: '#4f46e5',
-            strokeWeight: 5,
-            strokeOpacity: 0.95
-          });
-          activeOverlays.push(polyline);
-        } catch (pe) {
-          console.error("Polyline overlay exception:", pe);
-        }
-      });
+      if (middleLat && middleLng) {
+        const middleMarker = new mappls.Marker({
+          map: mapInstance,
+          position: { lat: middleLat, lng: middleLng },
+          html: `<div class="mappls-custom-marker ${middleIconClass} w-8.5 h-8.5 rounded-full shadow border-2 border-white flex items-center justify-center bg-amber-500 text-white"><i class="fa-solid ${middleIconAwesome} text-xs"></i></div>`
+        });
+        activeOverlays.push(middleMarker);
 
-      const midLat = (startLat + endLat) / 2;
-      const midLng = (startLng + endLng) / 2;
-      mapInstance.setCenter([midLat, midLng]);
+        // Segment 1 (Rider -> Store)
+        getMapplsRoute(startLat, startLng, middleLat, middleLng).then((res1) => {
+          try {
+            const polyline1 = new mappls.Polyline({
+              map: mapInstance,
+              paths: res1.polyline.map((p: any) => ({ lat: p[0], lng: p[1] })),
+              strokeColor: '#3b82f6', // Solid light blue for rider transit to store
+              strokeWeight: 5,
+              strokeOpacity: 0.95
+            });
+            activeOverlays.push(polyline1);
+          } catch (pe) {
+            console.error("Store route polyline exception:", pe);
+          }
+        });
+
+        // Segment 2 (Store -> Customer) - dashed
+        getMapplsRoute(middleLat, middleLng, endLat, endLng).then((res2) => {
+          try {
+            const polyline2 = new mappls.Polyline({
+              map: mapInstance,
+              paths: res2.polyline.map((p: any) => ({ lat: p[0], lng: p[1] })),
+              strokeColor: '#94a3b8', // Gray dashed representation
+              strokeWeight: 4,
+              strokeOpacity: 0.8,
+              dashArray: '10, 10'
+            });
+            activeOverlays.push(polyline2);
+          } catch (pe) {
+            console.error("Customer route polyline exception:", pe);
+          }
+        });
+
+        const midLat = (startLat + middleLat + endLat) / 3;
+        const midLng = (startLng + middleLng + endLng) / 3;
+        mapInstance.setCenter([midLat, midLng]);
+      } else {
+        // Direct segment (Rider -> Customer)
+        getMapplsRoute(startLat, startLng, endLat, endLng).then((res) => {
+          try {
+            const polyline = new mappls.Polyline({
+              map: mapInstance,
+              paths: res.polyline.map((p: any) => ({ lat: p[0], lng: p[1] })),
+              strokeColor: '#4f46e5',
+              strokeWeight: 5,
+              strokeOpacity: 0.9
+            });
+            activeOverlays.push(polyline);
+          } catch (pe) {
+            console.error("Direct segment polyline exception:", pe);
+          }
+        });
+
+        const midLat = (startLat + endLat) / 2;
+        const midLng = (startLng + endLng) / 2;
+        mapInstance.setCenter([midLat, midLng]);
+      }
+
+      // Adjust Zoom dynamically based on distance
+      const dist = calculateDistance(startLat, startLng, endLat, endLng);
+      let zoom = 14;
+      if (dist > 15) zoom = 10;
+      else if (dist > 8) zoom = 11;
+      else if (dist > 4) zoom = 12;
+      else if (dist > 1.5) zoom = 13;
+      else zoom = 14;
+      mapInstance.setZoom(zoom);
     }
   } catch (overlayErr) {
     console.error("Drawing Mappls overlays error:", overlayErr);

@@ -1,7 +1,7 @@
 import { auth, db } from "./firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { ref, onValue, set, get, update, remove } from "firebase/database";
-import { showToast, uploadToCloudinary } from "./utils";
+import { showToast, uploadToCloudinary, updateLeafletMap, calculateDistance } from "./utils";
 
 // Core State variables
 let loggedInMerchant: any = null;
@@ -189,8 +189,13 @@ function renderStoreOrdersList() {
     } else if (o.status === "out") {
       stepDescription = "Rider in route with delivery";
       buttonActionMarkup = `
-        <div class="p-2 border border-sky-100 text-sky-850 bg-sky-50 text-[10px] rounded-lg font-black uppercase text-center">
-          In Transit - Out For Delivery <i class="fa-solid fa-truck-fast"></i>
+        <div class="space-y-2">
+          <div class="p-2 border border-sky-100 text-sky-850 bg-sky-50 text-[10px] rounded-lg font-black uppercase text-center font-bold">
+            In Transit - Out For Delivery <i class="fa-solid fa-truck-fast"></i>
+          </div>
+          <button onclick="trackAssignedRider('${o.orderId}')" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 rounded-xl cursor-pointer shadow text-center text-xs transition-all flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-location-crosshairs animate-bounce"></i> Track Assigned Rider
+          </button>
         </div>
       `;
     } else if (o.status === "delivered") {
@@ -458,3 +463,85 @@ function loadDynamicCategories() {
     }
   });
 }
+
+// === REAL-TIME MERCHANT RIDER TRACKING PIPELINE ===
+let activeStoreTrackingUnsubscribe: any = null;
+let activeRiderTrackingUnsubscribe: any = null;
+
+function closeRiderTracking() {
+  const modal = document.getElementById("store-tracking-modal");
+  const content = document.getElementById("store-tracking-modal-content");
+  if (content) content.classList.add("translate-y-full");
+  setTimeout(() => {
+    if (modal) modal.classList.add("hidden");
+  }, 300);
+
+  if (activeStoreTrackingUnsubscribe) {
+    activeStoreTrackingUnsubscribe();
+    activeStoreTrackingUnsubscribe = null;
+  }
+  if (activeRiderTrackingUnsubscribe) {
+    activeRiderTrackingUnsubscribe();
+    activeRiderTrackingUnsubscribe = null;
+  }
+}
+
+document.getElementById("btn-close-store-tracking")?.addEventListener("click", closeRiderTracking);
+
+Object.assign(window, {
+  trackAssignedRider(orderId: string) {
+    const modal = document.getElementById("store-tracking-modal");
+    const content = document.getElementById("store-tracking-modal-content");
+    if (modal) modal.classList.remove("hidden");
+    setTimeout(() => {
+      if (content) content.classList.remove("translate-y-full");
+    }, 50);
+
+    const trackerOrderId = document.getElementById("store-track-order-id");
+    if (trackerOrderId) trackerOrderId.innerText = `Order ID: #${orderId.substring(0, 8).toUpperCase()}`;
+
+    // Clean previous subscriptions
+    if (activeStoreTrackingUnsubscribe) activeStoreTrackingUnsubscribe();
+    if (activeRiderTrackingUnsubscribe) activeRiderTrackingUnsubscribe();
+
+    activeStoreTrackingUnsubscribe = onValue(ref(db, `orders/${orderId}`), (orderSnap) => {
+      if (!orderSnap.exists()) return;
+      const o = orderSnap.val();
+
+      const userLat = o.userLocation?.lat || 12.9716;
+      const userLng = o.userLocation?.lng || 77.5946;
+
+      if (o.deliveryId) {
+        activeRiderTrackingUnsubscribe = onValue(ref(db, `deliveryboy1/${o.deliveryId}`), (riderSnap) => {
+          if (!riderSnap.exists()) return;
+          const r = riderSnap.val();
+
+          const riderName = document.getElementById("store-track-rider-name");
+          if (riderName) riderName.innerText = r.name || r.fullName || "Express Courier Rider";
+
+          const riderLat = r.location?.lat || 12.9716;
+          const riderLng = r.location?.lng || 77.5946;
+
+          // Standard distance estimation
+          const dist = calculateDistance(riderLat, riderLng, userLat, userLng);
+          const eta = Math.ceil((dist / 35) * 60) + 5;
+
+          const trackEta = document.getElementById("store-track-eta");
+          if (trackEta) trackEta.innerText = `ETA: ${eta} MINS (${dist.toFixed(1)} KM)`;
+
+          const trackStatus = document.getElementById("store-track-rider-status");
+          if (trackStatus) trackStatus.innerText = "Rider dispatch is active, heading towards patient house!";
+
+          // Trigger dynamic Mappls drawing on modal map container
+          updateLeafletMap("store-tracking-map", riderLat, riderLng, userLat, userLng, false);
+        });
+      } else {
+        const trackEta = document.getElementById("store-track-eta");
+        if (trackEta) trackEta.innerText = "STANDBY";
+        const trackStatus = document.getElementById("store-track-rider-status");
+        if (trackStatus) trackStatus.innerText = "Standby order acceptance queue...";
+        updateLeafletMap("store-tracking-map", userLat, userLng, userLat, userLng, true);
+      }
+    });
+  }
+});

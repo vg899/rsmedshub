@@ -10,6 +10,7 @@ let currentRiderDetail: any = null;
 let isDutyActive = true;
 let activeOrderPayload: any = null;
 let riderGPSInterval: any = null;
+let activeStoreProfile: any = null;
 let activeTab = "dashboard";
 
 // --- TEMPORARY UPLOAD URL STATES ---
@@ -436,13 +437,21 @@ function bootstrapRiderLiveLocationTracking() {
     } catch (err) {
       // Fallback trajectory system: Auto-advance coordinates towards targets representing real transit motion
       if (activeOrderPayload) {
-        const destLat = activeOrderPayload.userLocation?.lat || 12.9716;
-        const destLng = activeOrderPayload.userLocation?.lng || 77.5946;
+        let destLat = 12.9716;
+        let destLng = 77.5946;
+
+        if (activeOrderPayload.status === "packed") {
+          destLat = activeStoreProfile?.location?.lat || activeOrderPayload.storeLat || 12.9716;
+          destLng = activeStoreProfile?.location?.lng || activeOrderPayload.storeLng || 77.5946;
+        } else {
+          destLat = activeOrderPayload.userLocation?.lat || 12.9716;
+          destLng = activeOrderPayload.userLocation?.lng || 77.5946;
+        }
 
         const currentLat = currentRiderDetail?.location?.lat || 12.9716;
         const currentLng = currentRiderDetail?.location?.lng || 77.5946;
 
-        // Slide coordinate by 12% closer
+        // Slide coordinate closer (12% closer per step for smooth visual motion)
         const stepLat = currentLat + (destLat - currentLat) * 0.12;
         const stepLng = currentLng + (destLng - currentLng) * 0.12;
 
@@ -460,7 +469,7 @@ function bootstrapRiderLiveLocationTracking() {
         });
       }
     }
-  }, 8000);
+  }, 3000);
 }
 
 // --- BINDING CLICKEABLE MANUALLY FORCED GPS TRACKING BUTTON ---
@@ -547,8 +556,18 @@ function subscribeToDispatchPoolAndOrders() {
       });
     }
 
+    // Lazy load active store profile
+    if (activeOrderPayload && (!activeStoreProfile || activeStoreProfile.storeId !== activeOrderPayload.storeId)) {
+      get(ref(db, `stores/${activeOrderPayload.storeId}`)).then((snap) => {
+        if (snap.exists()) {
+          activeStoreProfile = snap.val();
+          triggerActiveOrderMapDraw();
+        }
+      }).catch((e) => console.error("Error fetching store profile:", e));
+    }
+
     // Available Pools Filter
-    const pools = globalOrdersCache.filter((o) => o.status === "packed");
+    const pools = globalOrdersCache.filter((o) => o.status === "packed" && !o.deliveryId);
 
     // Audio sound alert triggers on newly packed orders entering pool lists
     if (initialSyncDone && pools.length > lastDiscoveredPoolsCount && lastDiscoveredPoolsCount >= 0) {
@@ -727,7 +746,7 @@ Object.assign(window, {
       const o = snap.val();
       const updates: any = {};
       
-      updates[`orders/${orderId}/status`] = "out"; // Set Directly to out for delivery
+      updates[`orders/${orderId}/status`] = "packed"; // Head to pharmacy store first (Step 1)!
       updates[`orders/${orderId}/deliveryId`] = currentRiderId;
       updates[`orders/${orderId}/deliveryName`] = currentRiderDetail.name || "Express Rider Partner";
       updates[`orders/${orderId}/deliveryPhone`] = currentRiderDetail.mobile || "9988776655";
@@ -849,15 +868,45 @@ function triggerActiveOrderMapDraw() {
   const userLat = o.userLocation?.lat || 12.9716;
   const userLng = o.userLocation?.lng || 77.5946;
 
-  // Render maps
-  updateLeafletMap("rider-leaflet-map", riderLat, riderLng, userLat, userLng, false);
+  let targetLat = userLat;
+  let targetLng = userLng;
+  let middleLat: number | undefined = undefined;
+  let middleLng: number | undefined = undefined;
 
-  // Math ETA matrices
-  const distance = calculateDistance(riderLat, riderLng, userLat, userLng);
-  const totalMinutes = Math.ceil((distance / 30) * 60) + 3; // Approx 30km/hr average bike speed + 3min static margin
+  let labelTask = "Transit to Patient";
+
+  if (o.status === "packed") {
+    middleLat = activeStoreProfile?.location?.lat || o.storeLat || 12.9716;
+    middleLng = activeStoreProfile?.location?.lng || o.storeLng || 77.5946;
+    targetLat = middleLat;
+    targetLng = middleLng;
+    labelTask = "Navigate to Pharmacy Store";
+  }
+
+  // Render maps using multi-marker tracking
+  updateLeafletMap(
+    "rider-leaflet-map",
+    riderLat,
+    riderLng,
+    userLat,
+    userLng,
+    false,
+    "marker-rider",
+    "fa-motorcycle",
+    "marker-user",
+    "fa-house-chimney-medical",
+    middleLat,
+    middleLng,
+    "marker-store",
+    "fa-prescription-bottle-medical"
+  );
+
+  // Math ETA matrices based on immediate destination
+  const distance = calculateDistance(riderLat, riderLng, targetLat, targetLng);
+  const totalMinutes = Math.ceil((distance / 30) * 60) + 3; // Approx 30km/hr average bike speed + 3min margin
 
   const elEta = document.getElementById("rider-map-eta-time");
-  if (elEta) elEta.innerText = `${totalMinutes} Mins (${distance.toFixed(1)} KM Range)`;
+  if (elEta) elEta.innerText = `${labelTask} - ${totalMinutes} Mins (${distance.toFixed(1)} KM)`;
 }
 
 // --- STATUS PIPELINE STEP STATE ADVANCE ---
