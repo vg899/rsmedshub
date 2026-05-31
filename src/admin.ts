@@ -170,9 +170,12 @@ function subscribeToStats() {
         snapshot.forEach((child) => {
           total++;
           const u = child.val();
-          if (u && u.role === "user") {
-            clients++;
-            items.push(u);
+          if (u) {
+            u.uid = child.key;
+            if (u.role === "user") {
+              clients++;
+              items.push(u);
+            }
           }
         });
       }
@@ -181,7 +184,8 @@ function subscribeToStats() {
       if (statUsers) {
         statUsers.innerText = clients.toString();
       }
-      renderCustomersTable(items);
+      globalCustomers = items;
+      renderFilteredCustomers();
     } catch (err) {
       console.error("Error in onValue(users):", err);
     }
@@ -414,7 +418,10 @@ function renderCustomersTable(customers: any[]) {
           ${c.isBlocked ? "Blocked" : "Healthy Info"}
         </span>
       </td>
-      <td class="px-5 py-3 text-right">
+      <td class="px-5 py-3 text-right space-x-1.5 whitespace-nowrap">
+        <button onclick="inspectPatientDossier('${c.uid}')" class="text-[10px] font-bold px-2.5 py-1 rounded-lg border border-indigo-200 text-indigo-600 bg-white hover:bg-indigo-50 transition-all cursor-pointer">
+          <i class="fa-solid fa-address-card"></i> Dossier
+        </button>
         <button onclick="toggleBlockCustomer('${c.uid}', ${c.isBlocked || false})" class="text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all ${c.isBlocked ? "bg-emerald-500 text-white border-transparent hover:bg-emerald-600" : "border-rose-200 text-rose-600 bg-white hover:bg-rose-50"}">
           ${c.isBlocked ? "Unblock Client" : "Block Client"}
         </button>
@@ -3071,6 +3078,685 @@ Object.assign(window, {
   smcSelectStore,
   closeSmcEditModal,
   smcFocusDeliveryRoute,
+  smcDeleteMedicine(medId: string) {
+    if (confirm("Clinical Mandate: Permanently remove this medicine on behalf of the store?")) {
+      remove(ref(db, `medicines/${medId}`)).then(() => {
+        showToast("Medicine cleared successfully", "info");
+      });
+    }
+  },
+  smcUpdatePrice(medId: string, valStr: string) {
+    const nextP = parseFloat(valStr);
+    if (isNaN(nextP) || nextP <= 0) {
+      showToast("Invalid price format", "error");
+      return;
+    }
+    update(ref(db, `medicines/${medId}`), { price: nextP }).then(() => {
+      showToast("Store shelf price overrides synced in db!", "success");
+    });
+  },
+  smcUpdateStock(medId: string, valStr: string) {
+    const nextS = parseInt(valStr);
+    if (isNaN(nextS) || nextS < 0) {
+      showToast("Invalid stock volume", "error");
+      return;
+    }
+    update(ref(db, `medicines/${medId}`), { stock: nextS }).then(() => {
+      showToast("Store stock volume overrides synced in db!", "success");
+    });
+  }
+});
+
+// Advanced Administrative Systems & Hubs
+
+function renderFilteredCustomers() {
+  const query = userSearchQuery.trim().toLowerCase();
+  const filtered = globalCustomers.filter((c) => {
+    if (!query) return true;
+    return (
+      (c.name || "").toLowerCase().includes(query) ||
+      (c.email || "").toLowerCase().includes(query) ||
+      (c.mobile || "").toLowerCase().includes(query)
+    );
+  });
+  renderCustomersTable(filtered);
+}
+
+function inspectPatientDossier(uid: string) {
+  const customer = globalCustomers.find((c) => c.uid === uid);
+  if (!customer) {
+    showToast("Selected patient dossier could not be compiled.", "error");
+    return;
+  }
+
+  // Populate basic text info
+  const nameEl = document.getElementById("usr-inspect-name");
+  if (nameEl) nameEl.innerText = customer.name || "N/A";
+  const emailEl = document.getElementById("usr-inspect-email");
+  if (emailEl) emailEl.innerText = customer.email || "N/A";
+  const phoneEl = document.getElementById("usr-inspect-phone");
+  if (phoneEl) phoneEl.innerText = customer.mobile || "No phone linked";
+
+  const initialsEl = document.getElementById("usr-inspect-initials");
+  if (initialsEl) {
+    initialsEl.innerText = (customer.name || "PT").slice(0, 2).toUpperCase();
+  }
+
+  const statusBadge = document.getElementById("usr-inspect-status-badge");
+  if (statusBadge) {
+    statusBadge.innerText = customer.isBlocked ? "SUSPENDED ACCOUNT" : "ACTIVE ACCESS VALID";
+    statusBadge.className = `px-2 py-0.5 rounded-md ${customer.isBlocked ? "bg-rose-100 text-rose-800" : "bg-emerald-100 text-emerald-800"}`;
+  }
+
+  // Bind footer buttons dynamically
+  const blockBtn = document.getElementById("usr-inspect-btn-block");
+  if (blockBtn) {
+    blockBtn.innerText = customer.isBlocked ? "Unblock Patient" : "Block Patient";
+    blockBtn.onclick = () => {
+      (window as any).toggleBlockCustomer(customer.uid, customer.isBlocked || false);
+      closeUserDetailsInspectModal();
+    };
+  }
+
+  const deleteBtn = document.getElementById("usr-inspect-btn-delete");
+  if (deleteBtn) {
+    deleteBtn.onclick = () => {
+      if (confirm(`Clinical and Administrative Mandate: Purge patient folder and account registration of ${customer.name}? This is permanent.`)) {
+        remove(ref(db, `users/${customer.uid}`)).then(() => {
+          showToast("Patient record completely purged from records", "info");
+          closeUserDetailsInspectModal();
+        });
+      }
+    };
+  }
+
+  // Load and display addresses
+  const addrGrid = document.getElementById("usr-inspect-addresses-grid");
+  if (addrGrid) {
+    addrGrid.innerHTML = `<p class="text-slate-400 text-xs italic py-2">Loading addresses...</p>`;
+    get(ref(db, `users/${uid}/addresses`)).then((snapshot) => {
+      if (snapshot.exists()) {
+        const addresses = Object.values(snapshot.val());
+        if (addresses.length > 0) {
+          addrGrid.innerHTML = addresses.map((a: any) => `
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-1">
+              <span class="px-1.5 py-0.5 bg-violet-50 text-violet-750 font-black text-[9px] rounded uppercase">${a.label || "Home/Other"}</span>
+              <p class="font-semibold text-slate-800 leading-tight">${a.address || "No address detail"}</p>
+              <p class="text-[9px] text-slate-400 font-mono">${a.city || "Bengaluru"}, ${a.state || "Karnataka"}</p>
+            </div>
+          `).join("");
+        } else {
+          addrGrid.innerHTML = `<p class="text-slate-400 text-xs italic py-2">No saved locations linked.</p>`;
+        }
+      } else {
+        addrGrid.innerHTML = `<p class="text-slate-400 text-xs italic py-2">No saved locations linked.</p>`;
+      }
+    }).catch(() => {
+      addrGrid.innerHTML = `<p class="text-rose-500 text-xs py-2">Failed gathering coordinate logs.</p>`;
+    });
+  }
+
+  // Load and display patient orders from ordersCache
+  const ordersTbody = document.getElementById("usr-inspect-orders-tbody");
+  if (ordersTbody) {
+    const userOrders = (ordersCache || []).filter((o: any) => o.userId === uid);
+    if (userOrders.length > 0) {
+      ordersTbody.innerHTML = userOrders.map((o: any) => {
+        const dateStr = o.createdAt ? new Date(o.createdAt).toLocaleDateString() : "Internal Node";
+        const itemCount = o.items ? o.items.length : 0;
+        return `
+          <tr class="hover:bg-slate-50 transition-all font-semibold select-none">
+            <td class="p-2.5 font-mono text-slate-500 max-w-[80px] truncate">${o.orderId}</td>
+            <td class="p-2.5 text-slate-605">${dateStr}</td>
+            <td class="p-2.5 text-slate-700">${itemCount} drugs</td>
+            <td class="p-2.5 text-right font-mono font-bold text-slate-900">₹${o.total || 0}</td>
+            <td class="p-2.5 text-right">
+              <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded ${o.status === "delivered" ? "bg-emerald-100 text-emerald-800" : o.status === "cancelled" ? "bg-rose-100 text-rose-800" : "bg-blue-100 text-blue-800"}">
+                ${o.status || "Pending"}
+              </span>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    } else {
+      ordersTbody.innerHTML = `
+        <tr>
+          <td colspan="5" class="p-4 text-center text-slate-400 font-medium">No medical order records synced.</td>
+        </tr>
+      `;
+    }
+  }
+
+  // Unhide modal
+  const modal = document.getElementById("user-details-inspect-modal");
+  if (modal) modal.classList.remove("hidden");
+}
+
+function closeUserDetailsInspectModal() {
+  const modal = document.getElementById("user-details-inspect-modal");
+  if (modal) modal.classList.add("hidden");
+}
+
+function initNotificationsCenter() {
+  const notifForm = document.getElementById("form-broadcast-panel");
+  if (notifForm) {
+    notifForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const category = (document.getElementById("notif-category") as HTMLSelectElement).value;
+      const audience = (document.getElementById("notif-audience") as HTMLSelectElement).value;
+      const title = (document.getElementById("notif-title") as HTMLInputElement).value.trim();
+      const message = (document.getElementById("notif-message") as HTMLTextAreaElement).value.trim();
+
+      const notifId = "NOTIF_" + Date.now();
+      const newNotif = {
+        notifId,
+        category,
+        audience,
+        title,
+        message,
+        timestamp: Date.now()
+      };
+
+      set(ref(db, `notifications/${notifId}`), newNotif)
+        .then(() => {
+          showToast("Network dispatch transmitted successfully!", "success");
+          (notifForm as HTMLFormElement).reset();
+        })
+        .catch(() => {
+          showToast("Failed to broadcast alert.", "error");
+        });
+    });
+  }
+
+  // Subscribe to real-time notifications
+  onValue(ref(db, "notifications"), (snapshot) => {
+    const container = document.getElementById("notif-logs-container");
+    if (!container) return;
+
+    if (!snapshot.exists()) {
+      container.innerHTML = `<p class="text-xs text-slate-400 text-center py-12 font-semibold">No notifications found in network database.</p>`;
+      const badge = document.getElementById("notif-count-badge");
+      if (badge) badge.innerText = "0 Bulletins";
+      return;
+    }
+
+    const items: any[] = [];
+    snapshot.forEach((child) => {
+      items.push(child.val());
+    });
+
+    notificationsCache = items.sort((a, b) => b.timestamp - a.timestamp);
+
+    const badge = document.getElementById("notif-count-badge");
+    if (badge) badge.innerText = `${notificationsCache.length} Bulletins`;
+
+    container.innerHTML = notificationsCache.map((n) => {
+      const dateStr = new Date(n.timestamp).toLocaleString();
+      let catColor = "bg-teal-50 text-teal-800 border-teal-100";
+      if (n.category === "PROMOTIONAL") catColor = "bg-violet-50 text-violet-800 border-violet-100";
+      if (n.category === "MAINTENANCE") catColor = "bg-rose-50 text-rose-800 border-rose-100";
+
+      return `
+        <div class="py-3 flex items-start gap-4 text-xs font-semibold leading-relaxed border-b border-slate-50 last:border-none">
+          <div class="p-2 rounded-xl bg-slate-50 border shrink-0 text-slate-400 select-none">
+            <i class="fa-solid ${n.category === 'MAINTENANCE' ? 'fa-triangle-exclamation text-rose-500' : 'fa-bullhorn text-teal-500'}"></i>
+          </div>
+          <div class="flex-1 min-w-0 space-y-1">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <span class="font-extrabold text-slate-805 text-slate-900 truncate pr-2">${n.title}</span>
+              <span class="text-[9px] font-mono text-slate-400 select-none font-bold">${dateStr}</span>
+            </div>
+            <p class="text-slate-500 font-medium leading-relaxed font-sans text-[11px]">${n.message}</p>
+            <div class="flex items-center gap-1.5 select-none font-bold text-[9px] pt-1.5">
+              <span class="px-2 py-0.5 border rounded-md uppercase ${catColor}">${n.category}</span>
+              <span class="px-2 py-0.5 border border-slate-100 bg-slate-50 text-slate-500 rounded-md uppercase">${n.audience} Group</span>
+              <button onclick="deleteNotification('${n.notifId}')" class="text-rose-500 hover:scale-105 transition-all ml-auto font-black cursor-pointer bg-transparent border-none">
+                Delete Archive
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("");
+  });
+}
+
+function deleteNotification(id: string) {
+  if (confirm("Delete this notification record from history?")) {
+    remove(ref(db, `notifications/${id}`)).then(() => {
+      showToast("Notification archived cleared", "info");
+    });
+  }
+}
+
+function initReviewsComplaintsHub() {
+  const starBtns = document.querySelectorAll(".review-stars-btn");
+  starBtns.forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      starBtns.forEach((b) => b.classList.remove("active", "bg-slate-900", "text-white"));
+      const button = e.currentTarget as HTMLButtonElement;
+      button.classList.add("active", "bg-slate-900", "text-white");
+      activeReviewsStarFilter = button.getAttribute("data-stars") || "all";
+      renderGlobalReviews();
+    });
+  });
+
+  const searchInp = document.getElementById("reviews-search-input");
+  if (searchInp) {
+    searchInp.addEventListener("input", (e) => {
+      reviewsSearchQuery = (e.target as HTMLInputElement).value;
+      renderGlobalReviews();
+    });
+  }
+
+  // Tab switching
+  const tabReviews = document.getElementById("tab-btn-reviews");
+  const tabComplaints = document.getElementById("tab-btn-complaints");
+  const subviewReviews = document.getElementById("subview-reviews-container");
+  const subviewComplaints = document.getElementById("subview-complaints-container");
+
+  if (tabReviews && tabComplaints && subviewReviews && subviewComplaints) {
+    tabReviews.addEventListener("click", () => {
+      tabReviews.className = "px-3.5 py-1.5 rounded-lg text-xs font-bold bg-white text-indigo-700 shadow-sm cursor-pointer transition-all";
+      tabComplaints.className = "px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:text-slate-800 cursor-pointer transition-all";
+      subviewReviews.classList.remove("hidden");
+      subviewComplaints.classList.add("hidden");
+    });
+
+    tabComplaints.addEventListener("click", () => {
+      tabComplaints.className = "px-3.5 py-1.5 rounded-lg text-xs font-bold bg-white text-indigo-700 shadow-sm cursor-pointer transition-all";
+      tabReviews.className = "px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:text-slate-800 cursor-pointer transition-all";
+      subviewComplaints.classList.remove("hidden");
+      subviewReviews.classList.add("hidden");
+    });
+  }
+
+  // Subscribe to reviews
+  onValue(ref(db, "reviews"), (snapshot) => {
+    globalReviewsCache = [];
+    if (snapshot.exists()) {
+      snapshot.forEach((child) => {
+        const storeId = child.key;
+        if (storeId) {
+          child.forEach((reviewChild) => {
+            const rev = reviewChild.val();
+            if (rev) {
+              rev.storeId = storeId;
+              rev.reviewId = reviewChild.key;
+              globalReviewsCache.push(rev);
+            }
+          });
+        }
+      });
+    }
+    renderGlobalReviews();
+  });
+
+  // Subscribe to user complaints
+  onValue(ref(db, "complaints"), (snapshot) => {
+     complaintsCache = [];
+     if (snapshot.exists()) {
+       snapshot.forEach((child) => {
+         const comp = child.val();
+         if (comp) {
+           comp.complaintId = child.key;
+           complaintsCache.push(comp);
+         }
+       });
+     }
+     renderComplaintsTable();
+  });
+}
+
+function renderGlobalReviews() {
+  const container = document.getElementById("reviews-global-card-grid");
+  if (!container) return;
+
+  const query = reviewsSearchQuery.trim().toLowerCase();
+  const filtered = globalReviewsCache.filter((r) => {
+    if (activeReviewsStarFilter !== "all") {
+      const limit = parseInt(activeReviewsStarFilter);
+      if (r.rating !== limit) return false;
+    }
+    if (query) {
+      const matchText = `${r.comment} ${r.patientName} ${r.medicineName || ""}`.toLowerCase();
+      if (!matchText.includes(query)) return false;
+    }
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<p class="text-xs text-slate-400 text-center py-16 col-span-full">No matching customer reviews logs synced.</p>`;
+    return;
+  }
+
+  container.innerHTML = filtered.map((r) => {
+    const starsStr = "★".repeat(r.rating) + "☆".repeat(5 - r.rating);
+    const dateStr = r.timestamp ? new Date(r.timestamp).toLocaleDateString() : "Historical Log";
+    return `
+      <div class="bg-white p-4 border rounded-2xl shadow-xs space-y-3 relative hover:shadow-sm transition-all text-xs font-semibold">
+        <div class="flex items-center justify-between">
+          <span class="text-amber-500 font-bold select-none">${starsStr}</span>
+          <span class="text-[9px] font-mono font-bold text-slate-400">${dateStr}</span>
+        </div>
+        <p class="text-slate-700 leading-relaxed font-sans font-medium text-[11px]">"${r.comment || "No comment left"}"</p>
+        <div class="flex items-center justify-between border-t border-slate-50 pt-2 text-[10px] select-none font-bold">
+          <span class="text-slate-600 truncate max-w-[125px]"><i class="fa-solid fa-circle-user mr-1 text-slate-400 animate-pulse"></i>${r.patientName || "Anonymous Patient"}</span>
+          <button onclick="dismissReview('${r.storeId}', '${r.reviewId}')" class="text-rose-500 hover:scale-105 transition-all cursor-pointer bg-transparent border-none">
+            <i class="fa-regular fa-trash-can mr-1"></i>Dismiss
+          </button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function dismissReview(storeId: string, revId: string) {
+  if (confirm("Clinical Mandate: Permanently exclude this patient review comment from store feedback metrics?")) {
+    remove(ref(db, `reviews/${storeId}/${revId}`)).then(() => {
+      showToast("Review reference suppressed", "info");
+    });
+  }
+}
+
+function renderComplaintsTable() {
+  const tbody = document.getElementById("tbody-complaints-registry");
+  const countBadge = document.getElementById("complaints-badge-count");
+  if (!tbody) return;
+
+  const openTickets = complaintsCache.filter((c) => !c.resolved);
+  if (countBadge) countBadge.innerText = `${openTickets.length} Open Tickets`;
+
+  if (complaintsCache.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="p-12 text-center text-slate-400 font-medium">No customer dispute folders active.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = complaintsCache.map((c) => {
+    const dateStr = c.timestamp ? new Date(c.timestamp).toLocaleDateString() : "Today";
+    return `
+      <tr class="hover:bg-slate-50/50 transition-all text-xs font-semibold border-b border-slate-100 last:border-none">
+        <td class="px-5 py-4">
+          <p class="font-bold text-slate-900">${c.name || "Customer Ticket"}</p>
+          <p class="text-[10px] font-mono text-slate-400 font-bold break-all">${c.email || "support@rsmedshub.com"}</p>
+        </td>
+        <td class="px-5 py-4 font-mono text-slate-500 font-bold max-w-[110px] truncate">${c.orderId || "N/A"}</td>
+        <td class="px-5 py-4">
+          <p class="font-extrabold text-slate-800 leading-tight">${c.subject || "Dispute"}</p>
+          <p class="text-slate-500 mt-1 max-w-sm font-medium leading-relaxed font-sans text-[11px]">${c.description || "No dispute details filled"}</p>
+        </td>
+        <td class="px-5 py-4 font-semibold text-slate-600 select-none">${dateStr}</td>
+        <td class="px-5 py-4 select-none">
+          <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded ${c.resolved ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}">
+            ${c.resolved ? "Closed & Cleared" : "Open Dispute"}
+          </span>
+        </td>
+        <td class="px-5 py-4 text-right space-x-1">
+          ${!c.resolved ? `
+            <button onclick="resolveComplaint('${c.complaintId}')" class="text-[10px] font-black px-2.5 py-1 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 cursor-pointer border-none shadow-sm shadow-emerald-150">
+              Resolve
+            </button>
+          ` : ""}
+          <button onclick="deleteComplaint('${c.complaintId}')" class="text-[10px] font-bold px-2.5 py-1 bg-white text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
+            Purge Folder
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function resolveComplaint(id: string) {
+  update(ref(db, `complaints/${id}`), { resolved: true }).then(() => {
+    showToast("Complaint resolved & closed", "success");
+  });
+}
+
+function deleteComplaint(id: string) {
+  if (confirm("Delete this complaint log permanently from records?")) {
+    remove(ref(db, `complaints/${id}`)).then(() => {
+      showToast("Complaint archived purged", "info");
+    });
+  }
+}
+
+function initCloudinaryMediaHub() {
+  const fileInp = document.getElementById("cld-hub-file") as HTMLInputElement;
+  const progressBlock = document.getElementById("cld-hub-progress-block");
+  const progressBar = document.getElementById("cld-hub-progress-bar");
+  const successBlock = document.getElementById("cld-hub-success-block");
+  const successUrl = document.getElementById("cld-hub-success-url");
+
+  if (fileInp) {
+    fileInp.addEventListener("change", async (e: any) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      if (progressBlock) progressBlock.classList.remove("hidden");
+      if (successBlock) successBlock.classList.add("hidden");
+      if (progressBar) progressBar.style.width = "40%";
+
+      try {
+        const url = await uploadToCloudinary(file);
+        if (progressBar) progressBar.style.width = "100%";
+        setTimeout(() => {
+          if (progressBlock) progressBlock.classList.add("hidden");
+          if (successBlock) successBlock.classList.remove("hidden");
+          if (successUrl) successUrl.innerText = url;
+          // Clear file input value
+          fileInp.value = "";
+          showToast("Media assets securely injected into Cloudinary!", "success");
+        }, 500);
+      } catch (err) {
+        if (progressBlock) progressBlock.classList.add("hidden");
+        showToast("Asset upload failed.", "error");
+      }
+    });
+  }
+
+  // Real-time aggregate subscription
+  const aggregateAllMediaAssets = () => {
+    // 1. Marketing Banners
+    onValue(ref(db, "banners"), (snapshot) => {
+      const assets: any[] = [];
+      if (snapshot.exists()) {
+        snapshot.forEach((child) => {
+          const val = child.val();
+          if (val && val.url) {
+            assets.push({ id: child.key, label: "Marketing Banner Asset", url: val.url, category: "BANNER" });
+          }
+        });
+      }
+
+      // 2. Rider verification paperwork
+      onValue(ref(db, "deliveryboy1"), (riderSnap) => {
+        if (riderSnap.exists()) {
+          riderSnap.forEach((child) => {
+            const r = child.val();
+            if (r) {
+              if (r.aadhaarFrontUrl) assets.push({ id: `${child.key}_aadhaar_f`, label: `${r.name || "Rider"} Aadhaar Front`, url: r.aadhaarFrontUrl, category: "RIDER_DOC" });
+              if (r.aadhaarBackUrl) assets.push({ id: `${child.key}_aadhaar_b`, label: `${r.name || "Rider"} Aadhaar Back`, url: r.aadhaarBackUrl, category: "RIDER_DOC" });
+              if (r.dlUrl) assets.push({ id: `${child.key}_dl`, label: `${r.name || "Rider"} Driving License`, url: r.dlUrl, category: "RIDER_DOC" });
+              if (r.qrCodeUrl) assets.push({ id: `${child.key}_qr`, label: `${r.name || "Rider"} QR Payment Code`, url: r.qrCodeUrl, category: "FINANCE" });
+            }
+          });
+        }
+
+        // 3. Store licenses
+        onValue(ref(db, "stores"), (storeSnap) => {
+          if (storeSnap.exists()) {
+            storeSnap.forEach((child) => {
+              const s = child.val();
+              if (s) {
+                if (s.imageUrl) assets.push({ id: `${child.key}_avatar`, label: `${s.name || "Store"} Branch Image`, url: s.imageUrl, category: "STORE_LOGO" });
+                if (s.licenseImageUrl) assets.push({ id: `${child.key}_license`, label: `${s.name || "Store"} Drug License Copy`, url: s.licenseImageUrl, category: "STORE_LICENSE" });
+              }
+            });
+          }
+
+          mediaAssetsCache = assets;
+          renderCloudinaryAssets();
+        });
+      });
+    });
+  };
+
+  aggregateAllMediaAssets();
+}
+
+function renderCloudinaryAssets() {
+  const container = document.getElementById("cld-assets-grid");
+  const badge = document.getElementById("cld-assets-count-badge");
+  if (!container) return;
+
+  if (badge) badge.innerText = `${mediaAssetsCache.length} Assets`;
+
+  if (mediaAssetsCache.length === 0) {
+    container.innerHTML = `<p class="text-xs text-slate-400 text-center py-16 col-span-full">Synthesizing document database file streams...</p>`;
+    return;
+  }
+
+  container.innerHTML = mediaAssetsCache.map((a) => {
+    return `
+      <div class="bg-slate-50 p-2 border border-slate-150 rounded-xl flex flex-col space-y-2 select-none">
+        <div class="relative w-full h-24 rounded-lg overflow-hidden border border-slate-100 bg-white/50">
+          <img src="${a.url}" referrerPolicy="no-referrer" class="w-full h-full object-cover">
+          <span class="absolute top-1 left-1 px-1.5 py-0.5 bg-slate-900/85 text-white text-[8px] font-black tracking-wide rounded select-none uppercase">
+            ${a.category}
+          </span>
+        </div>
+        <div class="space-y-1 text-[10px] font-bold">
+          <p class="text-slate-800 leading-tight truncate" title="${a.label}">${a.label}</p>
+          <a href="${a.url}" target="_blank" class="text-indigo-500 hover:underline block text-[9px] truncate">${a.url}</a>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function initPlatformSettings() {
+  onValue(ref(db, "platform_settings"), (snapshot) => {
+    if (snapshot.exists()) {
+      const s = snapshot.val();
+      const nInp = document.getElementById("set-app-name") as HTMLInputElement;
+      if (nInp) nInp.value = s.appName || "RS Meds Hub Medicine Delivery Network";
+
+      const eInp = document.getElementById("set-email") as HTMLInputElement;
+      if (eInp) eInp.value = s.supportEmail || "support@rsmedshub.com";
+
+      const pInp = document.getElementById("set-phone") as HTMLInputElement;
+      if (pInp) pInp.value = s.supportPhone || "+91-9988776655";
+
+      const lInp = document.getElementById("set-logo") as HTMLInputElement;
+      if (lInp) lInp.value = s.brandLogoUrl || "";
+
+      const tTxt = document.getElementById("set-terms") as HTMLTextAreaElement;
+      if (tTxt) tTxt.value = s.clinicalTerms || "";
+
+      const prTxt = document.getElementById("set-privacy") as HTMLTextAreaElement;
+      if (prTxt) prTxt.value = s.privacyPolicy || "";
+
+      const autoTgl = document.getElementById("set-autosafeguard-toggle") as HTMLInputElement;
+      if (autoTgl) {
+        autoTgl.checked = s.inactivityEnabled || false;
+        inactivityEnabled = s.inactivityEnabled || false;
+      }
+
+      const autoLim = document.getElementById("set-autosafeguard-limit") as HTMLSelectElement;
+      if (autoLim) {
+        autoLim.value = s.inactivityLimitSeconds?.toString() || "300";
+        inactivityLimitSeconds = s.inactivityLimitSeconds || 300;
+      }
+    }
+  });
+
+  const saveSettings = () => {
+    const appName = (document.getElementById("set-app-name") as HTMLInputElement).value.trim();
+    const supportEmail = (document.getElementById("set-email") as HTMLInputElement).value.trim();
+    const supportPhone = (document.getElementById("set-phone") as HTMLInputElement).value.trim();
+    const brandLogoUrl = (document.getElementById("set-logo") as HTMLInputElement).value.trim();
+    const clinicalTerms = (document.getElementById("set-terms") as HTMLTextAreaElement).value.trim();
+    const privacyPolicy = (document.getElementById("set-privacy") as HTMLTextAreaElement).value.trim();
+    const activeToggle = (document.getElementById("set-autosafeguard-toggle") as HTMLInputElement).checked;
+    const limitSec = parseInt((document.getElementById("set-autosafeguard-limit") as HTMLSelectElement).value);
+
+    const payload = {
+      appName,
+      supportEmail,
+      supportPhone,
+      brandLogoUrl,
+      clinicalTerms,
+      privacyPolicy,
+      inactivityEnabled: activeToggle,
+      inactivityLimitSeconds: limitSec
+    };
+
+    set(ref(db, "platform_settings"), payload).then(() => {
+      showToast("Platform custom constraints updated safely inside DB!", "success");
+    }).catch(() => {
+      showToast("Identity sync failed", "error");
+    });
+  };
+
+  const saveBtn = document.getElementById("btn-save-settings-top");
+  if (saveBtn) saveBtn.addEventListener("click", () => saveSettings());
+
+  const settingsForm = document.getElementById("form-platform-settings");
+  if (settingsForm) {
+    settingsForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      saveSettings();
+    });
+  }
+
+  const logoFileInp = document.getElementById("set-logo-file");
+  if (logoFileInp) {
+    logoFileInp.addEventListener("change", async (e: any) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      showToast("Inoculating brand asset...", "info");
+      try {
+        const url = await uploadToCloudinary(file);
+        const lInp = document.getElementById("set-logo") as HTMLInputElement;
+        if (lInp) lInp.value = url;
+        showToast("Brand logo updated!", "success");
+      } catch (err) {
+        showToast("Logo injection aborted", "error");
+      }
+    });
+  }
+
+  const checkActivity = () => {
+    if (!inactivityEnabled) return;
+    const idleSeconds = Math.floor((Date.now() - lastUserActivityTime) / 1000);
+    if (idleSeconds >= inactivityLimitSeconds) {
+       showToast("Guard Triggered: Admin idle for security threshold.", "error");
+       signOut(auth).then(() => {
+         window.location.reload();
+       });
+    }
+  };
+
+  setInterval(checkActivity, 5000);
+
+  ["click", "mousemove", "keypress", "scroll", "touchstart"].forEach((evt) => {
+    window.addEventListener(evt, () => {
+      lastUserActivityTime = Date.now();
+    });
+  });
+}
+
+// Window bindings helper
+Object.assign(window, {
+  smcSelectStore,
+  closeSmcEditModal,
+  smcFocusDeliveryRoute,
+  closeUserDetailsInspectModal,
+  inspectPatientDossier,
+  deleteNotification,
+  dismissReview,
+  resolveComplaint,
+  deleteComplaint,
   smcDeleteMedicine(medId: string) {
     if (confirm("Clinical Mandate: Permanently remove this medicine on behalf of the store?")) {
       remove(ref(db, `medicines/${medId}`)).then(() => {
