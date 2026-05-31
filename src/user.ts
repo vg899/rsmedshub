@@ -714,6 +714,102 @@ Object.assign(window, {
     selectedAddressDetail = { address: formatted, lat, lng };
     addrSuggestions.classList.add("hidden");
     showToast("Destination marked successfully", "success");
+  },
+  setManualCoordinates(formatted: string, lat: number, lng: number, city?: string, state?: string) {
+    currentCoordinates = {
+      lat,
+      lng,
+      address: formatted,
+      city: city || formatted.split(",")[0] || "Gonda",
+      state: state || "Uttar Pradesh"
+    };
+
+    const cityBadge = document.getElementById("loc-city-txt")!;
+    if (cityBadge) {
+      cityBadge.innerText = currentCoordinates.city || "Gonda";
+    }
+    if (addrInput) {
+      addrInput.value = formatted;
+    }
+    
+    // Clear searched inputs & suggestion layers
+    const locSearchInput = document.getElementById("location-search-input") as HTMLInputElement;
+    const locSuggestions = document.getElementById("location-suggestions-container") as HTMLDivElement;
+    if (locSearchInput) locSearchInput.value = "";
+    if (locSuggestions) locSuggestions.classList.add("hidden");
+
+    renderPharmacySlider();
+    showToast(`Location updated to ${cityBadge?.innerText || "chosen city"}!`, "success");
+    const locPickerDrawer = document.getElementById("location-picker-drawer") as HTMLDivElement;
+    if (locPickerDrawer) locPickerDrawer.classList.add("hidden");
+  }
+});
+
+// Setup event listeners for Location Picker Drawer helper elements
+const locPickerDrawer = document.getElementById("location-picker-drawer") as HTMLDivElement;
+const btnLocCapsule = document.getElementById("btn-location-capsule") as HTMLButtonElement;
+const btnCloseLocDrawer = document.getElementById("btn-close-location-drawer") as HTMLButtonElement;
+const locSearchInput = document.getElementById("location-search-input") as HTMLInputElement;
+const locSuggestions = document.getElementById("location-suggestions-container") as HTMLDivElement;
+const btnGPSDetectDrawer = document.getElementById("btn-gps-detect-drawer") as HTMLButtonElement;
+
+btnLocCapsule?.addEventListener("click", () => {
+  locPickerDrawer?.classList.remove("hidden");
+});
+
+btnCloseLocDrawer?.addEventListener("click", () => {
+  locPickerDrawer?.classList.add("hidden");
+});
+
+locSearchInput?.addEventListener("input", async (e) => {
+  const query = (e.target as HTMLInputElement).value;
+  if (query.trim().length < 3) {
+    locSuggestions.classList.add("hidden");
+    return;
+  }
+
+  const features = await searchAddress(query);
+  if (features.length === 0) {
+    locSuggestions.classList.add("hidden");
+    return;
+  }
+
+  locSuggestions.innerHTML = features.map((f: any) => {
+    return `
+      <button onclick="setManualCoordinates('${f.properties.formatted.replace(/'/g, "\\'")}', ${f.geometry.coordinates[1]}, ${f.geometry.coordinates[0]}, '', '')" class="w-full text-left p-2.5 text-[10px] font-semibold text-slate-600 hover:bg-slate-50 transition-all cursor-pointer truncate">
+        <i class="fa-solid fa-map-pin mr-1.5 text-teal-500"></i> ${f.properties.formatted}
+      </button>
+    `;
+  }).join("");
+
+  locSuggestions.classList.remove("hidden");
+});
+
+btnGPSDetectDrawer?.addEventListener("click", async () => {
+  const originalHtml = btnGPSDetectDrawer.innerHTML;
+  btnGPSDetectDrawer.disabled = true;
+  btnGPSDetectDrawer.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Detecting...`;
+  showToast("Requerying GPS...", "info");
+  try {
+    const loc = await getCurrentGPS();
+    if (loc.address) {
+      currentCoordinates = loc;
+      const cityBadge = document.getElementById("loc-city-txt")!;
+      if (cityBadge) {
+        cityBadge.innerText = loc.city || loc.address.split(",")[0] || "Bengaluru";
+      }
+      if (addrInput) {
+        addrInput.value = loc.address;
+      }
+      renderPharmacySlider();
+      showToast(`Location updated: ${cityBadge.innerText}`, "success");
+      locPickerDrawer?.classList.add("hidden");
+    }
+  } catch (error) {
+    showToast("Failed to detect GPS location automatically. Please choose from list or search.", "error");
+  } finally {
+    btnGPSDetectDrawer.disabled = false;
+    btnGPSDetectDrawer.innerHTML = originalHtml;
   }
 });
 
