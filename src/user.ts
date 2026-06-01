@@ -13,6 +13,13 @@ let searchQuery = "";
 let activeOrderTrackingId = "";
 let trackingRiderInterval: any = null;
 
+// Category Storefront State trackers
+let currentCategoriesList: any[] = [];
+let activeStorefrontCategory: any = null;
+let categorySearchQuery = "";
+let categorySortOption = "popular";
+let categoryStoreFilter = "all";
+
 // Default Global pricing config (loads dynamically later)
 let charges = {
   deliveryCharge: 40,
@@ -673,52 +680,362 @@ const categoryIcons: { [key: string]: string } = {
   "RESPIRATORY": "fa-lungs"
 };
 
+function getMedicineCountForCategory(categoryName: string): number {
+  if (categoryName === "All") return allMedicines.length;
+  return allMedicines.filter(m => m.category === categoryName).length;
+}
+
 function renderDynamicCategoriesList(categories: any[]) {
-  const container = document.getElementById("categories-container-grid");
-  if (!container) return;
+  currentCategoriesList = categories;
 
-  const sorted = [...categories].sort((a, b) => {
-    if (a.code === "ALL") return -1;
-    if (b.code === "ALL") return 1;
-    return (a.name || "").localeCompare(b.name || "");
-  });
+  // Filter active and sort alphabetically
+  const activeCategories = [...categories].filter(c => c.active !== false);
+  const sorted = activeCategories.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
 
-  container.innerHTML = sorted.map(it => {
-    const icon = categoryIcons[it.code] || "fa-prescription-bottle-medical";
-    const mappedVal = it.code === "ALL" ? "All" : it.name;
-    const isActive = activeCategory === mappedVal;
-    const activeStylingClass = isActive 
-      ? "border-emerald-500 bg-emerald-50/20 ring-2 ring-emerald-500/20" 
-      : "border-slate-100 bg-white";
+  // 1. HORIZONTAL CATEGORY SLIDER (Circles style matching Blinkit / Instamart)
+  const sliderEl = document.getElementById("category-horizontal-slider");
+  if (sliderEl) {
+    if (sorted.length === 0) {
+      sliderEl.innerHTML = `<div class="py-2 text-[10px] text-slate-400 font-bold w-full">No active categories.</div>`;
+    } else {
+      sliderEl.innerHTML = sorted.map(it => {
+        const imageUrl = it.imageUrl || `https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=150&auto=format&fit=crop&q=60`;
+        const count = getMedicineCountForCategory(it.name);
+        return `
+          <button class="category-slider-btn shrink-0 flex flex-col items-center justify-center text-center cursor-pointer focus:outline-none transition-all hover:scale-105" data-category="${it.name}">
+            <div class="w-13 h-13 rounded-full overflow-hidden flex items-center justify-center bg-white shadow-3xs border border-slate-100 p-0.5">
+              <img src="${imageUrl}" class="w-full h-full object-cover rounded-full" referrerpolicy="no-referrer" alt="${it.name}">
+            </div>
+            <span class="text-[8.5px] font-black text-slate-700 leading-tight mt-1.5 max-w-[62px] truncate uppercase font-sans" title="${it.name}">${it.name}</span>
+            <span class="text-[7.5px] text-slate-400 font-extrabold mt-0.5 font-mono">${count} Meds</span>
+          </button>
+        `;
+      }).join("");
+    }
+  }
 
-    return `
-      <button class="cat-badge-btn group flex flex-col items-center justify-center p-2 rounded-2xl border transition-all cursor-pointer focus:outline-none ${activeStylingClass}" data-category="${mappedVal}">
-        <div class="w-8 h-8 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center mb-1 group-hover:scale-110 transition-all shrink-0">
-          <i class="fa-solid ${icon} text-xs"></i>
-        </div>
-        <span class="text-[7.5px] font-black text-slate-700 uppercase tracking-tight text-center truncate w-full" title="${it.name}">${it.name}</span>
-      </button>
-    `;
-  }).join("");
+  // 2. FEATURED GRID (Bento grid style matching Swiggy Instamart)
+  const featuredGridEl = document.getElementById("categories-featured-grid");
+  if (featuredGridEl) {
+    let featuredList = sorted.filter(c => c.featured === true || c.featured === "yes");
+    if (featuredList.length === 0) {
+      featuredList = sorted.slice(0, 4);
+    }
+    
+    if (featuredList.length === 0) {
+      featuredGridEl.innerHTML = `<div class="col-span-2 py-2 text-[10px] text-slate-400 font-bold">No featured categories.</div>`;
+    } else {
+      featuredGridEl.innerHTML = featuredList.map(it => {
+        const imageUrl = it.imageUrl || `https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300&auto=format&fit=crop&q=80`;
+        const count = getMedicineCountForCategory(it.name);
+        return `
+          <div class="category-grid-card relative rounded-2xl overflow-hidden shadow-3xs bg-white border border-slate-100 hover:border-amber-300 transition-all hover:shadow-xs aspect-[1.38/1] flex flex-col justify-end group cursor-pointer" data-category="${it.name}">
+            <img src="${imageUrl}" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-all duration-300" referrerpolicy="no-referrer" alt="${it.name}">
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/10 to-transparent"></div>
+            
+            <span class="absolute top-2 right-2 bg-amber-500 text-white text-[7px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider leading-none shadow-3xs">Featured</span>
+            
+            <div class="p-2.5 relative z-10 text-left">
+              <h4 class="text-[10px] font-black text-white uppercase tracking-wider leading-none drop-shadow-md font-display">${it.name}</h4>
+              <p class="text-[7.5px] text-amber-300 font-black flex items-center gap-1 mt-1 leading-none font-mono">
+                <i class="fa-solid fa-capsules text-[6px]"></i> ${count} Meds
+              </p>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+  }
 
-  document.querySelectorAll(".cat-badge-btn").forEach((btn) => {
+  // 3. TRENDING TRACK (Hot sliders style matching Apollo Pharmacy)
+  const trendingGridEl = document.getElementById("category-trending-slider");
+  if (trendingGridEl) {
+    let trendingList = sorted.filter(c => c.trending === true || c.trending === "yes");
+    if (trendingList.length === 0) {
+      trendingList = sorted.slice(2, 7);
+    }
+    
+    if (trendingList.length === 0) {
+      trendingGridEl.innerHTML = `<div class="py-2 text-[10px] text-slate-400 font-bold w-full">No trending categories.</div>`;
+    } else {
+      trendingGridEl.innerHTML = trendingList.map(it => {
+        const imageUrl = it.imageUrl || `https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300&auto=format&fit=crop&q=80`;
+        const count = getMedicineCountForCategory(it.name);
+        return `
+          <div class="category-grid-card shrink-0 w-32 rounded-2xl overflow-hidden bg-white border border-slate-100 hover:border-rose-300 shadow-3xs hover:shadow-xs relative aspect-[1.38/1] flex flex-col justify-end group cursor-pointer hover:scale-103 transition-all" data-category="${it.name}">
+            <img src="${imageUrl}" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-all duration-300" referrerpolicy="no-referrer" alt="${it.name}">
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent"></div>
+            
+            <span class="absolute top-2 left-2 bg-rose-600 text-white text-[6.5px] font-black px-1 py-0.5 rounded-sm uppercase tracking-wider leading-none shadow-3xs flex items-center gap-0.5">
+              <i class="fa-solid fa-fire text-[6px]"></i> HOT
+            </span>
+            
+            <div class="p-2 relative z-10 text-left">
+              <h5 class="text-[9.5px] font-black text-white uppercase tracking-wider leading-tight">${it.name}</h5>
+              <p class="text-[7px] text-rose-300 font-black mt-0.5 uppercase tracking-wide leading-none font-mono">${count} items</p>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+  }
+
+  // Register interactive click handlers for Category clicks across all sections!
+  document.querySelectorAll(".category-slider-btn, .category-grid-card").forEach((btn) => {
     btn.addEventListener("click", (e) => {
-      const target = e.currentTarget as HTMLButtonElement;
-      activeCategory = target.getAttribute("data-category")!;
-      
-      document.querySelectorAll(".cat-badge-btn").forEach((b) => {
-        b.classList.remove("border-emerald-500", "bg-emerald-50/20", "ring-2", "ring-emerald-500/20");
-        b.classList.add("border-slate-100", "bg-white");
-      });
-      
-      target.classList.remove("border-slate-100", "bg-white");
-      target.classList.add("border-emerald-500", "bg-emerald-50/20", "ring-2", "ring-emerald-500/20");
-
-      renderMedicinesGrid();
-      triggerAISuggestion();
+      const target = e.currentTarget as HTMLElement;
+      const catName = target.getAttribute("data-category");
+      if (catName) {
+        openCategoryStorefront(catName);
+      }
     });
   });
 }
+
+function openCategoryStorefront(categoryName: string) {
+  const cat = currentCategoriesList.find(c => c.name === categoryName);
+  activeStorefrontCategory = cat || {
+    name: categoryName,
+    imageUrl: `https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=500&auto=format&fit=crop&q=80`,
+    bannerUrl: `https://images.unsplash.com/photo-1471864190281-a93a3070b6de?w=600&auto=format&fit=crop&q=80`,
+    code: categoryName.toUpperCase().replace(/[^A-Z0-9]/g, "_")
+  };
+  
+  categorySearchQuery = "";
+  categorySortOption = "popular";
+  categoryStoreFilter = "all";
+  
+  const searchInp = document.getElementById("category-search-input") as HTMLInputElement;
+  if (searchInp) searchInp.value = "";
+  
+  const sortSel = document.getElementById("category-sort-select") as HTMLSelectElement;
+  if (sortSel) sortSel.value = "popular";
+  
+  const storeSel = document.getElementById("category-store-filter-select") as HTMLSelectElement;
+  if (storeSel) storeSel.value = "all";
+  
+  const storefrontEl = document.getElementById("category-storefront-view");
+  if (storefrontEl) {
+    storefrontEl.classList.remove("hidden");
+    setTimeout(() => {
+      storefrontEl.classList.remove("translate-y-full");
+      storefrontEl.classList.add("translate-y-0");
+    }, 15);
+  }
+  
+  updateCategoryStorefrontDetails();
+  bindCategoryStorefrontControls();
+}
+
+function closeCategoryStorefront() {
+  const storefrontEl = document.getElementById("category-storefront-view");
+  if (storefrontEl) {
+    storefrontEl.classList.remove("translate-y-0");
+    storefrontEl.classList.add("translate-y-full");
+    setTimeout(() => {
+      storefrontEl.classList.add("hidden");
+    }, 350);
+  }
+}
+
+function updateCategoryStorefrontDetails() {
+  if (!activeStorefrontCategory) return;
+  
+  const bannerContainer = document.getElementById("category-banner-container")!;
+  const titleContainer = document.getElementById("category-storefront-title")!;
+  const badgeContainer = document.getElementById("category-storefront-badge")!;
+  
+  if (bannerContainer) {
+    const finalBanner = activeStorefrontCategory.bannerUrl || `https://images.unsplash.com/photo-1471864190281-a93a3070b6de?w=600&auto=format&fit=crop&q=80`;
+    bannerContainer.style.backgroundImage = `url('${finalBanner}')`;
+    bannerContainer.style.backgroundSize = "cover";
+    bannerContainer.style.backgroundPosition = "center";
+  }
+  
+  if (titleContainer) {
+    titleContainer.innerText = activeStorefrontCategory.name;
+  }
+  
+  if (badgeContainer) {
+    badgeContainer.innerText = activeStorefrontCategory.featured === true || activeStorefrontCategory.featured === "yes" ? "Trending Collection" : "Apollo Pharmacy Verified";
+  }
+
+  // Gather active delivery pharmacies
+  const storesWithinRadiusIds = new Set(allStores.filter((s) => {
+    if (!s.location || !currentCoordinates) return false;
+    const dist = calculateDistance(currentCoordinates.lat, currentCoordinates.lng, s.location.lat, s.location.lng);
+    return dist <= currentDeliveryRadius;
+  }).map(s => s.storeId));
+
+  // Matched category medicines list
+  let matchedList = allMedicines.filter((m) => {
+    if (m.category !== activeStorefrontCategory.name) return false;
+    if (currentCoordinates && !storesWithinRadiusIds.has(m.storeId)) return false;
+    if (categoryStoreFilter !== "all" && m.storeId !== categoryStoreFilter) return false;
+    
+    if (categorySearchQuery !== "") {
+      const q = categorySearchQuery.toLowerCase();
+      const nLower = (m.name || "").toLowerCase();
+      const dLower = (m.description || "").toLowerCase();
+      if (!nLower.includes(q) && !dLower.includes(q)) return false;
+    }
+    
+    return true;
+  });
+
+  // Sort
+  if (categorySortOption === "price-low") {
+    matchedList.sort((a, b) => Number(a.price || 0) - Number(b.price || 0));
+  } else if (categorySortOption === "price-high") {
+    matchedList.sort((a, b) => Number(b.price || 0) - Number(a.price || 0));
+  } else {
+    // Sort by rating / default
+    matchedList.sort((a, b) => Number(b.rating || 4.2) - Number(a.rating || 4.2));
+  }
+
+  // Update lists
+  const cntContainer = document.getElementById("category-storefront-cnt");
+  if (cntContainer) {
+    cntContainer.innerText = `${matchedList.length} meds found`;
+  }
+
+  const listContainer = document.getElementById("category-medicines-list-container");
+  if (listContainer) {
+    if (matchedList.length === 0) {
+      listContainer.innerHTML = `
+        <div class="text-center py-12 text-slate-400 bg-white border border-slate-100 rounded-3xl p-6 shadow-3xs animate-fade-in w-full">
+          <i class="fa-solid fa-box-open text-3xl text-slate-300 mb-2"></i>
+          <p class="text-xs font-black text-slate-700">No matching medications</p>
+          <p class="text-[10px] text-slate-400 font-semibold mt-1">We couldn't locate medicine stock matching selections here inside your radius.</p>
+        </div>
+      `;
+    } else {
+      listContainer.innerHTML = matchedList.map((m) => {
+        const qtyInCart = cartItems[m.medicineId]?.qty || 0;
+        const isFav = profileData && profileData.favorites && profileData.favorites[m.medicineId] ? true : false;
+        
+        const storeObj = allStores.find(st => st.id === m.storeId || st.storeId === m.storeId);
+        const storeName = storeObj ? storeObj.name : "Local Pharmacy";
+        
+        return `
+          <div class="bg-white rounded-2xl border border-slate-150 p-3 shadow-3xs hover:shadow-2xs transition-all relative flex flex-col gap-3 font-sans w-full select-none">
+            <button onclick="toggleFavoriteItem('${m.medicineId}')" class="absolute top-2.5 right-2.5 w-7 h-7 bg-white hover:bg-slate-50 text-slate-400 hover:text-rose-500 rounded-full flex items-center justify-center border border-slate-100 transition-all cursor-pointer z-10 shadow-3xs focus:outline-none">
+              <i class="${isFav ? 'fa-solid fa-heart text-rose-500' : 'fa-regular fa-heart'} text-xs"></i>
+            </button>
+            
+            <div class="flex gap-3 text-left">
+              <img class="w-16 h-16 rounded-xl object-cover cursor-pointer border border-slate-100 shrink-0 select-none shadow-3xs" src="${m.image || "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300"}" referrerpolicy="no-referrer" alt="${m.name}" onclick="openProductDetailDrawer('${m.medicineId}')">
+              <div class="flex-1 min-w-0 flex flex-col justify-between">
+                <div class="cursor-pointer text-left" onclick="openProductDetailDrawer('${m.medicineId}')">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="text-[7.5px] font-black uppercase text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded tracking-wider leading-none">${m.category || "General"}</span>
+                    ${m.prescriptionRequired ? `<span class="text-[7px] font-black uppercase text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded tracking-wider flex items-center gap-0.5 leading-none"><i class="fa-solid fa-file-prescription"></i> Rx needed</span>` : ""}
+                  </div>
+                  <h4 class="font-extrabold text-slate-900 text-[11px] truncate leading-tight tracking-tight mt-1.5 font-display">${m.name}</h4>
+                  <p class="text-[9px] text-slate-450 text-slate-400 truncate mt-0.5" title="${m.description}">${m.description || "Certified medicinal drug formula"}</p>
+                  
+                  <div class="flex items-center gap-1 mt-1.5 text-[8.5px] font-black text-indigo-700 bg-indigo-50/50 border border-indigo-100 rounded px-1.5 py-0.5 w-max">
+                    <i class="fa-solid fa-prescription-bottle-medical text-[7.5px] text-indigo-500"></i> ${storeName}
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="flex items-center justify-between border-t border-slate-100 pt-2 px-0.5 mt-0.5">
+              <div class="flex flex-col text-left">
+                <span class="text-[8px] text-slate-400 uppercase font-black tracking-wide leading-none select-none">Apollo Pharmacy Discounted</span>
+                <span class="font-black text-slate-900 text-[13px] font-mono tracking-tight text-blue-600 mt-1">₹${m.price}</span>
+              </div>
+              
+              ${qtyInCart > 0 ? `
+                <div class="flex items-center gap-3 bg-blue-605 bg-blue-600 text-white rounded-xl px-3 py-1.5 text-[10px] font-black shadow-3xs font-mono border-none">
+                  <button onclick="updateCartItemQtyAndRefresh('${m.medicineId}', -1)" class="cursor-pointer hover:opacity-85 px-0.5 border-none bg-transparent text-white outline-none"><i class="fa-solid fa-minus text-[7.5px]"></i></button>
+                  <span class="min-w-[10px] text-center select-none font-bold">${qtyInCart}</span>
+                  <button onclick="updateCartItemQtyAndRefresh('${m.medicineId}', 1)" class="cursor-pointer hover:opacity-85 px-0.5 border-none bg-transparent text-white outline-none"><i class="fa-solid fa-plus text-[7.5px]"></i></button>
+                </div>
+              ` : `
+                <button onclick="addMedicineAndReloadStorefront('${m.medicineId}')" class="bg-blue-605 bg-blue-600 hover:bg-blue-700 text-white text-[8px] font-black py-1.5 px-3 rounded-xl hover:shadow-xs transition-any cursor-pointer uppercase tracking-wider flex items-center gap-1 border-none font-sans">
+                  Add <i class="fa-solid fa-plus text-[7px]"></i>
+                </button>
+              `}
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+  }
+
+  // Populate Store filter options
+  const filterSelect = document.getElementById("category-store-filter-select") as HTMLSelectElement;
+  if (filterSelect) {
+    const relativeMedicines = allMedicines.filter(m => m.category === activeStorefrontCategory.name);
+    const uniqueStoreIds = [...new Set(relativeMedicines.map(m => m.storeId))].filter(Boolean);
+    
+    let opts = `<option value="all">All Pharmacies</option>`;
+    uniqueStoreIds.forEach(sid => {
+      const s = allStores.find(store => store.id === sid || store.storeId === sid);
+      if (s) {
+        opts += `<option value="${sid}">${s.name}</option>`;
+      }
+    });
+    filterSelect.innerHTML = opts;
+    filterSelect.value = categoryStoreFilter;
+  }
+}
+
+function bindCategoryStorefrontControls() {
+  const searchInp = document.getElementById("category-search-input");
+  if (searchInp) {
+    searchInp.replaceWith(searchInp.cloneNode(true)); // eliminate duplicate bindings
+    document.getElementById("category-search-input")!.addEventListener("input", (e) => {
+      categorySearchQuery = (e.target as HTMLInputElement).value.trim();
+      updateCategoryStorefrontDetails();
+    });
+  }
+
+  const sortSel = document.getElementById("category-sort-select");
+  if (sortSel) {
+    sortSel.replaceWith(sortSel.cloneNode(true));
+    document.getElementById("category-sort-select")!.addEventListener("change", (e) => {
+      categorySortOption = (e.target as HTMLSelectElement).value;
+      updateCategoryStorefrontDetails();
+    });
+  }
+
+  const storeSel = document.getElementById("category-store-filter-select");
+  if (storeSel) {
+    storeSel.replaceWith(storeSel.cloneNode(true));
+    document.getElementById("category-store-filter-select")!.addEventListener("change", (e) => {
+      categoryStoreFilter = (e.target as HTMLSelectElement).value;
+      updateCategoryStorefrontDetails();
+    });
+  }
+
+  const closeBtn = document.getElementById("btn-close-category-storefront");
+  if (closeBtn) {
+    closeBtn.replaceWith(closeBtn.cloneNode(true));
+    document.getElementById("btn-close-category-storefront")!.addEventListener("click", () => {
+      closeCategoryStorefront();
+    });
+  }
+}
+
+// Attach these clean helpers to the window namespace
+Object.assign(window, {
+  openCategoryStorefront,
+  closeCategoryStorefront,
+  addMedicineAndReloadStorefront(id: string) {
+    (window as any).addMedicineToCart(id);
+    updateCategoryStorefrontDetails();
+  },
+  updateCartItemQtyAndRefresh(id: string, delta: number) {
+    (window as any).updateCartItemQty(id, delta);
+    updateCategoryStorefrontDetails();
+  },
+  refreshCategoryStorefront() {
+    updateCategoryStorefrontDetails();
+  }
+});
 
 // Search input keyword tracking
 document.getElementById("search-medicine-input")?.addEventListener("input", (e) => {

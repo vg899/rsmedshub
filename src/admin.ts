@@ -1599,42 +1599,82 @@ let allCategoriesList: any[] = [];
 let categorySearchQuery = "";
 let categoryEditModeCode: string | null = null;
 
+function getCategoryPlaceholderImage(name: string): string {
+  const n = name.toLowerCase();
+  if (n.includes("fever") || n.includes("paracetamol")) return "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300";
+  if (n.includes("diabetes") || n.includes("sugar")) return "https://images.unsplash.com/photo-1507413245164-6160d8298b31?w=300";
+  if (n.includes("heart") || n.includes("cardio")) return "https://images.unsplash.com/photo-1559757175-5700dde675bc?w=300";
+  if (n.includes("blood") || n.includes("bp") || n.includes("hypertension")) return "https://images.unsplash.com/photo-1603398938378-e54eab446dde?w=300";
+  if (n.includes("vitamin") || n.includes("supplement") || n.includes("nutrition")) return "https://images.unsplash.com/photo-1616671285410-b98687720760?w=300";
+  if (n.includes("skin") || n.includes("hair") || n.includes("beauty")) return "https://images.unsplash.com/photo-1556228515-3198555418b6?w=300";
+  if (n.includes("baby") || n.includes("child")) return "https://images.unsplash.com/photo-1515488042361-404e9250afef?w=300";
+  if (n.includes("ayurveda") || n.includes("herbal")) return "https://images.unsplash.com/photo-1611082231993-f3741d740c0b?w=300";
+  if (n.includes("device") || n.includes("oximeter") || n.includes("thermometer")) return "https://images.unsplash.com/photo-1542736667-069246bdbc6d?w=300";
+  return "https://images.unsplash.com/photo-1584017911766-d451b3d0e843?w=300";
+}
+
+function getCategoryPlaceholderBanner(name: string): string {
+  const n = name.toLowerCase();
+  if (n.includes("fever")) return "https://images.unsplash.com/photo-1628771065518-0d82f111818d?w=800";
+  if (n.includes("diabetes")) return "https://images.unsplash.com/photo-1530026405186-ed1ea0ac7a63?w=800";
+  if (n.includes("heart") || n.includes("blood") || n.includes("bp")) return "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800";
+  if (n.includes("vitamin") || n.includes("supplement") || n.includes("nutrition") || n.includes("immunity")) return "https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?w=800";
+  if (n.includes("baby") || n.includes("child")) return "https://images.unsplash.com/photo-1515488042361-404e9250afef?w=800";
+  if (n.includes("ayurveda") || n.includes("herbal")) return "https://images.unsplash.com/photo-1611082231993-f3741d740c0b?w=800";
+  if (n.includes("device") || n.includes("oximeter")) return "https://images.unsplash.com/photo-1542736667-069246bdbc6d?w=800";
+  return "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800";
+}
+
+function autoProvisionCategoryIfNeeded(categoryName: string) {
+  if (!categoryName) return;
+  const name = categoryName.trim();
+  if (name === "" || name.toUpperCase() === "ALL") return;
+  
+  const code = name.toUpperCase().replace(/[^A-Z0-9_]/g, "_");
+  
+  const exists = allCategoriesList.some(c => c.code === code);
+  if (!exists) {
+    get(ref(db, `categories/${code}`)).then((snap) => {
+      if (!snap.exists()) {
+        const payload = {
+          code,
+          name,
+          active: true,
+          imageUrl: getCategoryPlaceholderImage(name),
+          bannerUrl: getCategoryPlaceholderBanner(name),
+          featured: true,
+          trending: false
+        };
+        set(ref(db, `categories/${code}`), payload).then(() => {
+          console.log(`Auto created category ${name} (code: ${code})`);
+        });
+      }
+    });
+  }
+}
+
 function checkAndPreloadCategories() {
   get(ref(db, "categories")).then((snapshot) => {
     if (!snapshot.exists()) {
       const defaultCategories = {
-        "ALL": { code: "ALL", name: "All Medicines", active: true },
-        "DIABETES": { code: "DIABETES", name: "Diabetes Care", active: true },
-        "HEART": { code: "HEART", name: "Heart Care", active: true },
-        "BP": { code: "BP", name: "Blood Pressure", active: true },
-        "ALLERGY": { code: "ALLERGY", name: "Allergy Relief", active: true },
-        "COLD_FLU": { code: "COLD_FLU", name: "Cold & Flu", active: true },
-        "FEVER": { code: "FEVER", name: "Fever Medicines", active: true },
-        "PAIN": { code: "PAIN", name: "Pain Relief", active: true },
-        "STOMACH": { code: "STOMACH", name: "Stomach Care", active: true },
-        "DIGESTION": { code: "DIGESTION", name: "Digestion", active: true },
-        "VITAMINS": { code: "VITAMINS", name: "Vitamins & Supplements", active: true },
-        "IMMUNITY": { code: "IMMUNITY", name: "Immunity Boosters", active: true },
-        "BABY_CARE": { code: "BABY_CARE", name: "Baby Care", active: true },
-        "WOMEN_CARE": { code: "WOMEN_CARE", name: "Women's Care", active: true },
-        "MEN_CARE": { code: "MEN_CARE", name: "Men's Care", active: true },
-        "SENIOR_CARE": { code: "SENIOR_CARE", name: "Senior Citizen Care", active: true },
-        "SKIN_CARE": { code: "SKIN_CARE", name: "Skin Care", active: true },
-        "HAIR_CARE": { code: "HAIR_CARE", name: "Hair Care", active: true },
-        "EYE_CARE": { code: "EYE_CARE", name: "Eye Care", active: true },
-        "DENTAL": { code: "DENTAL", name: "Dental Care", active: true },
-        "PERSONAL_CARE": { code: "PERSONAL_CARE", name: "Personal Care", active: true },
-        "FIRST_AID": { code: "FIRST_AID", name: "First Aid", active: true },
-        "MEDICAL_DEVICES": { code: "MEDICAL_DEVICES", name: "Medical Devices", active: true },
-        "AYURVEDA": { code: "AYURVEDA", name: "Ayurveda", active: true },
-        "HOMEOPATHY": { code: "HOMEOPATHY", name: "Homeopathy", active: true },
-        "NUTRITION": { code: "NUTRITION", name: "Nutrition", active: true },
-        "FITNESS": { code: "FITNESS", name: "Fitness & Wellness", active: true },
-        "ORTHOPEDIC": { code: "ORTHOPEDIC", name: "Orthopedic Care", active: true },
-        "RESPIRATORY": { code: "RESPIRATORY", name: "Respiratory Care", active: true }
+        "ALL": { code: "ALL", name: "All Medicines", active: true, imageUrl: "https://images.unsplash.com/photo-1584017911756-d451b3d0e843?w=300", bannerUrl: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800", featured: true, trending: false },
+        "DIABETES": { code: "DIABETES", name: "Diabetes Care", active: true, imageUrl: "https://images.unsplash.com/photo-1507413245164-6160d8298b31?w=300", bannerUrl: "https://images.unsplash.com/photo-1530026405186-ed1ea0ac7a63?w=800", featured: true, trending: true },
+        "HEART": { code: "HEART", name: "Heart Care", active: true, imageUrl: "https://images.unsplash.com/photo-1559757175-5700dde675bc?w=300", bannerUrl: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800", featured: true, trending: false },
+        "BP": { code: "BP", name: "Blood Pressure", active: true, imageUrl: "https://images.unsplash.com/photo-1603398938378-e54eab446dde?w=300", bannerUrl: "https://images.unsplash.com/photo-1530026405186-ed1ea0ac7a63?w=800", featured: false, trending: true },
+        "ALLERGY": { code: "ALLERGY", name: "Allergy Relief", active: true, imageUrl: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300", bannerUrl: "https://images.unsplash.com/photo-1628771065518-0d82f111818d?w=800", featured: false, trending: false },
+        "COLD_FLU": { code: "COLD_FLU", name: "Cold & Flu", active: true, imageUrl: "https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?w=300", bannerUrl: "https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?w=800", featured: true, trending: true },
+        "FEVER": { code: "FEVER", name: "Fever Medicines", active: true, imageUrl: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300", bannerUrl: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800", featured: true, trending: true },
+        "PAIN": { code: "PAIN", name: "Pain Relief", active: true, imageUrl: "https://images.unsplash.com/photo-1603398938378-e54eab446dde?w=300", bannerUrl: "https://images.unsplash.com/photo-1628771065518-0d82f111818d?w=800", featured: true, trending: false },
+        "STOMACH": { code: "STOMACH", name: "Stomach Care", active: true, imageUrl: "https://images.unsplash.com/photo-1584017911766-d451b3d0e843?w=300", bannerUrl: "https://images.unsplash.com/photo-1530026405186-ed1ea0ac7a63?w=800", featured: false, trending: false },
+        "DIGESTION": { code: "DIGESTION", name: "Digestion", active: true, imageUrl: "https://images.unsplash.com/photo-1616671285410-b98687720760?w=300", bannerUrl: "https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?w=800", featured: false, trending: false },
+        "VITAMINS": { code: "VITAMINS", name: "Vitamins & Supplements", active: true, imageUrl: "https://images.unsplash.com/photo-1616671285410-b98687720760?w=300", bannerUrl: "https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?w=800", featured: true, trending: true },
+        "IMMUNITY": { code: "IMMUNITY", name: "Immunity Boosters", active: true, imageUrl: "https://images.unsplash.com/photo-1616671285410-b98687720760?w=300", bannerUrl: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800", featured: false, trending: true },
+        "BABY_CARE": { code: "BABY_CARE", name: "Baby Care", active: true, imageUrl: "https://images.unsplash.com/photo-1515488042361-404e9250afef?w=300", bannerUrl: "https://images.unsplash.com/photo-1515488042361-404e9250afef?w=800", featured: true, trending: false },
+        "MEDICAL_DEVICES": { code: "MEDICAL_DEVICES", name: "Medical Devices", active: true, imageUrl: "https://images.unsplash.com/photo-1542736667-069246bdbc6d?w=300", bannerUrl: "https://images.unsplash.com/photo-1542736667-069246bdbc6d?w=800", featured: true, trending: false },
+        "AYURVEDA": { code: "AYURVEDA", name: "Ayurveda", active: true, imageUrl: "https://images.unsplash.com/photo-1611082231993-f3741d740c0b?w=300", bannerUrl: "https://images.unsplash.com/photo-1611082231993-f3741d740c0b?w=800", featured: true, trending: true }
       };
       set(ref(db, "categories"), defaultCategories).then(() => {
-        showToast("Initial category catalogue seeded in Database!", "success");
+        showToast("Premium visual category catalogue seeded!", "success");
       });
     }
   });
@@ -1665,7 +1705,7 @@ function renderCategoriesTable() {
   if (filtered.length === 0) {
     tableBody.innerHTML = `
       <tr>
-        <td colspan="4" class="p-4 text-center text-slate-400 font-medium">No operational segments found.</td>
+        <td colspan="6" class="p-4 text-center text-slate-400 font-medium">No operational segments found.</td>
       </tr>
     `;
     return;
@@ -1673,16 +1713,34 @@ function renderCategoriesTable() {
 
   tableBody.innerHTML = filtered.map(it => {
     const statusColor = it.active 
-      ? "bg-emerald-50 text-emerald-600 border border-emerald-100" 
+      ? "bg-emerald-55 bg-emerald-50 text-emerald-600 border border-emerald-100" 
       : "bg-rose-50 text-rose-600 border border-rose-100";
     const statusText = it.active ? "Active" : "Inactive";
     const toggleIcon = it.active ? "fa-toggle-on text-emerald-500" : "fa-toggle-off text-slate-400";
     const toggleTitle = it.active ? "Deactivate Category" : "Activate Category";
 
+    // Build highlights string
+    let highlightsHtml = "";
+    if (it.featured === true || it.featured === "yes") {
+      highlightsHtml += `<span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase text-amber-700 bg-amber-100 border border-amber-200 mr-1">FEATURED</span>`;
+    }
+    if (it.trending === true || it.trending === "yes") {
+      highlightsHtml += `<span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase text-rose-700 bg-rose-100 border border-rose-200 mr-1">TRENDING</span>`;
+    }
+    if (!highlightsHtml) {
+      highlightsHtml = `<span class="text-slate-400 text-xs">-</span>`;
+    }
+
+    const itemImg = it.imageUrl || getCategoryPlaceholderImage(it.name);
+
     return `
       <tr class="hover:bg-slate-50/40 transition-colors border-b border-slate-100 font-sans">
+        <td class="p-3">
+          <img src="${itemImg}" class="w-8 h-8 rounded-lg object-contain bg-slate-50 border border-slate-100 placeholder-no-referrer shrink-0" referrerpolicy="no-referrer">
+        </td>
         <td class="p-3 font-mono font-black text-slate-700 text-xs">${it.code}</td>
         <td class="p-3 font-bold text-slate-800 text-xs">${it.name}</td>
+        <td class="p-3 whitespace-nowrap">${highlightsHtml}</td>
         <td class="p-3">
           <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide ${statusColor}">
             ${statusText}
@@ -1713,6 +1771,63 @@ function setupCategoryFormListeners() {
     });
   }
 
+  // Choose file upload handlers
+  const imgFile = document.getElementById("category-image-file") as HTMLInputElement;
+  const imgUrl = document.getElementById("category-image-url") as HTMLInputElement;
+  const imgPreview = document.getElementById("category-image-preview");
+
+  imgFile?.addEventListener("change", async (e: any) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (imgPreview) imgPreview.innerHTML = `<i class="fa-solid fa-spinner animate-spin text-teal-500"></i>`;
+    try {
+      const url = await uploadToCloudinary(file);
+      if (imgUrl) imgUrl.value = url;
+      if (imgPreview) imgPreview.innerHTML = `<img src="${url}" class="w-full h-full object-contain">`;
+      showToast("Category image icon uploaded successfully!", "success");
+    } catch (err) {
+      if (imgPreview) imgPreview.innerHTML = `<i class="fa-solid fa-circle-exclamation text-rose-500"></i>`;
+      showToast("Failed to upload category image", "error");
+    }
+  });
+
+  const bannerFile = document.getElementById("category-banner-file") as HTMLInputElement;
+  const bannerUrl = document.getElementById("category-banner-url") as HTMLInputElement;
+  const bannerPreview = document.getElementById("category-banner-preview");
+
+  bannerFile?.addEventListener("change", async (e: any) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (bannerPreview) bannerPreview.innerHTML = `<i class="fa-solid fa-spinner animate-spin text-teal-500 text-xs"></i>`;
+    try {
+      const url = await uploadToCloudinary(file);
+      if (bannerUrl) bannerUrl.value = url;
+      if (bannerPreview) bannerPreview.innerHTML = `<img src="${url}" class="w-full h-full object-cover">`;
+      showToast("Category banner uploaded successfully!", "success");
+    } catch (err) {
+      if (bannerPreview) bannerPreview.innerHTML = `<i class="fa-solid fa-circle-exclamation text-rose-500"></i>`;
+      showToast("Failed to upload category banner", "error");
+    }
+  });
+
+  imgUrl?.addEventListener("input", (e: any) => {
+    const url = e.target.value.trim();
+    if (url && imgPreview) {
+      imgPreview.innerHTML = `<img src="${url}" class="w-full h-full object-contain">`;
+    } else if (imgPreview) {
+      imgPreview.innerHTML = `<i class="fa-solid fa-image text-slate-350"></i>`;
+    }
+  });
+
+  bannerUrl?.addEventListener("input", (e: any) => {
+    const url = e.target.value.trim();
+    if (url && bannerPreview) {
+      bannerPreview.innerHTML = `<img src="${url}" class="w-full h-full object-cover">`;
+    } else if (bannerPreview) {
+      bannerPreview.innerHTML = `<i class="fa-solid fa-rectangle-ad text-slate-350"></i>`;
+    }
+  });
+
   const formCategory = document.getElementById("form-category") as HTMLFormElement;
   if (formCategory) {
     formCategory.addEventListener("submit", (e) => {
@@ -1721,18 +1836,34 @@ function setupCategoryFormListeners() {
       const codeInput = document.getElementById("category-code") as HTMLInputElement;
       const nameInput = document.getElementById("category-name") as HTMLInputElement;
       const statusSelect = document.getElementById("category-status") as HTMLSelectElement;
+      const featuredSelect = document.getElementById("category-featured") as HTMLSelectElement;
+      const trendingSelect = document.getElementById("category-trending") as HTMLSelectElement;
+      const imageUrlInput = document.getElementById("category-image-url") as HTMLInputElement;
+      const bannerUrlInput = document.getElementById("category-banner-url") as HTMLInputElement;
 
       const codeRaw = codeInput.value.trim().toUpperCase();
       const code = codeRaw.replace(/[^A-Z0-9_]/g, "_");
       const name = nameInput.value.trim();
       const active = statusSelect.value === "active";
+      const featured = featuredSelect ? featuredSelect.value === "yes" : false;
+      const trending = trendingSelect ? trendingSelect.value === "yes" : false;
+      const imageUrl = imageUrlInput ? imageUrlInput.value.trim() : "";
+      const bannerUrl = bannerUrlInput ? bannerUrlInput.value.trim() : "";
 
       if (!code || !name) {
         showToast("Operational segment Code and Name are both mandatory.", "error");
         return;
       }
 
-      set(ref(db, `categories/${code}`), { code, name, active })
+      set(ref(db, `categories/${code}`), { 
+        code, 
+        name, 
+        active, 
+        featured, 
+        trending, 
+        imageUrl: imageUrl || getCategoryPlaceholderImage(name), 
+        bannerUrl: bannerUrl || getCategoryPlaceholderBanner(name) 
+      })
         .then(() => {
           showToast(categoryEditModeCode ? "Category configuration saved!" : "Category established successfully!", "success");
           resetCategoryForm();
@@ -1755,6 +1886,13 @@ function resetCategoryForm() {
   const codeInput = document.getElementById("category-code") as HTMLInputElement;
   const nameInput = document.getElementById("category-name") as HTMLInputElement;
   const statusSelect = document.getElementById("category-status") as HTMLSelectElement;
+  const featuredSelect = document.getElementById("category-featured") as HTMLSelectElement;
+  const trendingSelect = document.getElementById("category-trending") as HTMLSelectElement;
+  const imageUrlInput = document.getElementById("category-image-url") as HTMLInputElement;
+  const bannerUrlInput = document.getElementById("category-banner-url") as HTMLInputElement;
+  const imgPreview = document.getElementById("category-image-preview");
+  const bannerPreview = document.getElementById("category-banner-preview");
+
   const formTitle = document.getElementById("category-form-title")!;
   const btnCancel = document.getElementById("btn-cancel-category-edit")!;
   const codeLabel = codeInput?.parentElement?.querySelector("p")!;
@@ -1766,6 +1904,14 @@ function resetCategoryForm() {
   }
   if (nameInput) nameInput.value = "";
   if (statusSelect) statusSelect.value = "active";
+  if (featuredSelect) featuredSelect.value = "no";
+  if (trendingSelect) trendingSelect.value = "no";
+  if (imageUrlInput) imageUrlInput.value = "";
+  if (bannerUrlInput) bannerUrlInput.value = "";
+  
+  if (imgPreview) imgPreview.innerHTML = `<i class="fa-solid fa-image text-slate-350"></i>`;
+  if (bannerPreview) bannerPreview.innerHTML = `<i class="fa-solid fa-rectangle-ad text-slate-350"></i>`;
+
   if (formTitle) formTitle.innerHTML = `<i class="fa-solid fa-plus text-teal-500"></i> Add New Category`;
   if (btnCancel) btnCancel.classList.add("hidden");
   if (codeLabel) codeLabel.innerText = "Unique identifier (letters/underscores only).";
@@ -1790,6 +1936,13 @@ Object.assign(window, {
     const codeInput = document.getElementById("category-code") as HTMLInputElement;
     const nameInput = document.getElementById("category-name") as HTMLInputElement;
     const statusSelect = document.getElementById("category-status") as HTMLSelectElement;
+    const featuredSelect = document.getElementById("category-featured") as HTMLSelectElement;
+    const trendingSelect = document.getElementById("category-trending") as HTMLSelectElement;
+    const imageUrlInput = document.getElementById("category-image-url") as HTMLInputElement;
+    const bannerUrlInput = document.getElementById("category-banner-url") as HTMLInputElement;
+    const imgPreview = document.getElementById("category-image-preview");
+    const bannerPreview = document.getElementById("category-banner-preview");
+
     const formTitle = document.getElementById("category-form-title")!;
     const btnCancel = document.getElementById("btn-cancel-category-edit")!;
     const codeLabel = codeInput?.parentElement?.querySelector("p")!;
@@ -1798,8 +1951,36 @@ Object.assign(window, {
       codeInput.value = code;
       codeInput.disabled = true; 
     }
-    if (nameInput) nameInput.value = name;
-    if (statusSelect) statusSelect.value = active ? "active" : "inactive";
+    
+    // Look up category in cache
+    const cat = allCategoriesList.find(c => c.code === code);
+    if (cat) {
+      if (nameInput) nameInput.value = cat.name || name;
+      if (statusSelect) statusSelect.value = cat.active ? "active" : "inactive";
+      if (featuredSelect) featuredSelect.value = (cat.featured === true || cat.featured === "yes") ? "yes" : "no";
+      if (trendingSelect) trendingSelect.value = (cat.trending === true || cat.trending === "yes") ? "yes" : "no";
+      if (imageUrlInput) imageUrlInput.value = cat.imageUrl || "";
+      if (bannerUrlInput) bannerUrlInput.value = cat.bannerUrl || "";
+      
+      if (imgPreview) {
+        if (cat.imageUrl) {
+          imgPreview.innerHTML = `<img src="${cat.imageUrl}" class="w-full h-full object-contain">`;
+        } else {
+          imgPreview.innerHTML = `<i class="fa-solid fa-image text-slate-350"></i>`;
+        }
+      }
+      
+      if (bannerPreview) {
+        if (cat.bannerUrl) {
+          bannerPreview.innerHTML = `<img src="${cat.bannerUrl}" class="w-full h-full object-cover">`;
+        } else {
+          bannerPreview.innerHTML = `<i class="fa-solid fa-rectangle-ad text-slate-350"></i>`;
+        }
+      }
+    } else {
+      if (nameInput) nameInput.value = name;
+      if (statusSelect) statusSelect.value = active ? "active" : "inactive";
+    }
     
     if (formTitle) formTitle.innerHTML = `<i class="fa-solid fa-pencil text-teal-500"></i> Edit Category: ${code}`;
     if (btnCancel) btnCancel.classList.remove("hidden");
@@ -2619,6 +2800,9 @@ function initStoreManagementCenter() {
         if (m) {
           if (!m.medicineId) m.medicineId = child.key;
           smcMedicines.push(m);
+          if (m.category) {
+            autoProvisionCategoryIfNeeded(m.category);
+          }
         }
       });
     }

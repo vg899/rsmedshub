@@ -170,14 +170,44 @@
         </div>
       </div>
 
-      <!-- CATEGORIES HEADER & DOUBLE ROW INTEGRATION GRID -->
-      <div class="space-y-3">
-        <h4 class="text-xs font-black text-slate-900 uppercase tracking-widest flex items-center gap-1.5 font-display">
-          <span class="w-1.5 h-3.5 bg-blue-600 rounded-full"></span> Categories
+      <!-- BRANDED HORIZONTAL CATEGORY SLIDER (Swiggy Instamart / Blinkit / Zepto Style) -->
+      <div class="space-y-2 pb-1 bg-white p-3 rounded-2xl border border-slate-100 shadow-3xs">
+        <div class="flex justify-between items-center">
+          <h4 class="text-[11px] font-black text-slate-800 uppercase tracking-widest flex items-center gap-1 font-display">
+            <span class="w-1.5 h-3 bg-blue-600 rounded-full"></span> Quick Swipe segments
+          </h4>
+          <span class="text-[8px] text-slate-400 font-extrabold uppercase tracking-widest flex items-center gap-1 animate-pulse">
+            Swipe <i class="fa-solid fa-arrow-right"></i>
+          </span>
+        </div>
+        <div id="category-horizontal-slider" class="flex gap-2.5 overflow-x-auto py-1 custom-scrollbar select-none scroll-smooth">
+          <!-- Live Categories track items populate here -->
+          <div class="py-4 text-center text-[9px] font-bold text-slate-400 w-full">Populating active sliders...</div>
+        </div>
+      </div>
+
+      <!-- FEATURED CATEGORIES SECTION (Apollo style bento/grid layout) -->
+      <div class="space-y-2">
+        <h4 class="text-[11px] font-black text-slate-800 uppercase tracking-widest flex items-center gap-1.5 font-display">
+          <span class="w-1.5 h-3.5 bg-amber-500 rounded-full"></span> Featured segments
         </h4>
-        <div class="grid grid-cols-4 gap-2" id="categories-container-grid font-sans">
-          <!-- Dynamically populated categories from Firebase realtime database -->
-          <div class="col-span-4 py-6 text-center text-[10px] font-bold text-slate-400">Loading live medical segments...</div>
+        <div class="grid grid-cols-2 gap-2" id="categories-featured-grid">
+          <!-- Dynamically populated featured categories cards -->
+          <div class="col-span-2 py-4 text-center text-[10px] font-bold text-slate-400">Loading featured collections...</div>
+        </div>
+      </div>
+
+      <!-- TRENDING CATEGORIES SECTION (Express pill / badge style) -->
+      <div class="space-y-2">
+        <div class="flex justify-between items-center">
+          <h4 class="text-[11px] font-black text-slate-800 uppercase tracking-widest flex items-center gap-1.5 font-display">
+            <span class="w-1.5 h-3.5 bg-rose-500 rounded-full"></span> Trending categories
+          </h4>
+          <span class="text-[8px] font-black bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded uppercase animate-bounce">On Fire</span>
+        </div>
+        <div id="category-trending-slider" class="flex gap-2 overflow-x-auto py-1 custom-scrollbar select-none scroll-smooth">
+          <!-- Swipeable high-contrast trending cards populate dynamically -->
+          <div class="py-3 text-center text-[10px] font-bold text-slate-450 w-full text-slate-400">Loading trending tags...</div>
         </div>
       </div>
 
@@ -1160,7 +1190,69 @@
         </div>
 
       </div>
-    </div>
+
+      <!-- CATEGORY-WISE MEDICINE STOREFRONT (Slide up overlay from bottom to match Blinkit/Zepto/Apollo Store) -->
+      <div id="category-storefront-view" class="hidden absolute inset-0 bg-slate-100 z-40 flex flex-col font-sans transition-all duration-350 transform translate-y-full">
+        <!-- Header Area -->
+        <div class="relative bg-gradient-to-r from-blue-600 to-blue-500 text-white shrink-0 shadow-md">
+          <!-- Interactive Category Banner -->
+          <div id="category-banner-container" class="relative w-full h-28 bg-cover bg-center overflow-hidden flex items-end">
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent z-1"></div>
+            
+            <!-- Back button -->
+            <button id="btn-close-category-storefront" class="absolute top-3 left-3 w-8 h-8 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white cursor-pointer hover:bg-black/60 transition-all border-none z-10">
+              <i class="fa-solid fa-arrow-left"></i>
+            </button>
+            
+            <!-- Title & count -->
+            <div class="p-4 z-10 w-full flex justify-between items-end relative">
+              <div>
+                <span id="category-storefront-badge" class="bg-rose-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider mb-1 inline-block">Apollo Care Certified</span>
+                <h2 id="category-storefront-title" class="text-base font-black tracking-tight leading-none text-white drop-shadow">Diabetes Essentials</h2>
+              </div>
+              <span id="category-storefront-cnt" class="text-[9px] bg-white/20 backdrop-blur-md text-white font-extrabold px-2.5 py-1 rounded-full border border-white/10 leading-none">12 meds found</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Search & Sort Controls Strip -->
+        <div class="bg-white p-3 border-b border-slate-150 shrink-0 space-y-2">
+          <div class="relative shadow-inner">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+              <i class="fa-solid fa-magnifying-glass text-[10px]"></i>
+            </span>
+            <input type="text" id="category-search-input" placeholder="Search medicines in this category..." class="w-full pl-8 pr-3 py-2 rounded-xl border border-slate-200 outline-none placeholder:text-slate-400 text-[11px] font-medium text-slate-800 focus:border-blue-500">
+          </div>
+          
+          <div class="flex items-center justify-between gap-2.5 pt-0.5">
+            <!-- Sort Selector -->
+            <div class="flex items-center gap-1.5">
+              <span class="text-[9px] font-bold text-slate-450 uppercase tracking-wide font-sans text-slate-400">Sort:</span>
+              <select id="category-sort-select" class="bg-slate-50 border border-slate-200 text-slate-700 font-extrabold text-[9px] px-2 py-1 rounded-lg outline-none cursor-pointer focus:border-blue-500 select-none">
+                <option value="popular">Popularity</option>
+                <option value="price-low">Price: Low to High</option>
+                <option value="price-high">Price: High to Low</option>
+              </select>
+            </div>
+
+            <!-- Store Selector Filter -->
+            <div class="flex items-center gap-1.5">
+              <span class="text-[9px] font-bold text-slate-450 uppercase tracking-wide font-sans text-slate-400">Store:</span>
+              <select id="category-store-filter-select" class="bg-slate-50 border border-slate-200 text-slate-700 font-extrabold text-[9px] px-2 py-1 rounded-lg outline-none cursor-pointer focus:border-blue-500 max-w-[120px] truncate select-none">
+                <option value="all">All Pharmacies</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dynamic Medicines Listing Track -->
+        <div class="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar" id="category-medicines-list-container">
+          <!-- List of filtered medicine cards inside dynamic listing scroll -->
+          <div class="text-center py-10 text-slate-400 font-semibold text-xs">
+            Loading operational catalogue...
+          </div>
+        </div>
+      </div>
 
     <!-- FULLSCREEN ZOOM AND VIEW POPUP FOR PRODUCT IMAGES -->
     <div id="fullscreen-zoom-viewer" class="fixed inset-0 bg-black/95 z-55 flex flex-col justify-between hidden p-5 select-none animate-fade-in font-sans">
