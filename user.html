@@ -719,6 +719,120 @@
       </div>
     </div>
 
+    <!-- FLOATING HELP & SUPPORT BUTTON (Modern Android-style design, always visible, mobile-friendly) -->
+    <div id="floating-support-btn-container" class="absolute bottom-18 right-4 z-25 select-none animate-fade-in">
+      <button id="btn-floating-support" class="w-12 h-12 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-lg border border-blue-500 hover:scale-110 active:scale-95 transition-all duration-300 cursor-pointer relative">
+        <i class="fa-solid fa-headset text-base"></i>
+        <!-- Ping indicator for responsive/live feel -->
+        <span class="absolute top-0 right-0 w-3 h-3 bg-semibold bg-emerald-505 bg-emerald-500 rounded-full border-2 border-white animate-pulse"></span>
+      </button>
+    </div>
+
+    <!-- PREMIUM MEDICAL HELP & SUPPORT POPUP (Android Native style overlay) -->
+    <div id="user-support-modal" class="hidden absolute inset-0 bg-slate-950/40 backdrop-blur-xs z-35 flex flex-col justify-end animate-fade-in font-sans">
+      <div class="bg-white rounded-t-[2rem] p-5 space-y-4 animate-slide-up select-none border-t border-slate-100 shadow-2xl relative">
+        
+        <!-- Header Section -->
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex items-center gap-2.5">
+            <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-base border border-blue-100 shadow-xs">
+              <i class="fa-solid fa-hospital-user"></i>
+            </div>
+            <div>
+              <h3 class="text-xs font-black text-slate-900 uppercase tracking-wide font-display">Apothecary Support Node</h3>
+              <p class="text-[9px] text-slate-500 font-bold flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>Support Desk</span>
+                <span class="text-slate-300">•</span>
+                <span id="support-hours-indicator" class="text-slate-550 font-semibold font-mono">24/7 Hours</span>
+              </p>
+            </div>
+          </div>
+          <button id="btn-close-support-modal" class="w-7 h-7 rounded-full bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center text-xs transition-all cursor-pointer border border-slate-100">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <!-- Emergency Widget -->
+        <div id="sup-emergency-card" class="p-3 bg-rose-50 border border-rose-100 rounded-2xl flex items-center justify-between gap-3 select-none">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="w-7 h-7 rounded-lg bg-rose-500 text-white flex items-center justify-center text-xs shadow-md shadow-rose-200 shrink-0"><i class="fa-solid fa-truck-medical"></i></span>
+            <div class="min-w-0">
+              <h4 class="text-[9px] font-black text-rose-950 uppercase tracking-wider">Emergency Support</h4>
+              <p class="text-[8px] text-rose-600 font-semibold truncate leading-none mt-0.5">Critical ICU drug delivery dispatch</p>
+            </div>
+          </div>
+          <a id="btn-link-emergency" href="tel:+919876543210" class="shrink-0 font-display font-black text-[9px] bg-rose-605 bg-rose-600 hover:bg-rose-700 text-white uppercase tracking-wider py-1.5 px-2.5 rounded-lg shadow-sm hover:scale-103 transition-all">CALL NOW</a>
+        </div>
+
+        <!-- Option Grid (Quick elements for WhatsApp, call Support, Ask FAQ/Ticket) -->
+        <div class="space-y-2">
+          <label class="block text-[8px] uppercase font-black text-slate-400 tracking-wider">Instant Communication Portals</label>
+          <div class="grid grid-cols-2 gap-2.5">
+            
+            <!-- Dial Support Portal -->
+            <a id="btn-link-call" href="tel:+919999999999" class="p-2.5 bg-blue-50/55 border border-blue-100 rounded-xl flex flex-col items-center justify-center text-center hover:bg-blue-105 hover:bg-blue-50 transition-all cursor-pointer group">
+              <span class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs mb-1 transition-all group-hover:scale-110"><i class="fa-solid fa-phone"></i></span>
+              <span class="text-[9px] font-black text-slate-800 uppercase tracking-tight">Call Support</span>
+              <span class="text-[8px] text-blue-500 font-extrabold font-mono mt-0.5" id="txt-support-phone">+91 9999999999</span>
+            </a>
+
+            <!-- WhatsApp Support Portal -->
+            <a id="btn-link-whatsapp" href="https://wa.me/919999999999" target="_blank" class="p-2.5 bg-emerald-50/55 border border-emerald-100 rounded-xl flex flex-col items-center justify-center text-center hover:bg-emerald-105 hover:bg-emerald-50 transition-all cursor-pointer group">
+              <span class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs mb-1 transition-all group-hover:scale-110"><i class="fa-brands fa-whatsapp text-sm"></i></span>
+              <span class="text-[9px] font-black text-slate-800 uppercase tracking-tight">WhatsApp Chat</span>
+              <span class="text-[8px] text-emerald-600 font-extrabold font-mono mt-0.5">Instant WhatsApp</span>
+            </a>
+
+          </div>
+        </div>
+
+        <!-- Custom Help desk module -->
+        <div class="space-y-2 pt-1 border-t border-slate-50">
+          <div class="flex items-center justify-between col-span-full">
+            <label class="block text-[8px] uppercase font-black text-slate-400 tracking-wider">Support Query Desk</label>
+            <a id="btn-support-email-link" href="mailto:support@rsmedshub.com" class="text-[8px] font-black text-indigo-600 uppercase hover:underline flex items-center gap-1">
+              <i class="fa-regular fa-envelope text-[9px]"></i> <span id="txt-support-email" class="font-mono">support@rsmedshub.com</span>
+            </a>
+          </div>
+
+          <div class="p-2.5 bg-slate-50 border border-slate-100 rounded-xl">
+            <h5 class="text-[8.5px] font-black text-slate-850 uppercase mb-1 flex items-center gap-1 text-slate-800"><i class="fa-solid fa-ticket text-blue-600 text-[9px]"></i> Create Help Desk Ticket</h5>
+            <textarea id="val-quick-support-msg" rows="2" placeholder="Describe cancellation, delivery, or clinical troubles..." class="w-full p-2 bg-white border border-slate-200 focus:ring-1 focus:ring-blue-500 text-slate-800 rounded-lg text-[9px] font-semibold outline-none transition-all resize-none"></textarea>
+            <div class="flex justify-end mt-1.5">
+              <button id="btn-submit-quick-ticket" class="bg-blue-650 bg-blue-600 hover:bg-blue-700 text-white font-black text-[8px] py-1 px-2.5 rounded-md leading-none transition-all cursor-pointer flex items-center gap-1 uppercase tracking-wider">
+                <i class="fa-solid fa-paper-plane"></i> Submit Ticket
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Collapsible FAQ list -->
+        <div class="space-y-1 pt-1 border-t border-slate-50">
+          <button id="btn-toggle-support-faqs" class="w-full flex items-center justify-between text-left text-slate-500 hover:text-slate-800 cursor-pointer">
+            <span class="text-[8px] uppercase font-black text-slate-400 tracking-wider flex items-center gap-1"><i class="fa-regular fa-circle-question text-blue-600 text-[9px]"></i> Frequently Asked Questions</span>
+            <i class="fa-solid fa-chevron-down text-[8px] text-slate-400" id="icon-support-faqs-chev"></i>
+          </button>
+          
+          <div id="support-faqs-accordion" class="hidden space-y-1.5 max-h-20 overflow-y-auto custom-scrollbar pt-1 pr-1">
+            <div class="p-2 bg-slate-50 border border-slate-100 rounded-lg text-[8.5px] font-semibold text-slate-500 leading-relaxed">
+              <span class="font-extrabold text-slate-850 text-slate-800 uppercase block text-[7.5px] mb-0.5">Q1. Can I return medicines that were wrong?</span>
+              Yes. If medicines are sealed and returned within 24 hours of dispatch, we process refunds instantly.
+            </div>
+            <div class="p-2 bg-slate-50 border border-slate-100 rounded-lg text-[8.5px] font-semibold text-slate-500 leading-relaxed">
+              <span class="font-extrabold text-slate-850 text-slate-800 uppercase block text-[7.5px] mb-0.5">Q2. Do you require prescriptions?</span>
+              Yes. For scheduled H/G narcotics lists, a prescription file must be uploaded during checkout.
+            </div>
+            <div class="p-2 bg-slate-50 border border-slate-100 rounded-lg text-[8.5px] font-semibold text-slate-500 leading-relaxed">
+              <span class="font-extrabold text-slate-850 text-slate-800 uppercase block text-[7.5px] mb-0.5">Q3. What are your delivery timings?</span>
+              Our direct dispatch riders operate 24 hours across main urban metropolitan zones.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <!-- FLOATING BOTTOM NAVIGATION BAR (Mimicking screenshot - HOME, SEARCH, CART, ORDERS, PROFILE) -->
     <nav class="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 shadow-lg px-4 py-2 flex items-center justify-between z-20 shrink-0 select-none">
       

@@ -129,6 +129,7 @@ function initDashboard() {
   initReviewsComplaintsHub();
   initCloudinaryMediaHub();
   initPlatformSettings();
+  initSupportCenterManagement();
 
   // Connect customer search input field
   document.getElementById("user-search-input")?.addEventListener("input", (e) => {
@@ -4833,4 +4834,112 @@ Object.assign(window, {
     });
   }
 });
+
+function initSupportCenterManagement() {
+  const refPath = "support_settings";
+
+  // Real-time listener for support configurations
+  onValue(ref(db, refPath), (snapshot) => {
+    if (snapshot.exists()) {
+      const s = snapshot.val();
+
+      const phoneInp = document.getElementById("set-sup-phone") as HTMLInputElement;
+      if (phoneInp) phoneInp.value = s.phone || "+919999999999";
+
+      const waInp = document.getElementById("set-sup-whatsapp") as HTMLInputElement;
+      if (waInp) waInp.value = s.whatsapp || "+919999999999";
+
+      const emergencyInp = document.getElementById("set-sup-emergency") as HTMLInputElement;
+      if (emergencyInp) emergencyInp.value = s.emergency || "+919876543210";
+
+      const emailInp = document.getElementById("set-sup-email") as HTMLInputElement;
+      if (emailInp) emailInp.value = s.email || "support@rsmedshub.com";
+
+      const hoursInp = document.getElementById("set-sup-hours") as HTMLInputElement;
+      if (hoursInp) hoursInp.value = s.hours || "9:00 AM - 10:00 PM (Daily)";
+
+      // Handle states of checkboxes
+      const callToggle = document.getElementById("set-sup-call-toggle") as HTMLInputElement;
+      if (callToggle) callToggle.checked = s.enableCall !== false;
+
+      const waToggle = document.getElementById("set-sup-whatsapp-toggle") as HTMLInputElement;
+      if (waToggle) waToggle.checked = s.enableWhatsapp !== false;
+
+      const emergencyToggle = document.getElementById("set-sup-emergency-toggle") as HTMLInputElement;
+      if (emergencyToggle) emergencyToggle.checked = s.enableEmergency !== false;
+
+      // Update indicators
+      const badgeCall = document.getElementById("st-badge-call");
+      if (badgeCall) {
+        if (s.enableCall !== false) {
+          badgeCall.innerText = "ONLINE";
+          badgeCall.className = "text-emerald-400 font-bold font-sans";
+        } else {
+          badgeCall.innerText = "OFFLINE";
+          badgeCall.className = "text-rose-455 text-rose-400 font-bold font-sans";
+        }
+      }
+
+      const badgeWa = document.getElementById("st-badge-whatsapp");
+      if (badgeWa) {
+        if (s.enableWhatsapp !== false) {
+          badgeWa.innerText = "ONLINE";
+          badgeWa.className = "text-emerald-400 font-bold font-sans";
+        } else {
+          badgeWa.innerText = "OFFLINE";
+          badgeWa.className = "text-rose-455 text-rose-400 font-bold font-sans";
+        }
+      }
+
+      const badgeEmerg = document.getElementById("st-badge-emergency");
+      if (badgeEmerg) {
+        if (s.enableEmergency !== false) {
+          badgeEmerg.innerText = "HIGH PRECEDENCE";
+          badgeEmerg.className = "text-rose-400 font-bold font-sans";
+        } else {
+          badgeEmerg.innerText = "DISABLED";
+          badgeEmerg.className = "text-slate-450 text-slate-400 font-bold font-sans";
+        }
+      }
+    }
+  });
+
+  const saveSupportSettings = () => {
+    const phone = (document.getElementById("set-sup-phone") as HTMLInputElement).value.trim();
+    const whatsapp = (document.getElementById("set-sup-whatsapp") as HTMLInputElement).value.trim();
+    const emergency = (document.getElementById("set-sup-emergency") as HTMLInputElement).value.trim();
+    const email = (document.getElementById("set-sup-email") as HTMLInputElement).value.trim();
+    const hours = (document.getElementById("set-sup-hours") as HTMLInputElement).value.trim();
+
+    const enableCall = (document.getElementById("set-sup-call-toggle") as HTMLInputElement).checked;
+    const enableWhatsapp = (document.getElementById("set-sup-whatsapp-toggle") as HTMLInputElement).checked;
+    const enableEmergency = (document.getElementById("set-sup-emergency-toggle") as HTMLInputElement).checked;
+
+    if (!phone || !whatsapp || !emergency || !email || !hours) {
+      showToast("Please fill in all support details fully.", "error");
+      return;
+    }
+
+    const payload = {
+      phone,
+      whatsapp,
+      emergency,
+      email,
+      hours,
+      enableCall,
+      enableWhatsapp,
+      enableEmergency,
+      updatedAt: Date.now()
+    };
+
+    set(ref(db, "support_settings"), payload).then(() => {
+      showToast("Support Center Configuration written and synced safely!", "success");
+    }).catch((err) => {
+      console.error(err);
+      showToast("Failed to lock support state.", "error");
+    });
+  };
+
+  document.getElementById("btn-save-support-top")?.addEventListener("click", saveSupportSettings);
+}
 

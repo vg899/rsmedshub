@@ -524,6 +524,67 @@ function syncMainMarketplace() {
     renderMedicinesGrid();
   });
 
+  // Real-time Support Center dynamic updates sync listener
+  onValue(ref(db, "support_settings"), (snap) => {
+    let supportSettings = snap.val() || {
+      phone: "+919999999999",
+      whatsapp: "+919999999999",
+      emergency: "+919876543210",
+      email: "support@rsmedshub.com",
+      hours: "9:00 AM - 10:00 PM (Daily)",
+      enableCall: true,
+      enableWhatsapp: true,
+      enableEmergency: true
+    };
+
+    // Update Phone Elements
+    const linkCall = document.getElementById("btn-link-call") as HTMLAnchorElement;
+    const txtPhone = document.getElementById("txt-support-phone");
+    if (linkCall) {
+      if (supportSettings.enableCall !== false) {
+        linkCall.href = `tel:${supportSettings.phone || "+919999999999"}`;
+        linkCall.classList.remove("hidden");
+      } else {
+        linkCall.classList.add("hidden");
+      }
+    }
+    if (txtPhone) txtPhone.innerText = supportSettings.phone || "+919999999999";
+
+    // Update WhatsApp Elements
+    const linkWhatsapp = document.getElementById("btn-link-whatsapp") as HTMLAnchorElement;
+    if (linkWhatsapp) {
+      if (supportSettings.enableWhatsapp !== false) {
+        const waClean = (supportSettings.whatsapp || "+919999999999").replace(/\D/g, '');
+        linkWhatsapp.href = `https://wa.me/${waClean}`;
+        linkWhatsapp.classList.remove("hidden");
+      } else {
+        linkWhatsapp.classList.add("hidden");
+      }
+    }
+
+    // Update Emergency Elements
+    const linkEmergency = document.getElementById("btn-link-emergency") as HTMLAnchorElement;
+    const emergencyCard = document.getElementById("sup-emergency-card");
+    if (linkEmergency) linkEmergency.href = `tel:${supportSettings.emergency || "+919876543210"}`;
+    if (emergencyCard) {
+      if (supportSettings.enableEmergency !== false) {
+        emergencyCard.classList.remove("hidden");
+      } else {
+        emergencyCard.classList.add("hidden");
+      }
+    }
+
+    // Update Contact Email Elements
+    const linkEmail = document.getElementById("btn-support-email-link") as HTMLAnchorElement;
+    const txtEmail = document.getElementById("txt-support-email");
+    if (linkEmail) linkEmail.href = `mailto:${supportSettings.email || "support@rsmedshub.com"}`;
+    if (txtEmail) txtEmail.innerText = supportSettings.email || "support@rsmedshub.com";
+
+    // Update working hours
+    const hoursInd = document.getElementById("support-hours-indicator");
+    if (hoursInd) hoursInd.innerText = supportSettings.hours || "24/7 Hours";
+  });
+
   // Susbscribe promotional banners campaigns
   onValue(ref(db, "banners"), (snapshot) => {
     if (userBannerAutoplayInterval) {
@@ -2754,4 +2815,73 @@ function openSecurityDashboard() {
   `;
   openProfileDrawer(`<i class="fa-solid fa-shield-halved text-blue-600 mr-1.5 animate-pulse"></i> Security Settings Control`, html);
 }
+
+function initUserSupportSystem() {
+  const btnFloating = document.getElementById("btn-floating-support");
+  const modalSupport = document.getElementById("user-support-modal");
+  const btnClose = document.getElementById("btn-close-support-modal");
+  const btnToggleFaqs = document.getElementById("btn-toggle-support-faqs");
+  const accFaqs = document.getElementById("support-faqs-accordion");
+  const iconFaqsChev = document.getElementById("icon-support-faqs-chev");
+  const btnSubmitTicket = document.getElementById("btn-submit-quick-ticket");
+
+  // Toggle Modal
+  btnFloating?.addEventListener("click", () => {
+    modalSupport?.classList.remove("hidden");
+  });
+
+  btnClose?.addEventListener("click", () => {
+    modalSupport?.classList.add("hidden");
+  });
+
+  // Toggle FAQs Accordion
+  btnToggleFaqs?.addEventListener("click", () => {
+    if (accFaqs) {
+      const isHidden = accFaqs.classList.contains("hidden");
+      if (isHidden) {
+        accFaqs.classList.remove("hidden");
+        iconFaqsChev?.classList.replace("fa-chevron-down", "fa-chevron-up");
+      } else {
+        accFaqs.classList.add("hidden");
+        iconFaqsChev?.classList.replace("fa-chevron-up", "fa-chevron-down");
+      }
+    }
+  });
+
+  // Submit Support Ticket to Firebase RTDB Real-Time Sync DB
+  btnSubmitTicket?.addEventListener("click", () => {
+    const msgInp = document.getElementById("val-quick-support-msg") as HTMLTextAreaElement;
+    const msg = msgInp?.value.trim();
+
+    if (!msg) {
+      showToast("Please write details of your query/troubles first.", "error");
+      return;
+    }
+
+    const currentUserId = auth.currentUser?.uid || "anonymous_user";
+    const currentEmail = auth.currentUser?.email || "anonymous@example.com";
+    const ticketId = "TKT_" + Math.random().toString(36).substr(2, 9).toUpperCase();
+
+    const payload = {
+      ticketId,
+      userId: currentUserId,
+      email: currentEmail,
+      message: msg,
+      status: "pending",
+      createdAt: Date.now()
+    };
+
+    set(ref(db, `support_tickets/${currentUserId}/${ticketId}`), payload).then(() => {
+      showToast(`Support Ticket ${ticketId} raised successfully!`, "success");
+      if (msgInp) msgInp.value = "";
+      modalSupport?.classList.add("hidden");
+    }).catch((err) => {
+      console.error(err);
+      showToast("Failed to create ticket inside server.", "error");
+    });
+  });
+}
+
+// Invoke the setup
+initUserSupportSystem();
 

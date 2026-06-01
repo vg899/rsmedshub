@@ -73,6 +73,9 @@
       <button data-target="panel-settings" class="admin-nav-btn flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left whitespace-nowrap cursor-pointer hover:bg-slate-100">
         <i class="fa-solid fa-gears text-lg w-5 text-slate-400"></i>Platform Settings
       </button>
+      <button data-target="panel-support-center" class="admin-nav-btn flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left whitespace-nowrap cursor-pointer hover:bg-slate-100">
+        <i class="fa-solid fa-headset text-lg w-5 text-emerald-500 animate-pulse"></i>Support Center Management
+      </button>
       <button id="btn-sidebar-logistics" class="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left whitespace-nowrap cursor-pointer hover:bg-slate-800 text-teal-300">
         <i class="fa-solid fa-satellite-dish text-lg w-5 text-teal-400 animate-pulse"></i>Live Logistics Tracker
       </button>
@@ -1677,6 +1680,148 @@
                 <span class="bg-rose-100 text-rose-800 px-2 py-0.5 rounded border border-rose-200 font-mono">STRICT RTDB SYNC</span>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================= PANEL 13: SUPPORT CENTER MANAGEMENT ================================= -->
+      <section id="panel-support-center" class="admin-panel hidden space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-5 font-sans">
+          <div>
+            <h2 class="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2 font-display">
+              <i class="fa-solid fa-headset text-emerald-500 animate-pulse"></i>
+              Support Center Management Console
+            </h2>
+            <p class="text-xs text-slate-500 font-semibold mt-1">Manage customer helpline dialers, emergency medicine dispatches, and WhatsApp portals. Configured values synchronize instantly across all patient applications.</p>
+          </div>
+          <button id="btn-save-support-top" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-5 rounded-xl text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-md border-none">
+            <i class="fa-solid fa-cloud-arrow-up text-white"></i> Save Support Configuration
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 font-sans">
+          <div class="lg:col-span-2 space-y-6">
+            
+            <!-- Helpline Config Card -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-5">
+              <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center">
+                  <i class="fa-solid fa-phone text-blue-500 mr-2"></i> Voice Helpline Channel
+                </h3>
+                <label class="relative inline-flex items-center cursor-pointer select-none">
+                  <input type="checkbox" id="set-sup-call-toggle" checked class="sr-only peer">
+                  <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="space-y-1.55">
+                  <label class="block text-[10px] font-black text-slate-500 uppercase">Support Contact Number</label>
+                  <input type="text" id="set-sup-phone" required placeholder="e.g. +919999999999" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-blue-500 bg-white font-mono">
+                  <span class="text-[9px] text-slate-400 font-semibold leading-relaxed">Direct phone call dialer link (use landline or mobile with country code).</span>
+                </div>
+                <div class="space-y-1.5 p-3.5 bg-blue-50/50 border border-blue-100 rounded-xl text-[10px] text-blue-900 font-semibold leading-relaxed self-center">
+                  <p class="font-extrabold text-blue-900 uppercase text-[9px] tracking-wide mb-0.5"><i class="fa-solid fa-circle-info"></i> Sync Information</p>
+                  Toggling the voice switch instantly disables the Dial option on the client's home-screen support widget.
+                </div>
+              </div>
+            </div>
+
+            <!-- WhatsApp Gateway Config Card -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-5">
+              <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center">
+                  <i class="fa-brands fa-whatsapp text-emerald-600 mr-2 text-sm leading-none"></i> Interactive WhatsApp Portal
+                </h3>
+                <label class="relative inline-flex items-center cursor-pointer select-none">
+                  <input type="checkbox" id="set-sup-whatsapp-toggle" checked class="sr-only peer">
+                  <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                </label>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="space-y-1.55">
+                  <label class="block text-[10px] font-black text-slate-500 uppercase">WhatsApp Helpdesk Number</label>
+                  <input type="text" id="set-sup-whatsapp" required placeholder="e.g. +919999999999" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-emerald-500 bg-white font-mono">
+                  <span class="text-[9px] text-slate-400 font-semibold leading-relaxed">Used to open standard `wa.me` customer support threads instantly.</span>
+                </div>
+                <div class="space-y-1.5 p-3.5 bg-emerald-50/50 border border-emerald-100 rounded-xl text-[10px] text-emerald-900 font-semibold leading-relaxed self-center">
+                  <p class="font-extrabold text-emerald-900 uppercase text-[9px] tracking-wide mb-0.5"><i class="fa-solid fa-circle-check"></i> Live WhatsApp link</p>
+                  Will initiate the web or app whatsapp client directly. Do not include spaces, dashes, or special characters in raw text numbers.
+                </div>
+              </div>
+            </div>
+
+            <!-- Emergency Dispatch Config Card -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-5">
+              <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center">
+                  <i class="fa-solid fa-truck-medical text-rose-500 mr-2"></i> Clinical Emergency Hotline
+                </h3>
+                <label class="relative inline-flex items-center cursor-pointer select-none">
+                  <input type="checkbox" id="set-sup-emergency-toggle" checked class="sr-only peer">
+                  <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-rose-600"></div>
+                </label>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="space-y-1.55">
+                  <label class="block text-[10px] font-black text-slate-500 uppercase">Emergency Dispatch Contact</label>
+                  <input type="text" id="set-sup-emergency" required placeholder="e.g. +919876543210" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-rose-500 bg-white font-mono">
+                  <span class="text-[9px] text-slate-400 font-semibold leading-relaxed">Direct emergency dialing protocol for high-risk critical ICU supplies.</span>
+                </div>
+                <div class="space-y-1.5 p-3.5 bg-rose-50/50 border border-rose-100 rounded-xl text-[10px] text-rose-900 font-semibold leading-relaxed self-center font-sans font-medium">
+                  <p class="font-extrabold text-rose-900 uppercase text-[9px] tracking-wide mb-0.5"><i class="fa-solid fa-triangle-exclamation"></i> Emergency Priority</p>
+                  Always visible on physical user support board unless completely toggled off by administrator above.
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="space-y-6">
+            
+            <!-- Operating Metadata Card -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+              <h3 class="text-xs font-black text-slate-900 border-b border-slate-100 pb-3 uppercase tracking-wider flex items-center gap-1.5">
+                <i class="fa-regular fa-clock text-indigo-500"></i> Help-Desk Metadata
+              </h3>
+              
+              <div class="space-y-4">
+                <div>
+                  <label class="block text-[10px] font-black text-slate-500 uppercase mb-1.5">Support Desk Email</label>
+                  <input type="email" id="set-sup-email" required placeholder="support@rsmedshub.com" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-indigo-500 bg-white">
+                </div>
+                <div>
+                  <label class="block text-[10px] font-black text-slate-500 uppercase mb-1.5">Clinical Business Hours</label>
+                  <input type="text" id="set-sup-hours" required placeholder="e.g. 9:00 AM - 10:00 PM (Daily)" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-indigo-500 bg-white">
+                </div>
+              </div>
+            </div>
+
+            <!-- Health Status Panel -->
+            <div class="bg-slate-900 text-slate-100 p-5 rounded-2xl border border-slate-800 space-y-3.5 shadow-md">
+              <h4 class="text-emerald-400 font-extrabold text-xs uppercase flex items-center gap-1.5 select-none tracking-wider font-display">
+                <i class="fa-solid fa-signal text-[10px]"></i> Live Support Hub Status
+              </h4>
+              <p class="text-[10px] text-slate-350 leading-relaxed font-semibold">Our real-time engine coordinates with Firebase to instantly push fresh contact parameters. When saved, client app instances auto-update their dial links without refreshing their windows!</p>
+              
+              <div class="pt-2 text-[9.5px] font-mono space-y-1 text-slate-400">
+                <div class="flex justify-between">
+                  <span>Voice Dialer:</span>
+                  <span id="st-badge-call" class="text-emerald-400 font-bold">ONLINE</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>WhatsApp:</span>
+                  <span id="st-badge-whatsapp" class="text-emerald-400 font-bold">ONLINE</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>Emergency:</span>
+                  <span id="st-badge-emergency" class="text-rose-400 font-bold font-black">HIGH PRECEDENCE</span>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
