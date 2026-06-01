@@ -4351,9 +4351,10 @@ function renderLogisticsDashboard() {
             html: `<div class="w-8 h-8 rounded-full shadow-lg border-2 border-white flex items-center justify-center bg-teal-500 text-white hover:scale-110 transition-transform cursor-pointer" title="${s.name || "Pharmacy Branch"}"><i class="fa-solid fa-hospital text-[11px]"></i></div>`
           });
           
-          // Tooltip click listener
+          // Tooltip click listener which launches the Inspector Profile Modal
           m.addListener("click", () => {
-            showToast(`🏥 ${s.name} - ID: ${s.storeId || "N/A"}. Located in ${s.district || "Gonda"}, ${s.state || "UP"}`, "info");
+            showToast(`inspecting ${s.name}...`, "info");
+            inspectAsset("store", s.storeId);
           });
           
           logisticsOverlays.push(m);
@@ -4378,9 +4379,9 @@ function renderLogisticsDashboard() {
             html: `<div class="w-8.5 h-8.5 rounded-full shadow-lg border-2 border-slate-900 flex items-center justify-center ${colorClass} text-white hover:scale-110 transition-transform cursor-pointer" title="${r.name || "Rider Branch"}"><i class="fa-solid fa-motorcycle text-xs"></i></div>`
           });
 
-          const lastUpStr = r.location?.lastUpdated ? new Date(r.location.lastUpdated).toLocaleTimeString() : "N/A";
           m.addListener("click", () => {
-            showToast(`🚴 Rider: ${r.name || "Agent"} - ID: ${r.uid || "N/A"}. Mobile: ${r.mobile || "N/A"}. Mode: ${isRiderActive ? "Delivering Shipment" : (r.active ? "Online / Idle" : "Offline")}`, "info");
+            showToast(`inspecting ${r.name || "Rider Agent"}...`, "info");
+            inspectAsset("rider", r.uid || r.deliveryId);
           });
 
           logisticsOverlays.push(m);
@@ -4710,8 +4711,89 @@ function formatRelativeTime(msec: number): string {
   return new Date(msec).toLocaleDateString();
 }
 
+function inspectAsset(type: 'store' | 'rider', id: string) {
+  const overlay = document.getElementById("logistics-inspect-overlay");
+  const body = document.getElementById("logistics-inspect-body");
+  const tag = document.getElementById("inspect-entity-tag");
+  if (!overlay || !body || !tag) return;
+
+  if (type === 'store') {
+    const store = (adminStoresCache || []).find(s => s.storeId === id);
+    if (!store) {
+      showToast("Store not found in cache", "error");
+      return;
+    }
+    tag.innerText = "🏥 STORE INFO INSIGHT";
+    body.innerHTML = `
+      <div class="space-y-2">
+        <h3 class="text-xs font-black text-white uppercase">${store.name || "MedsHub Pharmacy"}</h3>
+        <div class="grid grid-cols-2 gap-1 text-[10px] font-mono p-1.5 bg-slate-900 rounded border border-slate-800">
+          <span class="text-slate-404 text-slate-400">STORE ID:</span> <span class="text-slate-200 text-right font-bold truncate">${store.storeId || "N/A"}</span>
+          <span class="text-slate-404 text-slate-400">STATE:</span> <span class="text-slate-200 text-right">${store.state || "Uttar Pradesh"}</span>
+          <span class="text-slate-404 text-slate-400">DISTRICT:</span> <span class="text-slate-200 text-right">${store.district || "Gonda"}</span>
+          <span class="text-slate-404 text-slate-400">REVENUE:</span> <span class="text-emerald-400 text-right">₹${store.revenue || 0}</span>
+          <span class="text-slate-404 text-slate-400">LATITUDE:</span> <span class="text-slate-200 text-right">${store.location?.lat?.toFixed(5) || "N/A"}</span>
+          <span class="text-slate-404 text-slate-400">LONGITUDE:</span> <span class="text-slate-200 text-right">${store.location?.lng?.toFixed(5) || "N/A"}</span>
+        </div>
+        <p class="text-[9.5px] leading-snug text-slate-400"><i class="fa-solid fa-map-pin text-rose-500 mr-1 text-[10px]"></i>${store.address || "No precise description provided"}</p>
+        <button onclick="focusLogisticsCoordinates(${store.location?.lat}, ${store.location?.lng}, 15)" class="w-full bg-teal-500 hover:bg-teal-600 text-slate-950 font-black py-1.5 rounded-lg text-[10px] uppercase transition-all tracking-wider cursor-pointer">
+          <i class="fa-solid fa-location-dot"></i> Focus Store Map Node
+        </button>
+      </div>
+    `;
+    overlay.classList.remove("hidden");
+    if (store.location?.lat && store.location?.lng) {
+      focusLogisticsCoordinates(store.location.lat, store.location.lng, 14);
+    }
+  } else if (type === 'rider') {
+    const rider = (ridersCache || []).find(r => r.deliveryId === id || r.uid === id);
+    if (!rider) {
+      showToast("Rider not found in cache", "error");
+      return;
+    }
+    tag.innerText = "🚴 RIDER TELEMETRY INSIGHT";
+    
+    const activeOrders = (ordersCache || []).filter(o => o.status !== "delivered" && o.status !== "cancelled");
+    const matchedActiveOrder = activeOrders.find(o => o.deliveryId === rider.uid || o.deliveryId === rider.deliveryId);
+    const isRiderActive = !!matchedActiveOrder;
+    const mode = isRiderActive ? "TRANSIT DELIVERING" : (rider.active ? "ONLINE / IDLE" : "OFFLINE");
+    const modeColor = isRiderActive ? "text-amber-400" : (rider.active ? "text-emerald-400" : "text-slate-400");
+    const speed = rider.location?.speed || (rider.active ? 28 : 0);
+    
+    body.innerHTML = `
+      <div class="space-y-2">
+        <h3 class="text-xs font-black text-white uppercase">${rider.name || "Delivery Agent"}</h3>
+        <div class="grid grid-cols-2 gap-1 text-[10px] font-mono p-1.5 bg-slate-900 rounded border border-slate-800">
+          <span class="text-slate-404 text-slate-400">RIDER ID:</span> <span class="text-slate-200 text-right truncate font-bold" title="${rider.deliveryId || rider.uid}">${(rider.deliveryId || rider.uid || "N/A").substring(0, 12)}...</span>
+          <span class="text-slate-404 text-slate-400">MOBILE:</span> <span class="text-slate-200 text-right">${rider.mobile || "N/A"}</span>
+          <span class="text-slate-404 text-slate-400">STATUS:</span> <span class="${modeColor} text-right font-black">${mode}</span>
+          <span class="text-slate-404 text-slate-400">SPEED DETECT:</span> <span class="text-amber-400 text-right font-bold">${speed} KM/H</span>
+          <span class="text-slate-404 text-slate-400">LATITUDE:</span> <span class="text-slate-200 text-right">${rider.location?.lat?.toFixed(5) || "N/A"}</span>
+          <span class="text-slate-404 text-slate-400">LONGITUDE:</span> <span class="text-slate-200 text-right">${rider.location?.lng?.toFixed(5) || "N/A"}</span>
+        </div>
+        <p class="text-[9.5px] leading-snug text-slate-400"><i class="fa-solid fa-clock mr-1 text-[10px] text-teal-400"></i>Signal updated: ${rider.location?.lastUpdated ? formatRelativeTime(rider.location.lastUpdated) : "N/A"}</p>
+        <div class="flex gap-1.5">
+          <button onclick="focusLogisticsCoordinates(${rider.location?.lat}, ${rider.location?.lng}, 15)" class="flex-1 bg-teal-500 hover:bg-teal-600 text-slate-950 font-black py-1.5 rounded-lg text-[10px] uppercase transition-all tracking-wider cursor-pointer">
+            <i class="fa-solid fa-crosshairs"></i> Focus
+          </button>
+          ${isRiderActive ? `
+            <button onclick="trackActiveLogisticsRoute('${matchedActiveOrder.orderId}')" class="flex-1 bg-indigo-550 bg-indigo-600 hover:bg-indigo-700 text-white font-black py-1.5 rounded-lg text-[10px] uppercase transition-all tracking-wider cursor-pointer">
+              <i class="fa-solid fa-route"></i> Trace Route
+            </button>
+          ` : ''}
+        </div>
+      </div>
+    `;
+    overlay.classList.remove("hidden");
+    if (rider.location?.lat && rider.location?.lng) {
+      focusLogisticsCoordinates(rider.location.lat, rider.location.lng, 14);
+    }
+  }
+}
+
 // Window bindings helper
 Object.assign(window, {
+  inspectAsset,
   focusLogisticsCoordinates,
   trackActiveLogisticsRoute,
   smcSelectStore,
