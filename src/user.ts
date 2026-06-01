@@ -815,12 +815,26 @@ function renderMedicinesGrid() {
   }).map(s => s.storeId));
 
   const filtered = allMedicines.filter((m) => {
-    // Only allow medicines from stores within the radius
-    if (!storesWithinRadiusIds.has(m.storeId)) return false;
+    // Only restrict medicines to stores within the radius if we are NOT searching and coordinates are resolved
+    if (searchQuery === "" && currentCoordinates && !storesWithinRadiusIds.has(m.storeId)) return false;
 
-    const matchCat = activeCategory === "All" || m.category === activeCategory;
-    const matchStore = activeStoreId === "" || m.storeId === activeStoreId;
-    const matchSearch = m.name.toLowerCase().includes(searchQuery) || m.description.toLowerCase().includes(searchQuery) || (m.category && m.category.toLowerCase().includes(searchQuery));
+    // When searching for an item, bypass the selected Category and Store filter to locate matching medicine easily
+    const matchCat = searchQuery !== "" || activeCategory === "All" || m.category === activeCategory;
+    const matchStore = searchQuery !== "" || activeStoreId === "" || m.storeId === activeStoreId;
+    
+    const nameLower = (m.name || "").toLowerCase();
+    const descLower = (m.description || "").toLowerCase();
+    const catLower = (m.category || "").toLowerCase();
+    const mfrLower = (m.manufacturer || "").toLowerCase();
+    const brandLower = (m.brand || "").toLowerCase();
+
+    const matchSearch = searchQuery === "" || 
+                        nameLower.includes(searchQuery) || 
+                        descLower.includes(searchQuery) || 
+                        catLower.includes(searchQuery) ||
+                        mfrLower.includes(searchQuery) ||
+                        brandLower.includes(searchQuery);
+
     return matchCat && matchStore && matchSearch;
   });
 
