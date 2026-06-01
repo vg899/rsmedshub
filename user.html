@@ -873,6 +873,327 @@
 
   </div>
 
+    <!-- PRODUCT DETAIL DRAWER OVERLAY (Tata 1mg / Apollo style comprehensive product hub) -->
+    <div id="product-detail-drawer" class="hidden absolute inset-0 bg-slate-950/45 backdrop-blur-xs z-35 transition-all duration-305 flex flex-col justify-end">
+      <div id="product-detail-drawer-content" class="bg-white rounded-t-[32px] max-h-[92vh] flex flex-col shadow-2xl relative border-t border-slate-150 transform translate-y-full transition-transform duration-300 overflow-hidden text-slate-800">
+        
+        <!-- Swipe/Pull Handle Indicator -->
+        <div class="py-2.5 flex items-center justify-center bg-white shrink-0 sticky top-0 z-40 border-b border-slate-100">
+          <div class="w-12 h-1.5 bg-slate-200 rounded-full cursor-pointer hover:bg-slate-300 transition-all shadow-inner" id="btn-pull-close-detail"></div>
+          <button id="btn-close-detail-drawer" class="absolute right-4 top-2 text-slate-400 hover:text-slate-605 transition-all cursor-pointer bg-transparent border-none">
+            <i class="fa-solid fa-circle-xmark text-xl"></i>
+          </button>
+        </div>
+
+        <!-- Scrollable details container -->
+        <div class="flex-1 overflow-y-auto custom-scrollbar font-sans text-xs pb-20 space-y-4 pr-1">
+          
+          <!-- IMAGE SLIDER COMPONENT -->
+          <div class="bg-slate-50/50 p-2 relative">
+            <!-- Active Slide Image Container -->
+            <div class="relative h-48 bg-white rounded-2xl border border-slate-100 flex items-center justify-center p-2.5 overflow-hidden group shadow-inner">
+              <img id="detail-slider-img-active" src="" alt="" class="max-h-full max-w-full object-contain cursor-zoom-in transition-transform duration-300 hover:scale-105">
+              <span class="absolute bottom-2.5 right-2.5 bg-slate-900/60 backdrop-blur-xs text-white text-[8px] font-black px-2 py-0.5 rounded-full font-mono tracking-wider shadow z-10" id="txt-slider-active-idx">1 / 1</span>
+              
+              <!-- Wishlist absolute floating badge heart -->
+              <button id="btn-detail-wishlist" class="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white text-slate-400 hover:text-rose-500 hover:scale-110 active:scale-95 flex items-center justify-center shadow transition-all border-none cursor-pointer z-10">
+                <i class="fa-solid fa-heart text-sm" id="detail-wishlist-icon"></i>
+              </button>
+            </div>
+
+            <!-- Thumbnail row carousel -->
+            <div id="detail-slider-thumbs" class="flex items-center gap-1.5 mt-2 overflow-x-auto py-1 custom-scrollbar shrink-0 px-2 min-h-0">
+              <!-- Inline thumbs dynamically loaded -->
+            </div>
+          </div>
+
+          <!-- PHARMA BADGING & DELIVERY INFORMATION -->
+          <div class="px-4 space-y-1">
+            <div class="flex items-center justify-between text-[10px] font-black text-blue-600 uppercase tracking-widest" id="detail-product-category-row">
+              <span id="detail-product-category">FEVER & COLD</span>
+              <span class="flex items-center gap-1 text-emerald-600 font-bold" id="detail-product-stock-status">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span id="detail-product-stock">IN STOCK</span>
+              </span>
+            </div>
+
+            <h1 id="detail-product-name" class="text-base font-extrabold text-slate-900 tracking-tight leading-tight pt-1">Paracetamol 650mg Chewables</h1>
+            
+            <p id="detail-product-subtitle" class="text-[9.5px] text-slate-400 font-bold tracking-wide uppercase leading-none pb-1.5">ABBOTT PHARMACEUTICALS | MFR: HEWLETT DRUGS</p>
+
+            <!-- Price module including Apollo cross-out and discount rate badges -->
+            <div class="flex items-end justify-between py-2 border-y border-slate-100 bg-slate-50/30 p-2.5 rounded-2xl">
+              <div>
+                <span class="text-[9px] text-slate-400 uppercase tracking-wider block font-bold leading-none mb-1">Selling Price</span>
+                <div class="flex items-baseline gap-2">
+                  <span class="text-lg font-black text-slate-900 font-mono" id="detail-product-price">₹120</span>
+                  <span class="text-xs text-slate-400 line-through font-mono hidden" id="detail-product-mrp">₹150</span>
+                  <span class="bg-emerald-50 text-emerald-700 text-[8.5px] font-black uppercase px-2 py-0.5 rounded-md border border-emerald-100 hidden" id="detail-product-discount-pct">20% OFF</span>
+                </div>
+              </div>
+              <div class="text-right">
+                <span class="text-[9px] text-slate-400 uppercase tracking-wider block font-bold leading-none mb-1">Standard Package</span>
+                <span id="detail-product-packsize" class="text-[10px] font-black text-slate-800 uppercase bg-white border border-slate-100 py-1 px-2.5 rounded-xl block shadow-3xs leading-none font-mono">15 tablet(s) in a Strip</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- PRESCRIPTION WARNING ADVISORY -->
+          <div id="detail-prescription-warning-box" class="mx-4 p-3 bg-amber-50 rounded-2xl border border-amber-100 text-amber-900 flex items-start gap-2.5 hidden">
+            <span class="w-7 h-7 rounded-lg bg-amber-500 text-white flex items-center justify-center text-xs shrink-0 shadow-sm"><i class="fa-solid fa-file-prescription"></i></span>
+            <div class="min-w-0">
+              <h4 class="text-[10px] font-extrabold uppercase tracking-wider leading-tight">Prescription Verification Required</h4>
+              <p class="text-[9px] text-amber-705 font-semibold leading-relaxed mt-0.5">This scheduled H formula drug necessitates a valid clinical prescription slip. Please upload your medical slip in checkout drawer.</p>
+            </div>
+          </div>
+
+          <!-- DIRECT DELIVERY LOCATION STATS -->
+          <div class="mx-4 p-3 bg-blue-50/35 border border-blue-105 rounded-2xl space-y-1.5 font-semibold">
+            <div class="flex justify-between text-[10px] uppercase font-black text-blue-600 tracking-wider">
+              <span>Delivery Logistics</span>
+              <span class="font-mono text-slate-500 text-[9px]">Node: Local Dispatches</span>
+            </div>
+            <div class="grid grid-cols-2 gap-3 divide-x divide-blue-100/55 text-[10px] font-bold text-slate-700">
+              <div class="flex items-center gap-1.5 pl-0.5">
+                <i class="fa-solid fa-truck-fast text-blue-600 text-xs shrink-0"></i>
+                <div>
+                  <span class="text-slate-400 block text-[8px] leading-tight font-medium uppercase font-bold">Duration</span>
+                  <span id="detail-delivery-duration" class="text-slate-900 leading-tight">15 - 30 Minutes</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-1.5 pl-3">
+                <i class="fa-solid fa-map-pin text-rose-550 text-xs shrink-0"></i>
+                <div>
+                  <span class="text-slate-400 block text-[8px] leading-tight font-medium uppercase font-bold">Store Distance</span>
+                  <span id="detail-delivery-distance" class="text-slate-900 leading-tight">Calculating...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ACCORDION CLINICAL SPECIFICATIONS -->
+          <div class="mx-4 space-y-2">
+            <h3 class="text-[9.5px] font-black text-slate-400 uppercase tracking-widest pl-1 font-sans">Clinical Information & Guidelines</h3>
+            
+            <div class="border border-slate-100 rounded-2xl overflow-hidden divide-y divide-slate-100 shadow-3xs">
+              <!-- Item 1: Uses -->
+              <div class="spec-accordion-item">
+                <button type="button" class="w-full flex items-center justify-between p-3.5 bg-slate-50/50 text-slate-805 text-slate-800 text-[10px] font-extrabold uppercase tracking-wide border-none select-none text-left cursor-pointer font-sans" onclick="toggleDetailSpecsAccordion('spec-uses', this)">
+                  <span><i class="fa-solid fa-notes-medical text-indigo-505 text-indigo-600 mr-1.5"></i> Primary Diagnosis & Uses</span>
+                  <i class="fa-solid fa-chevron-down text-[9x] text-slate-400 transition-transform" id="spec-uses-chev"></i>
+                </button>
+                <div id="spec-uses" class="hidden p-3.5 bg-white text-[11px] font-semibold leading-relaxed border-t border-slate-100 text-slate-600">
+                  <!-- Populated -->
+                </div>
+              </div>
+
+              <!-- Item 2: Benefits -->
+              <div class="spec-accordion-item">
+                <button type="button" class="w-full flex items-center justify-between p-3.5 bg-slate-50/50 text-slate-800 text-[10px] font-extrabold uppercase tracking-wide border-none select-none text-left cursor-pointer font-sans" onclick="toggleDetailSpecsAccordion('spec-benefits', this)">
+                  <span><i class="fa-solid fa-heart-pulse text-emerald-500 mr-1.5"></i> Therapeutic Action Benefits</span>
+                  <i class="fa-solid fa-chevron-down text-[9x] text-slate-400 transition-transform"></i>
+                </button>
+                <div id="spec-benefits" class="hidden p-3.5 bg-white text-[11px] font-semibold leading-relaxed border-t border-slate-100 text-slate-600">
+                  <!-- Populated -->
+                </div>
+              </div>
+
+              <!-- Item 3: Dosage Instructs -->
+              <div class="spec-accordion-item">
+                <button type="button" class="w-full flex items-center justify-between p-3.5 bg-slate-50/50 text-slate-805 text-slate-800 text-[10px] font-extrabold uppercase tracking-wide border-none select-none text-left cursor-pointer font-sans" onclick="toggleDetailSpecsAccordion('spec-dosage', this)">
+                  <span><i class="fa-solid fa-clock text-blue-500 mr-1.5"></i> Dosage Instructions</span>
+                  <i class="fa-solid fa-chevron-down text-[9x] text-slate-400 transition-transform"></i>
+                </button>
+                <div id="spec-dosage" class="hidden p-3.5 bg-white text-[11px] font-semibold leading-relaxed border-t border-slate-100 text-slate-600">
+                  <!-- Populated -->
+                </div>
+              </div>
+
+              <!-- Item 4: Side Effects -->
+              <div class="spec-accordion-item">
+                <button type="button" class="w-full flex items-center justify-between p-3.5 bg-slate-50/50 text-slate-805 text-slate-800 text-[10px] font-extrabold uppercase tracking-wide border-none select-none text-left cursor-pointer font-sans" onclick="toggleDetailSpecsAccordion('spec-side-effects', this)">
+                  <span><i class="fa-solid fa-triangle-exclamation text-amber-500 mr-1.5"></i> Adverse Side Effects</span>
+                  <i class="fa-solid fa-chevron-down text-[9x] text-slate-400 transition-transform"></i>
+                </button>
+                <div id="spec-side-effects" class="hidden p-3.5 bg-white text-[11px] font-semibold leading-relaxed border-t border-slate-100 text-slate-600">
+                  <!-- Populated -->
+                </div>
+              </div>
+
+              <!-- Item 5: Safety Warnings -->
+              <div class="spec-accordion-item">
+                <button type="button" class="w-full flex items-center justify-between p-3.5 bg-slate-50/50 text-slate-805 text-slate-800 text-[10px] font-extrabold uppercase tracking-wide border-none select-none text-left cursor-pointer font-sans" onclick="toggleDetailSpecsAccordion('spec-warnings', this)">
+                  <span><i class="fa-solid fa-shield-halved text-rose-505 text-rose-500 mr-1.5"></i> Safety Warnings & Precautions</span>
+                  <i class="fa-solid fa-chevron-down text-[9x] text-slate-400 transition-transform"></i>
+                </button>
+                <div id="spec-warnings" class="hidden p-3.5 bg-white text-[11px] font-semibold leading-relaxed border-t border-slate-100 text-slate-600">
+                  <!-- Populated -->
+                </div>
+              </div>
+
+              <!-- Item 6: Storage Instructions -->
+              <div class="spec-accordion-item">
+                <button type="button" class="w-full flex items-center justify-between p-3.5 bg-slate-50/55 text-slate-800 text-[10px] font-extrabold uppercase tracking-wide border-none select-none text-left cursor-pointer font-sans" onclick="toggleDetailSpecsAccordion('spec-storage', this)">
+                  <span><i class="fa-solid fa-snowflake text-indigo-500 mr-1.5"></i> Storage Instructions</span>
+                  <i class="fa-solid fa-chevron-down text-[9x] text-slate-400 transition-transform"></i>
+                </button>
+                <div id="spec-storage" class="hidden p-3.5 bg-white text-[11px] font-semibold leading-relaxed border-t border-slate-100 text-slate-600">
+                  <!-- Populated -->
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SIMILAR REMEDIES CAROUSEL (Products dynamically matching category) -->
+          <div class="px-4 space-y-2">
+            <h3 class="text-[9.5px] font-black text-slate-400 uppercase tracking-widest pl-1 font-sans">Patients Also Interacted With</h3>
+            <div id="detail-similar-carousel" class="flex gap-3 overflow-x-auto pb-2 custom-scrollbar min-h-0">
+              <!-- Populated dynamic lists -->
+            </div>
+          </div>
+
+          <!-- COMPREHENSIVE RATINGS & REVIEWS MODULE -->
+          <div class="px-4 space-y-3 pb-8">
+            <h3 class="text-[9.5px] font-black text-slate-400 uppercase tracking-widest pl-1 font-sans">Apothecary Reviews & Patient Feedbacks</h3>
+            
+            <!-- Overall score layout -->
+            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-105 flex items-center gap-5 justify-between select-none">
+              <div class="text-center font-sans pr-2">
+                <span class="text-3xl font-black text-slate-900 leading-none block" id="txt-detail-average-stars">4.4</span>
+                <span class="text-[9px] text-slate-400 block font-bold uppercase mt-1 tracking-wide" id="txt-detail-review-count">24 Reviews</span>
+              </div>
+              <div class="flex-1 space-y-1 text-slate-450 text-[10px] font-bold">
+                <div class="flex items-center gap-1.5">
+                  <span class="w-2 font-mono text-[9px]">5</span>
+                  <i class="fa-solid fa-star text-[8px] text-amber-500 shrink-0"></i>
+                  <div class="flex-1 bg-slate-205 bg-slate-200 h-1 rounded-full overflow-hidden shrink-0"><div id="bar-review-star5" class="bg-amber-450 bg-amber-500 h-full w-[75%]"></div></div>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span class="w-2 font-mono text-[9px]">4</span>
+                  <i class="fa-solid fa-star text-[8px] text-amber-500 shrink-0"></i>
+                  <div class="flex-1 bg-slate-205 bg-slate-200 h-1 rounded-full overflow-hidden shrink-0"><div id="bar-review-star4" class="bg-amber-450 bg-amber-500 h-full w-[15%]"></div></div>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span class="w-2 font-mono text-[9px]">3</span>
+                  <i class="fa-solid fa-star text-[8px] text-amber-500 shrink-0"></i>
+                  <div class="flex-1 bg-slate-205 bg-slate-200 h-1 rounded-full overflow-hidden shrink-0"><div id="bar-review-star3" class="bg-amber-450 bg-amber-500 h-full w-[8%]"></div></div>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span class="w-2 font-mono text-[9px]">2</span>
+                  <i class="fa-solid fa-star text-[8px] text-amber-500 shrink-0"></i>
+                  <div class="flex-1 bg-slate-205 bg-slate-200 h-1 rounded-full overflow-hidden shrink-0"><div id="bar-review-star2" class="bg-amber-450 bg-amber-500 h-full w-[2%]"></div></div>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span class="w-2 font-mono text-[9px]">1</span>
+                  <i class="fa-solid fa-star text-[8px] text-amber-500 shrink-0"></i>
+                  <div class="flex-1 bg-slate-205 bg-slate-200 h-1 rounded-full overflow-hidden shrink-0"><div id="bar-review-star1" class="bg-amber-450 bg-amber-500 h-full w-[0%]"></div></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Existing lists -->
+            <div id="detail-reviews-list" class="space-y-3.5 divide-y divide-slate-100">
+              <!-- Inline reviews loaded dynamics -->
+            </div>
+
+            <!-- SUBMIT LIVE NEW REVIEW & PHOTO SYSTEM -->
+            <div class="p-4 bg-indigo-50/20 border border-indigo-100/30 rounded-2xl space-y-3">
+              <h4 class="text-[10px] font-black text-slate-800 uppercase tracking-wider flex items-center gap-1 font-sans">
+                <i class="fa-solid fa-comment-medical text-indigo-505 text-indigo-600"></i> Rate and Write a Review
+              </h4>
+              
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] text-slate-450 uppercase font-black tracking-wide font-sans">Patient Score:</span>
+                <!-- Star buttons -->
+                <div class="flex items-center gap-1 text-slate-300" id="ctr-review-submitting-stars">
+                  <button type="button" onclick="setSubmittingReviewStars(1)" class="text-sm bg-none bg-transparent border-none cursor-pointer p-0.5 text-slate-300"><i class="fa-solid fa-star pointer-events-none"></i></button>
+                  <button type="button" onclick="setSubmittingReviewStars(2)" class="text-sm bg-none bg-transparent border-none cursor-pointer p-0.5 text-slate-300"><i class="fa-solid fa-star pointer-events-none"></i></button>
+                  <button type="button" onclick="setSubmittingReviewStars(3)" class="text-sm bg-none bg-transparent border-none cursor-pointer p-0.5 text-slate-300"><i class="fa-solid fa-star pointer-events-none"></i></button>
+                  <button type="button" onclick="setSubmittingReviewStars(4)" class="text-sm bg-none bg-transparent border-none cursor-pointer p-0.5 text-slate-300"><i class="fa-solid fa-star pointer-events-none"></i></button>
+                  <button type="button" onclick="setSubmittingReviewStars(5)" class="text-sm bg-none bg-transparent border-none cursor-pointer p-0.5 text-slate-300"><i class="fa-solid fa-star pointer-events-none"></i></button>
+                </div>
+              </div>
+
+              <!-- Text reviews input -->
+              <div class="space-y-1.5">
+                <textarea id="val-new-review-text" rows="2.5" placeholder="Share your experience about this medication, delivery speeds or packaging quality..." class="w-full p-2.5 bg-white border border-slate-200 outline-none focus:border-indigo-500 rounded-xl font-semibold text-slate-800 text-[11px] font-sans resize-none"></textarea>
+              </div>
+
+              <!-- Dynamic Photo Upload review -->
+              <div class="flex items-center gap-3">
+                <label class="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-white border border-dashed border-indigo-200 hover:border-indigo-500 text-indigo-605 text-indigo-600 rounded-xl cursor-pointer transition-all">
+                  <i class="fa-solid fa-camera-retro text-xs text-indigo-500"></i> Add Review photo
+                  <input type="file" id="inp-review-live-photo" accept="image/*" class="hidden">
+                </label>
+                <!-- Preview mini -->
+                <div id="ctr-review-photo-preview" class="w-10 h-10 rounded-lg overflow-hidden border border-slate-100 relative hidden shrink-0 font-sans">
+                  <!-- Populated via file reading -->
+                </div>
+              </div>
+
+              <!-- CTA -->
+              <button id="btn-submit-medicine-review" class="w-full bg-indigo-600 hover:bg-indigo-705 text-white font-extrabold text-[10px] py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer uppercase tracking-wider border-none font-sans">
+                <i class="fa-solid fa-paper-plane"></i> Sync Patient Feedback
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sticky Floating purchase controls footer -->
+        <div class="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 p-3.5 shrink-0 flex items-center justify-between z-40 shadow-lg">
+          <div>
+            <span class="text-[9px] text-slate-400 block font-bold uppercase mb-0.5 leading-none font-sans">Total Payable</span>
+            <span class="text-sm font-black text-slate-900 font-mono" id="txt-detail-sticky-payable font-mono">₹0</span>
+          </div>
+          <!-- Quantity Controls & Add to Cart -->
+          <div class="flex items-center gap-2">
+            <div class="flex items-center bg-slate-50 border border-slate-100 rounded-xl shadow-inner font-mono font-black" id="ctr-detail-qty-row">
+              <button id="btn-detail-qty-minus" class="w-8 h-8 rounded-l-xl text-slate-400 hover:text-slate-800 flex items-center justify-center border-none text-[10px] font-semibold cursor-pointer select-none font-bold" type="button"><i class="fa-solid fa-minus pointer-events-none"></i></button>
+              <span id="txt-detail-qty" class="w-8 text-center text-xs text-slate-800 leading-none select-none font-bold">1</span>
+              <button id="btn-detail-qty-plus" class="w-8 h-8 rounded-r-xl text-slate-400 hover:text-slate-800 flex items-center justify-center border-none text-[10px] font-semibold cursor-pointer select-none font-bold" type="button"><i class="fa-solid fa-plus pointer-events-none"></i></button>
+            </div>
+            
+            <button id="btn-detail-add-cart" class="bg-blue-605 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-[10px] uppercase py-3 px-5 rounded-xl shadow-md border-none flex items-center gap-1.5 cursor-pointer hover:scale-103 transition-all tracking-wide font-sans">
+              <i class="fa-solid fa-cart-landing fa-cart-plus shrink-0"></i> Add To Cart
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- FULLSCREEN ZOOM AND VIEW POPUP FOR PRODUCT IMAGES -->
+    <div id="fullscreen-zoom-viewer" class="fixed inset-0 bg-black/95 z-55 flex flex-col justify-between hidden p-5 select-none animate-fade-in font-sans">
+      
+      <!-- Top header layout -->
+      <div class="flex items-center justify-between text-white border-b border-white/10 pb-3 shrink-0">
+        <div>
+          <h4 class="text-xs font-black uppercase tracking-wider text-amber-500 font-sans" id="txt-zoom-viewer-title">Interactive slide photo</h4>
+          <p class="text-[9px] text-white/40 font-bold font-mono">Use buttons or scroll zoom to adjust scale magnification</p>
+        </div>
+        <button id="btn-close-zoom-viewer" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer transition-all hover:scale-105 border-none">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Centered zoomed image view -->
+      <div class="flex-1 flex items-center justify-center overflow-auto p-4 select-none relative">
+        <img id="zoom-main-image" src="" class="max-h-[70vh] max-w-full object-contain transition-transform duration-200 shadow-2xl rounded-lg" style="transform: scale(1);">
+      </div>
+
+      <!-- Zoom and controls row footer -->
+      <div class="bg-white/5 border border-white/10 rounded-2xl p-3 flex items-center justify-between gap-4 shrink-0 text-white select-none">
+        <div class="flex items-center gap-1 bg-black/30 p-1 rounded-xl">
+          <button id="btn-zoom-out" class="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center text-xs font-bold border-none cursor-pointer"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+          <span id="txt-zoom-scale" class="text-[10px] font-black font-mono w-12 text-center text-amber-500 select-none">100%</span>
+          <button id="btn-zoom-in" class="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center text-xs font-bold border-none cursor-pointer"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+        </div>
+        
+        <button id="btn-reset-zoom" class="bg-white/15 hover:bg-white/25 border-none outline-none text-[9.5px] font-black uppercase tracking-wider py-2 px-4 rounded-xl cursor-pointer transition-all font-sans">Reset Scale</button>
+      </div>
+
+    </div>
+
   <script type="module" src="/src/user.ts?v=meds-profile-v5"></script>
 </body>
 </html>

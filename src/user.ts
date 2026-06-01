@@ -844,9 +844,9 @@ function renderMedicinesGrid() {
         <button onclick="toggleFavoriteItem('${m.medicineId}')" class="absolute top-2 right-2 w-7 h-7 bg-white/85 hover:bg-white text-slate-400 hover:text-rose-500 rounded-full flex items-center justify-center border border-slate-100 transition-all cursor-pointer z-10 shadow-xs focus:outline-none">
           <i class="${isFav ? 'fa-solid fa-heart text-rose-500' : 'fa-regular fa-heart'} text-xs"></i>
         </button>
-        <img class="w-full h-28 object-cover-no-referrer" src="${m.image || "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300"}" referrerpolicy="no-referrer" alt="${m.name}">
+        <img class="w-full h-28 object-cover-no-referrer cursor-pointer hover:opacity-95" src="${m.image || "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300"}" referrerpolicy="no-referrer" alt="${m.name}" onclick="openProductDetailDrawer('${m.medicineId}')">
         <div class="p-3 space-y-2 flex-1 flex flex-col justify-between">
-          <div>
+          <div class="cursor-pointer" onclick="openProductDetailDrawer('${m.medicineId}')">
             <span class="text-[7.5px] uppercase font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full tracking-wide">${m.category || "General"}</span>
             <h4 class="font-extrabold text-slate-900 text-[11px] mt-1.5 truncate leading-tight tracking-tight font-display">${m.name}</h4>
             <p class="text-[9px] text-slate-400 truncate mt-0.5 leading-normal" title="${m.description}">${m.description || "Certified secure pharmaceutical product"}</p>
@@ -2884,4 +2884,658 @@ function initUserSupportSystem() {
 
 // Invoke the setup
 initUserSupportSystem();
+
+// --- MEDICINE PRODUCT DETAILS SYSTEM GLOBAL EXPORTS ---
+let activeDetailMedicine: any = null;
+let detailSliderImages: string[] = [];
+let activeSliderImgIndex = 0;
+let detailQtyVal = 1;
+let submittingReviewStars = 5;
+let uploadedReviewPhotoUrl = "";
+
+const prodDetailDrawer = document.getElementById("product-detail-drawer") as HTMLDivElement;
+const prodDetailDrawerContent = document.getElementById("product-detail-drawer-content") as HTMLDivElement;
+const zoomViewer = document.getElementById("fullscreen-zoom-viewer") as HTMLDivElement;
+const zoomMainImg = document.getElementById("zoom-main-image") as HTMLImageElement;
+const zoomScaleLabel = document.getElementById("txt-zoom-scale")!;
+let currentZoomScale = 1.0;
+
+function openProductDetailDrawer(medId: string) {
+  const med = allMedicines.find(m => m.medicineId === medId);
+  if (!med) {
+    showToast("Medicine item details could not be retrieved from synchronizations database.", "error");
+    return;
+  }
+  
+  activeDetailMedicine = med;
+  detailQtyVal = 1;
+  submittingReviewStars = 5;
+  uploadedReviewPhotoUrl = "";
+  
+  // Reset quantity input visually
+  const qtyInputEl = document.getElementById("txt-detail-qty");
+  if (qtyInputEl) qtyInputEl.innerText = "1";
+  
+  // Build slide photos array
+  detailSliderImages = [];
+  if (med.image) {
+    detailSliderImages.push(med.image);
+  }
+  if (Array.isArray(med.sliderImages)) {
+    med.sliderImages.forEach((img: string) => {
+      if (img && !detailSliderImages.includes(img)) {
+        detailSliderImages.push(img);
+      }
+    });
+  }
+  if (detailSliderImages.length === 0) {
+    detailSliderImages.push("https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=500");
+  }
+  
+  activeSliderImgIndex = 0;
+  
+  // Render active photo slide
+  updateSliderDisplay();
+  
+  // Populate general info
+  document.getElementById("detail-product-category")!.innerText = (med.category || "General").toUpperCase();
+  document.getElementById("detail-product-name")!.innerText = med.name || "Medicine Item";
+  
+  const mfrSub = `${med.brand || 'Abbott'} | MFR: ${med.manufacturer || 'Certified Manufacturer'}`;
+  document.getElementById("detail-product-subtitle")!.innerText = mfrSub.toUpperCase();
+  
+  // Pack size
+  document.getElementById("detail-product-packsize")!.innerText = med.packSize || "10 tablet(s) in a Strip";
+  
+  // Stock display & Add to Cart disabled if out of stock
+  const stockEl = document.getElementById("detail-product-stock")!;
+  const stockStatusEl = document.getElementById("detail-product-stock-status")!;
+  const qtyRow = document.getElementById("ctr-detail-qty-row")!;
+  const addCartBtn = document.getElementById("btn-detail-add-cart") as HTMLButtonElement;
+  
+  const stockCount = parseInt(med.stock) || 0;
+  if (stockCount <= 0) {
+    stockEl.innerText = "OUT OF STOCK";
+    stockStatusEl.className = "flex items-center gap-1 text-rose-600 font-bold";
+    qtyRow.classList.add("opacity-40", "pointer-events-none");
+    addCartBtn.disabled = true;
+    addCartBtn.innerText = "OUT OF STOCK";
+    addCartBtn.className = "bg-slate-300 text-slate-500 font-extrabold text-[10px] uppercase py-3 px-5 rounded-xl cursor-not-allowed border-none shrink-0";
+  } else if (stockCount < 5) {
+    stockEl.innerText = `ONLY ${stockCount} LEFT`;
+    stockStatusEl.className = "flex items-center gap-1 text-amber-600 font-bold animate-pulse";
+    qtyRow.classList.remove("opacity-40", "pointer-events-none");
+    addCartBtn.disabled = false;
+    addCartBtn.innerText = "Add To Cart";
+    addCartBtn.className = "bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-[10px] uppercase py-3 px-5 rounded-xl shadow-md border-none flex items-center gap-1.5 cursor-pointer hover:scale-103 transition-all tracking-wide font-sans";
+  } else {
+    stockEl.innerText = `IN STOCK (${stockCount})`;
+    stockStatusEl.className = "flex items-center gap-1 text-emerald-600 font-bold";
+    qtyRow.classList.remove("opacity-40", "pointer-events-none");
+    addCartBtn.disabled = false;
+    addCartBtn.innerText = "Add To Cart";
+    addCartBtn.className = "bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-[10px] uppercase py-3 px-5 rounded-xl shadow-md border-none flex items-center gap-1.5 cursor-pointer hover:scale-103 transition-all tracking-wide font-sans";
+  }
+  
+  // Price and MRP cross-out and discount badges
+  const priceEl = document.getElementById("detail-product-price")!;
+  const mrpEl = document.getElementById("detail-product-mrp")!;
+  const discountEl = document.getElementById("detail-product-discount-pct")!;
+  
+  priceEl.innerText = `₹${med.price}`;
+  const disc = parseInt(med.discount) || 0;
+  if (disc > 0) {
+    const calculatedMrp = Math.round(med.price / (1 - disc / 100));
+    mrpEl.innerText = `₹${calculatedMrp}`;
+    mrpEl.classList.remove("hidden");
+    
+    discountEl.innerText = `${disc}% OFF`;
+    discountEl.classList.remove("hidden");
+  } else {
+    mrpEl.classList.add("hidden");
+    discountEl.classList.add("hidden");
+  }
+  
+  // Prescription warning
+  const isRx = (med.category || "").toLowerCase().includes("prescription") || 
+               (med.category || "").toLowerCase() === "rx" ||
+               (med.description || "").toLowerCase().includes("prescription required");
+               
+  const rxWarningBox = document.getElementById("detail-prescription-warning-box")!;
+  if (isRx) {
+    rxWarningBox.classList.remove("hidden");
+  } else {
+    rxWarningBox.classList.add("hidden");
+  }
+  
+  // Logistics - Calculate distance from user destination location
+  const deliveryDistanceEl = document.getElementById("detail-delivery-distance")!;
+  const deliveryDurationEl = document.getElementById("detail-delivery-duration")!;
+  
+  const supplierStore = allStores.find(s => s.storeId === med.storeId);
+  if (supplierStore && supplierStore.location && currentCoordinates) {
+    const distanceKm = calculateDistance(
+      currentCoordinates.lat,
+      currentCoordinates.lng,
+      supplierStore.location.lat,
+      supplierStore.location.lng
+    );
+    deliveryDistanceEl.innerText = `${distanceKm.toFixed(1)} km away`;
+    
+    // Duration estimation
+    if (distanceKm < 2) {
+      deliveryDurationEl.innerText = "15 - 20 Minutes";
+    } else if (distanceKm < 5) {
+      deliveryDurationEl.innerText = "20 - 30 Minutes";
+    } else {
+      deliveryDurationEl.innerText = "35 - 50 Minutes";
+    }
+  } else {
+    deliveryDistanceEl.innerText = "Nearby Store";
+    deliveryDurationEl.innerText = "15 - 30 Minutes";
+  }
+  
+  // Collapse specs accordions by default
+  const accordions = document.querySelectorAll(".spec-accordion-item > div:last-child");
+  accordions.forEach(el => {
+    el.classList.add("hidden");
+  });
+  const accordionsChevrons = document.querySelectorAll(".spec-accordion-item i.fa-chevron-up, .spec-accordion-item i.fa-chevron-down");
+  accordionsChevrons.forEach(ch => {
+    ch.className = "fa-solid fa-chevron-down text-[9px] text-slate-400 transition-transform";
+  });
+  
+  // Populate accordions content
+  document.getElementById("spec-uses")!.innerText = med.uses || "Primary therapeutic diagnosis indicator: Relieves fever, chills, migraine headaches, muscle pains and seasonal viral infections.";
+  document.getElementById("spec-benefits")!.innerText = med.benefits || "Directly mitigates high biological temperatures and mitigates brain pain signaling nodes. Supports standard active energy cells recuperation.";
+  document.getElementById("spec-dosage")!.innerText = med.dosage || "Standard adult dose is 1 tablet every 4-6 hours. Do not exceed 4000mg limit per day. Consult clinical physician or registered nurse practitioner.";
+  document.getElementById("spec-side-effects")!.innerText = med.sideEffects || "Minor mild constipation, transient skin allergy rashes, or stomach acidity. Discontinue clinical intake immediately if swelling or hepatoxicity symptoms emerge.";
+  document.getElementById("spec-warnings")!.innerText = med.warnings || "Consult doctor before use if you suffer from liver kidney disorders, chronic alcoholism history, or severe heart stroke issues. Never take in empty empty stomach.";
+  document.getElementById("spec-storage")!.innerText = med.storage || "Keep securely out of reach of residential infants and domestic pets. Store safely under 25°C temperature blocks away from excessive light or damp humidity.";
+  
+  // Sync wishlist button icon state in drawer
+  syncWishlistIconState(med.medicineId);
+  
+  // Render similar remedies
+  renderSimilarRemedies(med);
+  
+  // Load and render patient reviews
+  loadAndRenderPatientReviews(med.medicineId);
+  
+  // Reset review writing state
+  const newReviewText = document.getElementById("val-new-review-text") as HTMLTextAreaElement;
+  if (newReviewText) newReviewText.value = "";
+  resetReviewStarsDisplay();
+  const photoPreview = document.getElementById("ctr-review-photo-preview")!;
+  photoPreview.innerHTML = "";
+  photoPreview.classList.add("hidden");
+  
+  // Update sticky bottom footer pricing
+  updateStickyFooterPayable();
+  
+  // Open the drawer with CSS transitions
+  prodDetailDrawer.classList.remove("hidden");
+  setTimeout(() => {
+    prodDetailDrawerContent.classList.remove("translate-y-full");
+    prodDetailDrawerContent.classList.add("translate-y-0");
+  }, 10);
+}
+
+function syncWishlistIconState(medId: string) {
+  const isFav = profileData && profileData.favorites && profileData.favorites[medId] ? true : false;
+  const wishIcon = document.getElementById("detail-wishlist-icon")!;
+  const wishBtn = document.getElementById("btn-detail-wishlist")!;
+  
+  if (isFav) {
+    wishIcon.className = "fa-solid fa-heart text-sm text-rose-500 scale-110";
+    wishBtn.classList.add("text-rose-550");
+  } else {
+    wishIcon.className = "fa-solid fa-heart text-sm text-slate-400";
+    wishBtn.classList.remove("text-rose-550");
+  }
+}
+
+function updateSliderDisplay() {
+  const activeImg = document.getElementById("detail-slider-img-active") as HTMLImageElement;
+  const labelIdx = document.getElementById("txt-slider-active-idx")!;
+  const thumbsContainer = document.getElementById("detail-slider-thumbs")!;
+  
+  const currentImgUrl = detailSliderImages[activeSliderImgIndex];
+  activeImg.src = currentImgUrl;
+  
+  labelIdx.innerText = `${activeSliderImgIndex + 1} / ${detailSliderImages.length}`;
+  
+  // Render thumbs
+  thumbsContainer.innerHTML = detailSliderImages.map((img, idx) => {
+    const isActive = activeSliderImgIndex === idx;
+    return `
+      <button onclick="selectSliderActiveIndex(${idx})" type="button" class="w-12 h-12 bg-white rounded-lg border-2 ${isActive ? 'border-blue-600' : 'border-slate-100'} p-0.5 overflow-hidden flex items-center justify-center shrink-0 cursor-pointer transition-all">
+        <img src="${img}" class="h-full w-full object-contain" referrerpolicy="no-referrer">
+      </button>
+    `;
+  }).join("");
+}
+
+function updateStickyFooterPayable() {
+  const payableEl = document.getElementById("txt-detail-sticky-payable font-mono");
+  const payableElBackup = document.getElementById("txt-detail-sticky-payable");
+  if (activeDetailMedicine) {
+    const rate = activeDetailMedicine.price;
+    const finalTotal = rate * detailQtyVal;
+    if (payableEl) payableEl.innerText = `₹${finalTotal}`;
+    if (payableElBackup) payableElBackup.innerText = `₹${finalTotal}`;
+  }
+}
+
+function closeProductDetailDrawer() {
+  prodDetailDrawerContent.classList.remove("translate-y-0");
+  prodDetailDrawerContent.classList.add("translate-y-full");
+  setTimeout(() => {
+    prodDetailDrawer.classList.add("hidden");
+  }, 300);
+}
+
+function updateZoomDisplay() {
+  zoomMainImg.style.transform = `scale(${currentZoomScale})`;
+  zoomScaleLabel.innerText = `${Math.round(currentZoomScale * 100)}%`;
+}
+
+function triggerZoomIn() {
+  if (currentZoomScale >= 3.0) return;
+  currentZoomScale += 0.25;
+  updateZoomDisplay();
+}
+
+function triggerZoomOut() {
+  if (currentZoomScale <= 0.5) return;
+  currentZoomScale -= 0.25;
+  updateZoomDisplay();
+}
+
+function resetZoomScale() {
+  currentZoomScale = 1.0;
+  updateZoomDisplay();
+}
+
+function openFullscreenViewer() {
+  if (detailSliderImages.length === 0) return;
+  const currentImgUrl = detailSliderImages[activeSliderImgIndex];
+  
+  zoomMainImg.src = currentImgUrl;
+  currentZoomScale = 1.0;
+  updateZoomDisplay();
+  
+  zoomViewer.classList.remove("hidden");
+}
+
+function renderSimilarRemedies(med: any) {
+  const simContainer = document.getElementById("detail-similar-carousel")!;
+  
+  const matches = allMedicines.filter(m => m.category === med.category && m.medicineId !== med.medicineId).slice(0, 5);
+  if (matches.length === 0) {
+    const genericMatches = allMedicines.filter(m => m.medicineId !== med.medicineId).slice(0, 5);
+    matches.push(...genericMatches);
+  }
+  
+  simContainer.innerHTML = matches.map(m => {
+    return `
+      <div class="bg-slate-50 rounded-2xl p-2.5 min-w-[120px] max-w-[120px] border border-slate-100 flex flex-col justify-between shrink-0 hover:border-blue-200 transition-all text-center select-none font-sans">
+        <div onclick="openProductDetailDrawer('${m.medicineId}')" class="cursor-pointer">
+          <img src="${m.image || 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=200'}" class="w-16 h-16 object-contain mx-auto bg-white rounded-xl p-1 border border-slate-100" referrerpolicy="no-referrer">
+          <h4 class="font-bold text-slate-800 text-[10px] truncate leading-tight mt-1.5 font-sans">${m.name}</h4>
+          <span class="text-[8px] font-semibold text-slate-400 block truncate leading-none mt-0.5">${m.brand || 'Apollo'}</span>
+          <span class="font-mono text-[10px] font-black text-blue-600 block mt-1">₹${m.price}</span>
+        </div>
+        <button onclick="addMedicineToCart('${m.medicineId}')" class="bg-blue-600 hover:bg-blue-700 text-white font-black text-[8px] py-1 px-2.5 rounded-lg border-none mt-2 uppercase tracking-wide cursor-pointer w-full text-center hover:scale-103 transition-all">Quick Add</button>
+      </div>
+    `;
+  }).join("");
+}
+
+function loadAndRenderPatientReviews(medId: string) {
+  const reviewsListContainer = document.getElementById("detail-reviews-list")!;
+  
+  get(ref(db, `medicineReviews/${medId}`)).then((snapshot) => {
+    let reviews: any[] = [];
+    if (snapshot.exists()) {
+      snapshot.forEach(child => {
+        reviews.push({ reviewId: child.key, ...child.val() });
+      });
+    }
+    
+    // Fallback reviews
+    if (reviews.length === 0) {
+      reviews = [
+        {
+          reviewId: "r1",
+          username: "Dr. Sumit Saxena",
+          stars: 5,
+          text: "Excellent therapeutic action response curves. Handed standard pack to geriatric fever patients with immediate body temperature recuperation. Highly trustworthy store batch.",
+          date: "Yesterday",
+          photo: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=200"
+        },
+        {
+          reviewId: "r2",
+          username: "Anjali Mishra",
+          stars: 4,
+          text: "Very rapid home delivery dispatch. The strip was tightly packed in double layers bubble sheets. Perfect dosage of scheduled medicine.",
+          date: "3 days ago"
+        }
+      ];
+    }
+    
+    reviews.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    
+    const totalStars = reviews.reduce((sum, r) => sum + (parseInt(r.stars) || 5), 0);
+    const avgScore = (totalStars / reviews.length).toFixed(1);
+    
+    document.getElementById("txt-detail-average-stars")!.innerText = avgScore;
+    document.getElementById("txt-detail-review-count")!.innerText = `${reviews.length} Patient Reviews`;
+    
+    let s5 = 0, s4 = 0, s3 = 0, s2 = 0, s1 = 0;
+    reviews.forEach(r => {
+      const st = parseInt(r.stars) || 5;
+      if (st >= 5) s5++;
+      else if (st === 4) s4++;
+      else if (st === 3) s3++;
+      else if (st === 2) s2++;
+      else s1++;
+    });
+    
+    const pct = (cnt: number) => reviews.length > 0 ? `${(cnt / reviews.length) * 100}%` : "0%";
+    document.getElementById("bar-review-star5")!.style.width = pct(s5);
+    document.getElementById("bar-review-star4")!.style.width = pct(s4);
+    document.getElementById("bar-review-star3")!.style.width = pct(s3);
+    document.getElementById("bar-review-star2")!.style.width = pct(s2);
+    document.getElementById("bar-review-star1")!.style.width = pct(s1);
+    
+    reviewsListContainer.innerHTML = reviews.map(r => {
+      let reviewerStarsHtml = "";
+      for (let i = 1; i <= 5; i++) {
+        reviewerStarsHtml += `<i class="fa-solid fa-star ${i <= (r.stars || 5) ? 'text-amber-500' : 'text-slate-200'} text-[8px] mr-0.5 shrink-0"></i>`;
+      }
+      
+      return `
+        <div class="pt-3 first:pt-0 space-y-1 select-none font-sans">
+          <div class="flex items-center justify-between text-[10px]">
+            <div class="flex items-center gap-1.5">
+              <span class="w-5 h-5 rounded-full bg-slate-100 text-slate-500 text-[9px] font-black uppercase flex items-center justify-center font-mono leading-none">${r.username ? r.username[0] : 'V'}</span>
+              <h5 class="font-extrabold text-slate-900 capitalize font-sans">${r.username || 'Verified Patient'}</h5>
+            </div>
+            <span class="text-slate-400 font-medium font-mono text-[8.5px]">${r.date || 'clinical sync'}</span>
+          </div>
+          
+          <div class="flex items-center mt-0.5">${reviewerStarsHtml}</div>
+          
+          <p class="text-[10px] text-slate-600 leading-normal font-medium mt-1 font-sans">${r.text}</p>
+          
+          ${r.photo ? `
+            <div class="relative w-12 h-12 rounded-lg overflow-hidden border border-slate-100 mt-1 cursor-zoom-in shadow-2xs" onclick="openFullscreenReviewPhoto('${r.photo}')">
+              <img src="${r.photo}" class="w-full h-full object-cover">
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }).join("");
+  });
+}
+
+function openFullscreenReviewPhoto(url: string) {
+  zoomMainImg.src = url;
+  currentZoomScale = 1.0;
+  updateZoomDisplay();
+  zoomViewer.classList.remove("hidden");
+}
+
+function selectSliderActiveIndex(index: number) {
+  activeSliderImgIndex = index;
+  updateSliderDisplay();
+}
+
+function setSubmittingReviewStars(score: number) {
+  submittingReviewStars = score;
+  const starsContainer = document.getElementById("ctr-review-submitting-stars")!;
+  if (starsContainer) {
+    const starButtons = starsContainer.querySelectorAll("button");
+    starButtons.forEach((btn, idx) => {
+      if (idx < score) {
+        btn.className = "text-sm bg-none bg-transparent border-none cursor-pointer p-0.5 text-amber-500";
+      } else {
+        btn.className = "text-sm bg-none bg-transparent border-none cursor-pointer p-0.5 text-slate-300";
+      }
+    });
+  }
+}
+
+function resetReviewStarsDisplay() {
+  setSubmittingReviewStars(5);
+}
+
+const inpReviewLivePhoto = document.getElementById("inp-review-live-photo") as HTMLInputElement;
+const reviewPhotoPreview = document.getElementById("ctr-review-photo-preview")!;
+
+inpReviewLivePhoto?.addEventListener("change", async (e: any) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  reviewPhotoPreview.innerHTML = `<div class="absolute inset-0 bg-white/70 flex items-center justify-center"><i class="fa-solid fa-spinner animate-spin text-xs text-blue-600"></i></div>`;
+  reviewPhotoPreview.classList.remove("hidden");
+  
+  try {
+    const url = await uploadToCloudinary(file);
+    uploadedReviewPhotoUrl = url;
+    reviewPhotoPreview.innerHTML = `
+      <img src="${url}" class="w-full h-full object-cover">
+      <button onclick="removeUploadedReviewPhoto()" type="button" class="absolute top-0.5 right-0.5 w-3.5 h-3.5 bg-slate-900/60 text-white rounded-full flex items-center justify-center text-[7px] border-none cursor-pointer">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    `;
+  } catch (err) {
+    showToast("Review photo uploading failure.", "error");
+    reviewPhotoPreview.classList.add("hidden");
+    uploadedReviewPhotoUrl = "";
+  }
+});
+
+function removeUploadedReviewPhoto() {
+  uploadedReviewPhotoUrl = "";
+  if (inpReviewLivePhoto) inpReviewLivePhoto.value = "";
+  reviewPhotoPreview.innerHTML = "";
+  reviewPhotoPreview.classList.add("hidden");
+}
+
+function submitMedicineReview() {
+  if (!activeDetailMedicine) return;
+  if (!loggedInUser) {
+    showToast("Please log in to submit a review.", "error");
+    return;
+  }
+  
+  const textVal = (document.getElementById("val-new-review-text") as HTMLTextAreaElement).value.trim();
+  if (!textVal) {
+    showToast("Please write some feedback comment details.", "error");
+    return;
+  }
+  
+  const medId = activeDetailMedicine.medicineId;
+  const username = profileData.name || loggedInUser.displayName || loggedInUser.email?.split("@")[0] || "Patient";
+  
+  const payload = {
+    username,
+    stars: submittingReviewStars,
+    text: textVal,
+    photo: uploadedReviewPhotoUrl,
+    createdAt: Date.now()
+  };
+  
+  const reviewRefNode = ref(db, `medicineReviews/${medId}/${Date.now()}`);
+  set(reviewRefNode, payload).then(() => {
+    showToast("Patient review synchronized successfully!", "success");
+    loadAndRenderPatientReviews(medId);
+    
+    // Clear
+    (document.getElementById("val-new-review-text") as HTMLTextAreaElement).value = "";
+    removeUploadedReviewPhoto();
+    resetReviewStarsDisplay();
+  }).catch((err) => {
+    console.error(err);
+    showToast("Failed to sync review with database.", "error");
+  });
+}
+
+function toggleWishlistItemInDrawer() {
+  if (!activeDetailMedicine) return;
+  const id = activeDetailMedicine.medicineId;
+  const key = `users/${loggedInUser.uid}/favorites/${id}`;
+  
+  get(ref(db, key)).then((snap) => {
+    if (snap.exists()) {
+      remove(ref(db, key)).then(() => {
+        showToast("Removed from Favorites", "info");
+        syncWishlistIconState(id);
+        syncUserProfileDash();
+        renderMedicinesGrid();
+      });
+    } else {
+      set(ref(db, key), true).then(() => {
+        showToast("Added to Favorites!", "success");
+        syncWishlistIconState(id);
+        syncUserProfileDash();
+        renderMedicinesGrid();
+      });
+    }
+  });
+}
+
+function addDetailMedicineToCart() {
+  if (!activeDetailMedicine) return;
+  const id = activeDetailMedicine.medicineId;
+  const med = activeDetailMedicine;
+  
+  if (activeStoreId && activeStoreId !== med.storeId) {
+    showToast("For safety, please bundle items from one pharmacy store in single checkout.", "info");
+    return;
+  }
+  
+  cartItems[id] = {
+    medicineId: med.medicineId,
+    name: med.name,
+    price: med.price,
+    qty: detailQtyVal,
+    category: med.category || "General",
+    storeId: med.storeId,
+    storeName: med.storeName || "Pharmacy Store"
+  };
+  
+  syncCartBadge();
+  renderMedicinesGrid();
+  renderCartDrawer();
+  showToast(`${med.name} added to cart!`, "success");
+}
+
+function initProductDetailSystem() {
+  const btnClose = document.getElementById("btn-close-detail-drawer");
+  const btnPull = document.getElementById("btn-pull-close-detail");
+  const btnQtyMinus = document.getElementById("btn-detail-qty-minus");
+  const btnQtyPlus = document.getElementById("btn-detail-qty-plus");
+  const btnAddCart = document.getElementById("btn-detail-add-cart");
+  const btnDetailWishlist = document.getElementById("btn-detail-wishlist");
+  
+  const btnCloseZoom = document.getElementById("btn-close-zoom-viewer");
+  const btnZoomIn = document.getElementById("btn-zoom-in");
+  const btnZoomOut = document.getElementById("btn-zoom-out");
+  const btnResetZoom = document.getElementById("btn-reset-zoom");
+  const btnSubmitReview = document.getElementById("btn-submit-medicine-review");
+
+  btnClose?.addEventListener("click", () => {
+    closeProductDetailDrawer();
+  });
+  btnPull?.addEventListener("click", () => {
+    closeProductDetailDrawer();
+  });
+  
+  btnQtyMinus?.addEventListener("click", () => {
+    if (detailQtyVal <= 1) return;
+    detailQtyVal--;
+    document.getElementById("txt-detail-qty")!.innerText = detailQtyVal.toString();
+    updateStickyFooterPayable();
+  });
+  
+  btnQtyPlus?.addEventListener("click", () => {
+    if (!activeDetailMedicine) return;
+    const maxStock = parseInt(activeDetailMedicine.stock) || 0;
+    if (detailQtyVal >= maxStock) {
+      showToast(`Only ${maxStock} units currently in stock at vendor store.`, "info");
+      return;
+    }
+    detailQtyVal++;
+    document.getElementById("txt-detail-qty")!.innerText = detailQtyVal.toString();
+    updateStickyFooterPayable();
+  });
+  
+  btnAddCart?.addEventListener("click", () => {
+    addDetailMedicineToCart();
+  });
+  
+  btnDetailWishlist?.addEventListener("click", () => {
+    toggleWishlistItemInDrawer();
+  });
+  
+  btnCloseZoom?.addEventListener("click", () => {
+    zoomViewer.classList.add("hidden");
+  });
+  
+  btnZoomIn?.addEventListener("click", () => {
+    triggerZoomIn();
+  });
+  
+  btnZoomOut?.addEventListener("click", () => {
+    triggerZoomOut();
+  });
+  
+  btnResetZoom?.addEventListener("click", () => {
+    resetZoomScale();
+  });
+  
+  btnSubmitReview?.addEventListener("click", () => {
+    submitMedicineReview();
+  });
+
+  const activeSlideImageEl = document.getElementById("detail-slider-img-active");
+  activeSlideImageEl?.addEventListener("click", () => {
+    openFullscreenViewer();
+  });
+}
+
+function toggleDetailSpecsAccordion(specId: string, button: HTMLButtonElement) {
+  const content = document.getElementById(specId);
+  if (!content) return;
+  const chev = button.querySelector("i:last-child");
+  if (!chev) return;
+  
+  const isHidden = content.classList.contains("hidden");
+  if (isHidden) {
+    content.classList.remove("hidden");
+    chev.className = "fa-solid fa-chevron-up text-[9px] text-blue-600 transition-transform font-bold rotate-180";
+  } else {
+    content.classList.add("hidden");
+    chev.className = "fa-solid fa-chevron-down text-[9px] text-slate-400 transition-transform";
+  }
+}
+
+// Map window event targets for templates
+Object.assign(window, {
+  openProductDetailDrawer,
+  closeProductDetailDrawer,
+  selectSliderActiveIndex,
+  toggleDetailSpecsAccordion,
+  setSubmittingReviewStars,
+  removeUploadedReviewPhoto,
+  submitMedicineReview,
+  toggleWishlistItemInDrawer,
+  openFullscreenReviewPhoto
+});
+
+// Initialize systems
+initProductDetailSystem();
 

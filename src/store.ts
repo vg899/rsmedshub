@@ -469,14 +469,78 @@ Object.assign(window, {
 // 2. APOTHECARY INVENTORY & FILE UPLOAD
 let uploadedMedicinesCache: any[] = [];
 let medicineImageFile: File | null = null;
+let addMedicineSliderImages: string[] = [];
 
 const medFileInput = document.getElementById("med-file-input") as HTMLInputElement;
 medFileInput?.addEventListener("change", (e) => {
   const target = e.target as HTMLInputElement;
   if (target.files && target.files.length > 0) {
     medicineImageFile = target.files[0];
-    document.getElementById("img-upload-txt")!.innerText = "Selected Gallery";
+    document.getElementById("img-upload-txt")!.innerText = "Selected Cover";
     document.getElementById("img-upload-icon")!.className = "fa-solid fa-file-circle-check text-indigo-400 mr-2";
+  }
+});
+
+// Handles secondary multi image selection (Up to 10 images)
+const medMultiImagesInput = document.getElementById("med-multi-images-input") as HTMLInputElement;
+medMultiImagesInput?.addEventListener("change", async (e) => {
+  const files = (e.target as HTMLInputElement).files;
+  if (!files || files.length === 0) return;
+  if (addMedicineSliderImages.length >= 10) {
+    showToast("Maximum of 10 presentation images allowed per product", "error");
+    return;
+  }
+
+  showToast("Uploading slide photo to Cloudinary...", "info");
+  for (let i = 0; i < files.length; i++) {
+    if (addMedicineSliderImages.length >= 10) break;
+    try {
+      const url = await uploadToCloudinary(files[i]);
+      addMedicineSliderImages.push(url);
+    } catch {
+      showToast(`Failed uploading slide ${i+1}`, "error");
+    }
+  }
+  renderAddMedicineThumbs();
+  showToast("Slide photos loaded successfully!", "success");
+});
+
+function renderAddMedicineThumbs() {
+  const container = document.getElementById("add-med-thumbs-container");
+  const countSpan = document.getElementById("txt-slider-pics-cnt");
+  if (!container || !countSpan) return;
+
+  countSpan.innerText = `${addMedicineSliderImages.length} / 10 Upl`;
+  
+  if (addMedicineSliderImages.length > 0) {
+    container.classList.remove("hidden");
+    container.innerHTML = addMedicineSliderImages.map((url, i) => `
+      <div class="relative w-12 h-12 rounded-lg overflow-hidden border border-slate-200 shrink-0">
+        <img src="${url}" class="w-full h-full object-cover">
+        <button type="button" onclick="removeAddMedicineSliderImage(${i})" class="absolute -top-1 -right-1 w-4 h-4 bg-rose-600 text-white rounded-full flex items-center justify-center text-[8px] border-none cursor-pointer hover:bg-rose-700 transition-all shadow-xs"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+    `).join("");
+  } else {
+    container.classList.add("hidden");
+    container.innerHTML = "";
+  }
+}
+
+// Collapsible advanced specifications
+const toggleAddAdvancedBtn = document.getElementById("btn-toggle-add-advanced-sections");
+const addAdvancedPanel = document.getElementById("add-advanced-specs-collapsed");
+const addAdvancedChev = document.getElementById("icon-add-advanced-chev");
+
+toggleAddAdvancedBtn?.addEventListener("click", () => {
+  if (addAdvancedPanel) {
+    const isHidden = addAdvancedPanel.classList.contains("hidden");
+    if (isHidden) {
+      addAdvancedPanel.classList.remove("hidden");
+      addAdvancedChev?.classList.replace("fa-chevron-down", "fa-chevron-up");
+    } else {
+      addAdvancedPanel.classList.add("hidden");
+      addAdvancedChev?.classList.replace("fa-chevron-up", "fa-chevron-down");
+    }
   }
 });
 
@@ -488,12 +552,25 @@ document.getElementById("form-add-medicine")?.addEventListener("submit", async (
   const category = (document.getElementById("med-category") as HTMLSelectElement).value;
   const desc = (document.getElementById("med-desc") as HTMLInputElement).value.trim();
 
+  // Advanced clinical fields
+  const brand = (document.getElementById("med-brand") as HTMLInputElement).value.trim();
+  const genericName = (document.getElementById("med-generic") as HTMLInputElement).value.trim();
+  const manufacturer = (document.getElementById("med-manufacturer") as HTMLInputElement).value.trim();
+  const dosage = (document.getElementById("med-dosage") as HTMLInputElement).value.trim();
+  const packSize = (document.getElementById("med-pack-size") as HTMLInputElement).value.trim();
+  const discount = parseInt((document.getElementById("med-discount") as HTMLInputElement).value) || 0;
+  const uses = (document.getElementById("med-uses") as HTMLTextAreaElement).value.trim();
+  const benefits = (document.getElementById("med-benefits") as HTMLTextAreaElement).value.trim();
+  const sideEffects = (document.getElementById("med-side-effects") as HTMLTextAreaElement).value.trim();
+  const warnings = (document.getElementById("med-warnings") as HTMLTextAreaElement).value.trim();
+  const storage = (document.getElementById("med-storage") as HTMLInputElement).value.trim();
+
   const submitBtn = document.getElementById("btn-submit-med") as HTMLButtonElement;
   submitBtn.disabled = true;
-  submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Syncing image...`;
+  submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Syncing Cover Image...`;
 
   if (!medicineImageFile) {
-    showToast("Please pick a medicine label image from gallery", "error");
+    showToast("Please pick a main cover image from your camera or gallery", "error");
     submitBtn.disabled = false;
     submitBtn.innerHTML = `<i class="fa-solid fa-save"></i> <span>Inject into Medicine Matrix</span>`;
     return;
@@ -507,13 +584,26 @@ document.getElementById("form-add-medicine")?.addEventListener("submit", async (
     const payload = {
       medicineId: medId,
       storeId: currentStoreId,
-      storeName: currentStoreDetail.name || "Apothecary Outlet",
+      storeName: currentStoreDetail?.name || "Apothecary Outlet",
       name,
       price,
       stock,
       category,
       description: desc,
-      image: labelUrl
+      image: labelUrl,
+      images: [labelUrl, ...addMedicineSliderImages],
+      brand: brand || "Generic",
+      genericName: genericName || name,
+      manufacturer: manufacturer || "General Pharma",
+      dosage: dosage || "Standard Strength",
+      packSize: packSize || "Package Pack",
+      discount: discount,
+      uses: uses || "Temporary relief of mild discomfort.",
+      benefits: benefits || "Addresses targeted symptoms safely.",
+      sideEffects: sideEffects || "Minor nausea or dry mouth if any.",
+      warnings: warnings || "Take under supervision and store carefully.",
+      storage: storage || "Store below 30°C in dry dark space.",
+      createdAt: Date.now()
     };
 
     set(ref(db, `medicines/${medId}`), payload).then(() => {
@@ -521,8 +611,11 @@ document.getElementById("form-add-medicine")?.addEventListener("submit", async (
       
       // Reset form variables
       medicineImageFile = null;
+      addMedicineSliderImages = [];
+      renderAddMedicineThumbs();
+      
       (document.getElementById("form-add-medicine") as HTMLFormElement).reset();
-      document.getElementById("img-upload-txt")!.innerText = "Select Gallery";
+      document.getElementById("img-upload-txt")!.innerText = "Select Cover";
       document.getElementById("img-upload-icon")!.className = "fa-solid fa-camera mr-2 text-slate-400";
       
       submitBtn.disabled = false;
@@ -534,6 +627,160 @@ document.getElementById("form-add-medicine")?.addEventListener("submit", async (
     submitBtn.innerHTML = `<i class="fa-solid fa-save"></i> <span>Inject into Medicine Matrix</span>`;
   }
 });
+
+
+// State variables for Product Editing
+let editMedicineCoverFile: File | null = null;
+let editMedicineSliderImages: string[] = [];
+
+// Edit cover select trigger
+const editMedFileInput = document.getElementById("edit-med-file-input") as HTMLInputElement;
+editMedFileInput?.addEventListener("change", (e) => {
+  const target = e.target as HTMLInputElement;
+  if (target.files && target.files.length > 0) {
+    editMedicineCoverFile = target.files[0];
+    document.getElementById("edit-img-upload-txt")!.innerText = "Ready to Replace";
+    document.getElementById("edit-img-upload-icon")!.className = "fa-solid fa-file-circle-check text-green-500 mr-2";
+  }
+});
+
+// Edit Slider Multi-select trigger
+const editMedMultiImagesInput = document.getElementById("edit-med-multi-images-input") as HTMLInputElement;
+editMedMultiImagesInput?.addEventListener("change", async (e) => {
+  const files = (e.target as HTMLInputElement).files;
+  if (!files || files.length === 0) return;
+  if (editMedicineSliderImages.length >= 10) {
+    showToast("Upto 10 presentation photos permitted", "error");
+    return;
+  }
+
+  showToast("Uploading slide photo...", "info");
+  for (let i = 0; i < files.length; i++) {
+    if (editMedicineSliderImages.length >= 10) break;
+    try {
+      const url = await uploadToCloudinary(files[i]);
+      editMedicineSliderImages.push(url);
+    } catch {
+      showToast(`Failed uploading slide photo`, "error");
+    }
+  }
+  renderEditMedicineThumbs();
+  showToast("Slide photos loaded successfully", "success");
+});
+
+function renderEditMedicineThumbs() {
+  const container = document.getElementById("edit-med-thumbs-container");
+  const countSpan = document.getElementById("edit-txt-slider-pics-cnt");
+  if (!container || !countSpan) return;
+
+  countSpan.innerText = `${editMedicineSliderImages.length} / 10 Upl`;
+  
+  if (editMedicineSliderImages.length > 0) {
+    container.classList.remove("hidden");
+    container.innerHTML = editMedicineSliderImages.map((url, i) => `
+      <div class="relative w-12 h-12 rounded-lg overflow-hidden border border-slate-200 shrink-0">
+        <img src="${url}" class="w-full h-full object-cover">
+        <button type="button" onclick="removeEditMedicineSliderImage(${i})" class="absolute -top-1 -right-1 w-4 h-4 bg-rose-600 text-white rounded-full flex items-center justify-center text-[8px] border-none cursor-pointer hover:bg-rose-705 transition-all shadow-xs"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+    `).join("");
+  } else {
+    container.classList.add("hidden");
+    container.innerHTML = "";
+  }
+}
+
+// Edit Form submit
+document.getElementById("form-edit-medicine")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const medId = (document.getElementById("edit-med-id") as HTMLInputElement).value;
+  if (!medId) return;
+
+  const name = (document.getElementById("edit-med-name") as HTMLInputElement).value.trim();
+  const price = parseFloat((document.getElementById("edit-med-price") as HTMLInputElement).value);
+  const stock = parseInt((document.getElementById("edit-med-stock") as HTMLInputElement).value);
+  const category = (document.getElementById("edit-med-category") as HTMLSelectElement).value;
+  const desc = (document.getElementById("edit-med-desc") as HTMLInputElement).value.trim();
+  
+  const brand = (document.getElementById("edit-med-brand") as HTMLInputElement).value.trim();
+  const genericName = (document.getElementById("edit-med-generic") as HTMLInputElement).value.trim();
+  const manufacturer = (document.getElementById("edit-med-manufacturer") as HTMLInputElement).value.trim();
+  const dosage = (document.getElementById("edit-med-dosage") as HTMLInputElement).value.trim();
+  const packSize = (document.getElementById("edit-med-pack-size") as HTMLInputElement).value.trim();
+  const discount = parseInt((document.getElementById("edit-med-discount") as HTMLInputElement).value) || 0;
+  
+  const uses = (document.getElementById("edit-med-uses") as HTMLTextAreaElement).value.trim();
+  const benefits = (document.getElementById("edit-med-benefits") as HTMLTextAreaElement).value.trim();
+  const sideEffects = (document.getElementById("edit-med-side-effects") as HTMLTextAreaElement).value.trim();
+  const warnings = (document.getElementById("edit-med-warnings") as HTMLTextAreaElement).value.trim();
+  const storage = (document.getElementById("edit-med-storage") as HTMLInputElement).value.trim();
+
+  const submitBtn = document.getElementById("btn-save-edited-med") as HTMLButtonElement;
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Syncing update parameters...`;
+
+  try {
+    let coverUrl = "";
+    if (editMedicineCoverFile) {
+      showToast("Uploading new cover image...", "info");
+      coverUrl = await uploadToCloudinary(editMedicineCoverFile);
+    }
+
+    const updates: any = {
+      name,
+      price,
+      stock,
+      category,
+      description: desc,
+      brand,
+      genericName,
+      manufacturer,
+      dosage,
+      packSize,
+      discount,
+      uses,
+      benefits,
+      sideEffects,
+      warnings,
+      storage
+    };
+
+    if (coverUrl) {
+      updates.image = coverUrl;
+      // Also update slider images' index 0 if it exists
+      if (editMedicineSliderImages.length > 0) {
+        editMedicineSliderImages[0] = coverUrl;
+      } else {
+        editMedicineSliderImages.push(coverUrl);
+      }
+    }
+    
+    // Always store the updated list of images
+    updates.images = editMedicineSliderImages;
+
+    update(ref(db, `medicines/${medId}`), updates).then(() => {
+      showToast("Apothecary specifications synced completely!", "success");
+      
+      // Close Modal and reset variables
+      editMedicineCoverFile = null;
+      document.getElementById("edit-img-upload-txt")!.innerText = "Replace Cover";
+      document.getElementById("edit-img-upload-icon")!.className = "fa-solid fa-camera mr-2 text-slate-400";
+      
+      document.getElementById("store-edit-medicine-modal")?.classList.add("hidden");
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Modify Public Medication Specs`;
+    });
+  } catch (err) {
+    showToast("Error updating medicine profile specifications", "error");
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Modify Public Medication Specs`;
+  }
+});
+
+// Close edit medicine modal listener
+document.getElementById("btn-close-store-edit-med")?.addEventListener("click", () => {
+  document.getElementById("store-edit-medicine-modal")?.classList.add("hidden");
+});
+
 
 function subscribeStoreInventory() {
   onValue(ref(db, "medicines"), (snapshot) => {
@@ -582,21 +829,26 @@ function renderStoreMedicineList() {
         <img class="w-16 h-16 object-cover rounded-xl shrink-0" src="${m.image}" alt="">
         <div class="flex-1 min-w-0 space-y-1">
           <div class="flex items-center justify-between">
-            <h5 class="font-extrabold text-slate-900 truncate pr-5 leading-tight">${m.name}</h5>
-            <button onclick="deleteProductFromInventory('${m.medicineId}')" class="text-rose-450 text-rose-500 absolute top-3 right-3 text-sm cursor-pointer hover:scale-110 transition-all">
-              <i class="fa-regular fa-trash-can"></i>
-            </button>
+            <h5 class="font-extrabold text-slate-900 truncate pr-16 leading-tight">${m.name}</h5>
+            <div class="absolute top-3 right-3 flex items-center gap-1.5 shadow-xs bg-slate-50 border border-slate-100 p-0.5 rounded-lg text-slate-800">
+              <button onclick="openEditMedicineModal('${m.medicineId}')" class="text-indigo-605 text-indigo-600 hover:text-indigo-850 text-[11px] cursor-pointer hover:scale-115 transition-all w-6 h-6 rounded flex items-center justify-center border-none bg-white">
+                <i class="fa-solid fa-pencil"></i>
+              </button>
+              <button onclick="deleteProductFromInventory('${m.medicineId}')" class="text-rose-505 text-rose-500 hover:text-rose-705 text-[11px] cursor-pointer hover:scale-115 transition-all w-6 h-6 rounded flex items-center justify-center border-none bg-white">
+                <i class="fa-regular fa-trash-can"></i>
+              </button>
+            </div>
           </div>
-          <p class="text-[9px] text-slate-400 font-medium truncate leading-normal" title="${m.description}">${m.description || "N/A"}</p>
+          <p class="text-[9px] text-slate-450 text-slate-400 font-medium truncate pr-16 leading-normal" title="${m.description}">${m.description || "N/A"}</p>
           
           <div class="flex items-center justify-between pt-1 flex-wrap gap-1.5">
             <div class="flex items-center gap-1">
               <span class="text-[9px] text-slate-400">Price: ₹</span>
-              <input type="number" onchange="updateProductPriceValueMode('${m.medicineId}', this.value)" value="${m.price}" min="1" class="w-12 text-center p-0.5 border border-slate-200 rounded text-[10px] font-black focus:border-indigo-500 font-mono">
+              <input type="number" onchange="updateProductPriceValueMode('${m.medicineId}', this.value)" value="${m.price}" min="1" class="w-12 text-center p-0.5 border border-slate-200 rounded text-[10px] font-black focus:border-indigo-505 focus:border-indigo-500 font-mono text-slate-800 bg-slate-50">
             </div>
             <div class="flex items-center gap-1">
               <span class="text-[9px] ${isLowStock ? "text-rose-600 animate-pulse font-extrabold" : "text-slate-450 text-slate-400"}">Stock:</span>
-              <input type="number" onchange="updateProductStockValueMode('${m.medicineId}', this.value)" value="${m.stock}" min="0" class="w-12 text-center p-0.5 border border-slate-200 rounded text-[10px] font-black focus:border-indigo-500 font-mono">
+              <input type="number" onchange="updateProductStockValueMode('${m.medicineId}', this.value)" value="${m.stock}" min="0" class="w-12 text-center p-0.5 border border-slate-200 rounded text-[10px] font-black focus:border-indigo-505 focus:border-indigo-500 font-mono text-slate-800 bg-slate-50">
             </div>
           </div>
         </div>
@@ -636,6 +888,46 @@ Object.assign(window, {
       .then(() => {
         showToast("Price point synced", "success");
       });
+  },
+  openEditMedicineModal(medId: string) {
+    const med = uploadedMedicinesCache.find(m => m.medicineId === medId);
+    if (!med) return;
+
+    (document.getElementById("edit-med-id") as HTMLInputElement).value = med.medicineId;
+    (document.getElementById("edit-med-name") as HTMLInputElement).value = med.name || "";
+    (document.getElementById("edit-med-price") as HTMLInputElement).value = med.price || "";
+    (document.getElementById("edit-med-stock") as HTMLInputElement).value = med.stock || "";
+    (document.getElementById("edit-med-category") as HTMLSelectElement).value = med.category || "Fever & Cold";
+    (document.getElementById("edit-med-desc") as HTMLInputElement).value = med.description || "";
+    
+    (document.getElementById("edit-med-brand") as HTMLInputElement).value = med.brand || "";
+    (document.getElementById("edit-med-generic") as HTMLInputElement).value = med.genericName || "";
+    (document.getElementById("edit-med-manufacturer") as HTMLInputElement).value = med.manufacturer || "";
+    (document.getElementById("edit-med-dosage") as HTMLInputElement).value = med.dosage || "";
+    (document.getElementById("edit-med-pack-size") as HTMLInputElement).value = med.packSize || "";
+    (document.getElementById("edit-med-discount") as HTMLInputElement).value = med.discount || "0";
+    
+    (document.getElementById("edit-med-uses") as HTMLTextAreaElement).value = med.uses || "";
+    (document.getElementById("edit-med-benefits") as HTMLTextAreaElement).value = med.benefits || "";
+    (document.getElementById("edit-med-side-effects") as HTMLTextAreaElement).value = med.sideEffects || "";
+    (document.getElementById("edit-med-warnings") as HTMLTextAreaElement).value = med.warnings || "";
+    (document.getElementById("edit-med-storage") as HTMLInputElement).value = med.storage || "";
+
+    // Load slider images
+    editMedicineSliderImages = med.images ? [...med.images] : (med.image ? [med.image] : []);
+    renderEditMedicineThumbs();
+
+    // Show Edit popup
+    const editModal = document.getElementById("store-edit-medicine-modal");
+    editModal?.classList.remove("hidden");
+  },
+  removeAddMedicineSliderImage(index: number) {
+    addMedicineSliderImages.splice(index, 1);
+    renderAddMedicineThumbs();
+  },
+  removeEditMedicineSliderImage(index: number) {
+    editMedicineSliderImages.splice(index, 1);
+    renderEditMedicineThumbs();
   }
 });
 
