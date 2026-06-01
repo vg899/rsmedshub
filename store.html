@@ -40,21 +40,26 @@
     <section id="store-orders-pane" class="flex-1 overflow-y-auto px-4 py-4 space-y-5 pb-20 no-scrollbar">
       
       <!-- STATS SUMMARY DASHBOARD CAROUSEL -->
-      <div class="grid grid-cols-3 gap-2.5 shrink-0 select-none">
-        <div class="bg-white rounded-xl p-3 border border-slate-100 shadow-xs flex flex-col justify-between">
-          <p class="text-[9px] font-black text-slate-400 uppercase">Sales Earnings</p>
-          <h4 id="store-stat-earnings" class="text-base font-extrabold text-indigo-700 mt-1">₹0</h4>
-          <span class="text-[8px] text-slate-400 mt-2 block font-semibold leading-relaxed">Excl. Comms</span>
+      <div class="grid grid-cols-4 gap-2 shrink-0 select-none">
+        <div class="bg-white rounded-xl p-2.5 border border-slate-100 shadow-xs flex flex-col justify-between">
+          <p class="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase truncate">Sales Earnings</p>
+          <h4 id="store-stat-earnings" class="text-xs sm:text-sm font-extrabold text-indigo-700 mt-1">₹0</h4>
+          <span class="text-[7px] sm:text-[8px] text-slate-400 mt-2 block font-semibold leading-relaxed truncate">Excl. Comms</span>
         </div>
-        <div class="bg-white rounded-xl p-3 border border-slate-100 shadow-xs flex flex-col justify-between">
-          <p class="text-[9px] font-black text-slate-400 uppercase">Alert Alerts</p>
-          <h4 id="store-stat-pending" class="text-base font-extrabold text-amber-500 mt-1">0</h4>
-          <span class="text-[8px] text-[8px] text-amber-600 mt-2 block font-black uppercase">Pending Accept</span>
+        <div class="bg-white rounded-xl p-2.5 border border-slate-100 shadow-xs flex flex-col justify-between">
+          <p class="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase truncate">Alert Alerts</p>
+          <h4 id="store-stat-pending" class="text-xs sm:text-sm font-extrabold text-amber-500 mt-1">0</h4>
+          <span class="text-[7px] sm:text-[8px] text-amber-600 mt-2 block font-black uppercase truncate">Pending Accept</span>
         </div>
-        <div class="bg-white rounded-xl p-3 border border-slate-100 shadow-xs flex flex-col justify-between">
-          <p class="text-[9px] font-black text-slate-400 uppercase">Stock Items</p>
-          <h4 id="store-stat-invent" class="text-base font-extrabold text-emerald-700 mt-1">0</h4>
-          <span class="text-[8px] text-slate-405 text-emerald-600 mt-2 block font-bold" id="lbl-low-stock-count">0 Low Stock alert</span>
+        <div class="bg-white rounded-xl p-2.5 border border-slate-100 shadow-xs flex flex-col justify-between">
+          <p class="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase truncate">Stock Items</p>
+          <h4 id="store-stat-invent" class="text-xs sm:text-sm font-extrabold text-emerald-700 mt-1">0</h4>
+          <span class="text-[7px] sm:text-[8px] text-emerald-600 mt-2 block font-bold truncate" id="lbl-low-stock-count">0 Low Stock</span>
+        </div>
+        <div class="bg-white rounded-xl p-2.5 border border-slate-100 shadow-xs flex flex-col justify-between">
+          <p class="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase truncate">Coverage Area</p>
+          <h4 id="store-stat-coverage" class="text-xs sm:text-sm font-extrabold text-teal-700 mt-1">7 KM</h4>
+          <span class="text-[7px] sm:text-[8px] text-teal-600 mt-2 block font-bold truncate">Service Limit</span>
         </div>
       </div>
 

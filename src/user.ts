@@ -180,6 +180,7 @@ document.getElementById("btn-user-signout")?.addEventListener("click", async () 
 // 1. SYNC MARKETPLACE NODES & FILTER BINDINGS
 let allMedicines: any[] = [];
 let allStores: any[] = [];
+let currentDeliveryRadius = 10;
 
 // Fallback high-quality promotional slides
 const DEFAULT_CAROUSEL_SLIDES = [
@@ -421,6 +422,17 @@ function syncMainMarketplace() {
     }
   });
 
+  // Subscribe dynamically to delivery radius setup
+  onValue(ref(db, "platform_settings"), (snap) => {
+    if (snap.exists()) {
+      currentDeliveryRadius = parseFloat(snap.val().deliveryRadius) || 10;
+    } else {
+      currentDeliveryRadius = 10;
+    }
+    renderPharmacySlider();
+    renderMedicinesGrid();
+  });
+
   // Susbscribe promotional banners campaigns
   onValue(ref(db, "banners"), (snapshot) => {
     if (userBannerAutoplayInterval) {
@@ -565,10 +577,22 @@ document.getElementById("search-medicine-input")?.addEventListener("input", (e) 
 // Rendering operational stores horizontal scroller
 function renderPharmacySlider() {
   const container = document.getElementById("user-store-slider")!;
-  if (allStores.length === 0) {
+  
+  const storesWithinRadius = allStores.filter((s) => {
+    if (!s.location || !currentCoordinates) return false;
+    const dist = calculateDistance(currentCoordinates.lat, currentCoordinates.lng, s.location.lat, s.location.lng);
+    return dist <= currentDeliveryRadius;
+  });
+
+  const storeCntEl = document.getElementById("user-store-cnt");
+  if (storeCntEl) {
+    storeCntEl.innerText = `${storesWithinRadius.length} Stores Available`;
+  }
+
+  if (storesWithinRadius.length === 0) {
     container.innerHTML = `
       <div class="px-5 py-4 w-full text-center text-slate-400 font-bold text-xs bg-white rounded-2xl border border-dashed border-slate-200">
-        No active pharmacy branches operating in your city.
+        Currently no pharmacy is available in your area.
       </div>
     `;
     return;
@@ -585,16 +609,14 @@ function renderPharmacySlider() {
         <span class="text-[8px] text-slate-400 block font-bold">Filter Reset</span>
       </div>
     </button>
-  ` + allStores.map((s) => {
+  ` + storesWithinRadius.map((s) => {
     const isSelected = s.storeId === activeStoreId;
     const isOpen = s.isOpen !== false;
     const statusText = isOpen ? "OPEN" : "CLOSED";
     const statusColorClass = isOpen ? "text-emerald-500 bg-emerald-50" : "text-rose-500 bg-rose-50";
     
     // Dynamic calculate distance
-    const dist = (s.location && currentCoordinates)
-      ? calculateDistance(currentCoordinates.lat, currentCoordinates.lng, s.location.lat, s.location.lng).toFixed(1)
-      : (Math.random() * 2 + 1).toFixed(1);
+    const dist = calculateDistance(currentCoordinates!.lat, currentCoordinates!.lng, s.location.lat, s.location.lng).toFixed(1);
 
     return `
       <button onclick="selectActiveStore('${s.storeId}')" class="flex items-center gap-3 p-3 bg-white border ${isSelected ? "border-blue-500 bg-blue-50/10 text-blue-600 ring-2 ring-blue-500/20" : "border-slate-100 text-slate-600"} rounded-2xl shadow-xs shrink-0 cursor-pointer min-w-[200px] hover:scale-98 transition-all text-left">
@@ -628,7 +650,18 @@ Object.assign(window, {
 // Render grid display items
 function renderMedicinesGrid() {
   const container = document.getElementById("user-medicines-grid")!;
+  
+  // Filter stores within the maximum delivery radius
+  const storesWithinRadiusIds = new Set(allStores.filter((s) => {
+    if (!s.location || !currentCoordinates) return false;
+    const dist = calculateDistance(currentCoordinates.lat, currentCoordinates.lng, s.location.lat, s.location.lng);
+    return dist <= currentDeliveryRadius;
+  }).map(s => s.storeId));
+
   const filtered = allMedicines.filter((m) => {
+    // Only allow medicines from stores within the radius
+    if (!storesWithinRadiusIds.has(m.storeId)) return false;
+
     const matchCat = activeCategory === "All" || m.category === activeCategory;
     const matchStore = activeStoreId === "" || m.storeId === activeStoreId;
     const matchSearch = m.name.toLowerCase().includes(searchQuery) || m.description.toLowerCase().includes(searchQuery) || (m.category && m.category.toLowerCase().includes(searchQuery));
@@ -951,7 +984,16 @@ Object.assign(window, {
   selectAutocompleteAddress(formatted: string, lat: number, lng: number) {
     addrInput.value = formatted;
     selectedAddressDetail = { address: formatted, lat, lng };
+    currentCoordinates = {
+      lat,
+      lng,
+      address: formatted,
+      city: formatted.split(",")[0] || "Gonda",
+      state: "Uttar Pradesh"
+    };
     addrSuggestions.classList.add("hidden");
+    renderPharmacySlider();
+    renderMedicinesGrid();
     showToast("Destination marked successfully", "success");
   },
   setManualCoordinates(formatted: string, lat: number, lng: number, city?: string, state?: string) {
@@ -962,6 +1004,7 @@ Object.assign(window, {
       city: city || formatted.split(",")[0] || "Gonda",
       state: state || "Uttar Pradesh"
     };
+    selectedAddressDetail = { address: formatted, lat, lng };
 
     const cityBadge = document.getElementById("loc-city-txt")!;
     if (cityBadge) {
@@ -978,6 +1021,7 @@ Object.assign(window, {
     if (locSuggestions) locSuggestions.classList.add("hidden");
 
     renderPharmacySlider();
+    renderMedicinesGrid();
     showToast(`Location updated to ${cityBadge?.innerText || "chosen city"}!`, "success");
     const locPickerDrawer = document.getElementById("location-picker-drawer") as HTMLDivElement;
     if (locPickerDrawer) locPickerDrawer.classList.add("hidden");
@@ -1104,6 +1148,26 @@ confirmBtn.addEventListener("click", async () => {
   const userLat = selectedAddressDetail?.lat || currentCoordinates?.lat || 12.9716;
   const userLng = selectedAddressDetail?.lng || currentCoordinates?.lng || 77.5946;
 
+  // Resolve store profile for distance validation & coordinates storage
+  const storeInstance = allStores.find((s) => s.storeId === targetStore.storeId);
+  if (storeInstance && storeInstance.location) {
+    const storeLat = storeInstance.location.lat;
+    const storeLng = storeInstance.location.lng;
+    const deliveryDistance = calculateDistance(userLat, userLng, storeLat, storeLng);
+
+    if (deliveryDistance > currentDeliveryRadius) {
+      showToast(`Placement disallowed: This pharmacy is beyond the allowed delivery coverage limit. (Max: ${currentDeliveryRadius} KM, Actual: ${deliveryDistance.toFixed(1)} KM)`, "error");
+      confirmBtn.disabled = false;
+      confirmBtn.innerHTML = `<i class="fa-solid fa-credit-card mr-1.5"></i> Confirm Order & Proceed`;
+      return;
+    }
+  } else {
+    showToast("Invalid store configuration. Unable to verify delivery coverage.", "error");
+    confirmBtn.disabled = false;
+    confirmBtn.innerHTML = `<i class="fa-solid fa-credit-card mr-1.5"></i> Confirm Order & Proceed`;
+    return;
+  }
+
   const orderPayload = {
     orderId,
     userId: loggedInUser.uid,
@@ -1113,6 +1177,11 @@ confirmBtn.addEventListener("click", async () => {
     userLocation: { lat: userLat, lng: userLng },
     storeId: targetStore.storeId,
     storeName: targetStore.storeName,
+    storeLocation: {
+      lat: storeInstance.location.lat,
+      lng: storeInstance.location.lng
+    },
+    storeAddress: storeInstance.address || "",
     items,
     subtotal,
     gst,

@@ -1,12 +1,13 @@
 import { auth, db } from "./firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { ref, onValue, set, update, remove, get } from "firebase/database";
-import { showToast, uploadToCloudinary, getRouteMapUrl, getStaticMapUrl, loadMapplsScript, updateLeafletMap, calculateDistance } from "./utils";
+import { showToast, uploadToCloudinary, getRouteMapUrl, getStaticMapUrl, loadMapplsScript, updateLeafletMap, calculateDistance, getMapplsRoute } from "./utils";
 
 // Core Variables
 let activeSection = "panel-overview";
 let systemTimeInterval: any = null;
 let ridersCache: any[] = [];
+let adminStoresCache: any[] = [];
 
 // Advanced Dashboard Cache Variables
 let globalCustomers: any[] = [];
@@ -134,6 +135,9 @@ function initDashboard() {
     userSearchQuery = (e.target as HTMLInputElement).value;
     renderFilteredCustomers();
   });
+
+  // Start real-time dispatch command tracker
+  initLiveLogisticsTracker();
 }
 
 // 1. STATS ENGINE
@@ -156,6 +160,8 @@ interface OrderDetails {
   userName?: string;
   userMobile?: string;
   userAddress?: string;
+  storeLocation?: { lat: number; lng: number } | any;
+  userLocation?: { lat: number; lng: number } | any;
   settlementPaid?: boolean;
 }
 
@@ -217,6 +223,7 @@ function subscribeToStats() {
       const cntStores = document.getElementById("cnt-stores");
       if (cntStores) cntStores.innerText = `${total} Stores`;
 
+      adminStoresCache = items;
       renderStoresTable(items);
       updateGeoapifyAdminMap(items);
     } catch (err) {
@@ -3935,7 +3942,12 @@ function initPlatformSettings() {
       const autoLim = document.getElementById("set-autosafeguard-limit") as HTMLSelectElement;
       if (autoLim) {
         autoLim.value = s.inactivityLimitSeconds?.toString() || "300";
-        inactivityLimitSeconds = s.inactivityLimitSeconds || 300;
+        inactivityLimitSeconds = s.inactivityLimitSeconds || 305;
+      }
+
+      const rInp = document.getElementById("set-delivery-radius") as HTMLInputElement;
+      if (rInp) {
+        rInp.value = s.deliveryRadius?.toString() || "10";
       }
     }
   });
@@ -3949,6 +3961,7 @@ function initPlatformSettings() {
     const privacyPolicy = (document.getElementById("set-privacy") as HTMLTextAreaElement).value.trim();
     const activeToggle = (document.getElementById("set-autosafeguard-toggle") as HTMLInputElement).checked;
     const limitSec = parseInt((document.getElementById("set-autosafeguard-limit") as HTMLSelectElement).value);
+    const deliveryRadius = parseFloat((document.getElementById("set-delivery-radius") as HTMLInputElement).value) || 10;
 
     const payload = {
       appName,
@@ -3958,7 +3971,8 @@ function initPlatformSettings() {
       clinicalTerms,
       privacyPolicy,
       inactivityEnabled: activeToggle,
-      inactivityLimitSeconds: limitSec
+      inactivityLimitSeconds: limitSec,
+      deliveryRadius
     };
 
     set(ref(db, "platform_settings"), payload).then(() => {
@@ -4016,8 +4030,690 @@ function initPlatformSettings() {
   });
 }
 
+// =================================== Realtime Logistics Dispatch Tracker Center ===================================
+let logisticsMapInstance: any = null;
+let logisticsOverlays: any[] = [];
+let logisticsFilterTab = "all"; // "all", "stores", "riders", "active-deliveries"
+let logisticsSearch = "";
+let logisticsStateFilter = "All";
+let logisticsDistrictFilter = "All";
+let selectedActiveLiveRoute: any = null;
+let logisticsMapReady = false;
+
+function initLiveLogisticsTracker() {
+  const openBtn = document.getElementById("btn-open-logistics-tracking");
+  const sidebarBtn = document.getElementById("btn-sidebar-logistics");
+  const closeBtn = document.getElementById("btn-close-logistics-tracker");
+  const modal = document.getElementById("logistics-tracker-modal");
+
+  const openModal = () => {
+    if (modal) {
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+      setTimeout(() => {
+        initLogisticsMap();
+      }, 50);
+    }
+  };
+
+  openBtn?.addEventListener("click", openModal);
+  sidebarBtn?.addEventListener("click", openModal);
+
+  closeBtn?.addEventListener("click", () => {
+    if (modal) {
+      modal.classList.remove("flex");
+      modal.classList.add("hidden");
+    }
+  });
+
+  // Event handlers for filters
+  document.getElementById("tab-logistics-view-all")?.addEventListener("click", (e) => switchLogisticsTab("all", e.currentTarget as HTMLButtonElement));
+  document.getElementById("tab-logistics-view-stores")?.addEventListener("click", (e) => switchLogisticsTab("stores", e.currentTarget as HTMLButtonElement));
+  document.getElementById("tab-logistics-view-riders")?.addEventListener("click", (e) => switchLogisticsTab("riders", e.currentTarget as HTMLButtonElement));
+  document.getElementById("tab-logistics-view-active-deliveries")?.addEventListener("click", (e) => switchLogisticsTab("active-deliveries", e.currentTarget as HTMLButtonElement));
+
+  document.getElementById("logistics-filter-state")?.addEventListener("change", (e) => {
+    logisticsStateFilter = (e.target as HTMLSelectElement).value;
+    renderLogisticsDashboard();
+  });
+
+  document.getElementById("logistics-filter-district")?.addEventListener("change", (e) => {
+    logisticsDistrictFilter = (e.target as HTMLSelectElement).value;
+    renderLogisticsDashboard();
+  });
+
+  document.getElementById("logistics-search-input")?.addEventListener("input", (e) => {
+    logisticsSearch = (e.target as HTMLInputElement).value.toLowerCase().trim();
+    renderLogisticsDashboard();
+  });
+
+  document.getElementById("btn-clear-active-route")?.addEventListener("click", () => {
+    selectedActiveLiveRoute = null;
+    document.getElementById("logistics-active-tracking")?.classList.add("hidden");
+    renderLogisticsDashboard();
+  });
+
+  // Setup reactive triggers
+  onValue(ref(db, "stores"), () => {
+    if (modal && !modal.classList.contains("hidden")) {
+      populateLogisticsFilters();
+      renderLogisticsDashboard();
+    }
+  });
+
+  onValue(ref(db, "deliveryboy1"), () => {
+    if (modal && !modal.classList.contains("hidden")) {
+      populateLogisticsFilters();
+      renderLogisticsDashboard();
+    }
+  });
+
+  onValue(ref(db, "orders"), () => {
+    if (modal && !modal.classList.contains("hidden")) {
+      renderLogisticsDashboard();
+    }
+  });
+}
+
+function switchLogisticsTab(tab: string, btn: HTMLButtonElement) {
+  logisticsFilterTab = tab;
+  const tabIds = ["tab-logistics-view-all", "tab-logistics-view-stores", "tab-logistics-view-riders", "tab-logistics-view-active-deliveries"];
+  tabIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.className = "flex-1 py-1.5 text-center rounded-lg text-slate-400 font-semibold transition-all hover:text-white cursor-pointer";
+    }
+  });
+  btn.className = "flex-1 py-1.5 text-center rounded-lg bg-teal-500 text-slate-950 font-bold transition-all cursor-pointer";
+  renderLogisticsDashboard();
+}
+
+function initLogisticsMap() {
+  const mappls = (window as any).mappls;
+  if (!mappls) {
+    loadMapplsScript(() => {
+      initLogisticsMap();
+    });
+    return;
+  }
+
+  const mapDiv = document.getElementById("admin-live-logistics-map");
+  if (!mapDiv) return;
+
+  const defaultLat = 12.9716;
+  const defaultLng = 77.5946;
+
+  try {
+    // If Map already initialized, just enforce layout render
+    if ((window as any)["map_admin_live_logistics_map"]) {
+      logisticsMapInstance = (window as any)["map_admin_live_logistics_map"];
+      logisticsMapReady = true;
+      const loadingOverlay = document.getElementById("logistics-map-loading");
+      if (loadingOverlay) loadingOverlay.classList.add("hidden");
+      setTimeout(() => {
+        try {
+          logisticsMapInstance.invalidateSize();
+        } catch(err) {}
+      }, 100);
+      populateLogisticsFilters();
+      renderLogisticsDashboard();
+      return;
+    }
+
+    mapDiv.innerHTML = "";
+    logisticsMapInstance = new mappls.Map("admin-live-logistics-map", {
+      center: { lat: defaultLat, lng: defaultLng },
+      zoom: 12,
+      zoomControl: true,
+      attributionControl: false
+    });
+    
+    (window as any)["map_admin_live_logistics_map"] = logisticsMapInstance;
+    logisticsMapReady = true;
+    
+    const loadingOverlay = document.getElementById("logistics-map-loading");
+    if (loadingOverlay) loadingOverlay.classList.add("hidden");
+    
+    populateLogisticsFilters();
+    renderLogisticsDashboard();
+  } catch (e) {
+    console.error("Mappls Live Logistics map init error:", e);
+  }
+}
+
+function populateLogisticsFilters() {
+  const states = new Set<string>();
+  const districts = new Set<string>();
+
+  if (Array.isArray(adminStoresCache)) {
+    adminStoresCache.forEach(s => {
+      if (s.state) states.add(s.state.trim());
+      if (s.district) districts.add(s.district.trim());
+    });
+  }
+
+  if (Array.isArray(ridersCache)) {
+    ridersCache.forEach(r => {
+      if (r.state) states.add(r.state.trim());
+      if (r.district) districts.add(r.district.trim());
+    });
+  }
+
+  const stateSel = document.getElementById("logistics-filter-state") as HTMLSelectElement;
+  const distSel = document.getElementById("logistics-filter-district") as HTMLSelectElement;
+
+  if (stateSel) {
+    const curVal = stateSel.value;
+    stateSel.innerHTML = '<option value="All">All States</option>';
+    states.forEach(st => {
+      stateSel.innerHTML += `<option value="${st}">${st}</option>`;
+    });
+    if (states.has(curVal)) stateSel.value = curVal;
+  }
+
+  if (distSel) {
+    const curVal = distSel.value;
+    distSel.innerHTML = '<option value="All">All Districts</option>';
+    districts.forEach(ds => {
+      distSel.innerHTML += `<option value="${ds}">${ds}</option>`;
+    });
+    if (districts.has(curVal)) distSel.value = curVal;
+  }
+}
+
+function focusLogisticsCoordinates(lat: number, lng: number, zoomLevel: number = 14) {
+  if (logisticsMapInstance && logisticsMapReady) {
+    try {
+      logisticsMapInstance.setCenter({ lat, lng });
+      logisticsMapInstance.setZoom(zoomLevel);
+    } catch(err) {
+      console.error("Fail centering coordinates index:", err);
+    }
+  }
+}
+
+function trackActiveLogisticsRoute(orderId: string) {
+  const matchedOrder = (ordersCache || []).find(o => o.orderId === orderId);
+  if (matchedOrder) {
+    selectedActiveLiveRoute = matchedOrder;
+    // Show live route tracking HUD overlay
+    const trackingHUD = document.getElementById("logistics-active-tracking");
+    if (trackingHUD) {
+      trackingHUD.classList.remove("hidden");
+    }
+    renderLogisticsDashboard();
+    
+    // Auto center map on the store location
+    if (matchedOrder.storeLocation?.lat && matchedOrder.storeLocation?.lng) {
+      focusLogisticsCoordinates(matchedOrder.storeLocation.lat, matchedOrder.storeLocation.lng, 13);
+    }
+    showToast(`Tracing LIVE dispatch route for Order #${orderId}`, "info");
+  }
+}
+
+function renderLogisticsDashboard() {
+  if (!logisticsMapReady || !logisticsMapInstance) return;
+
+  const mappls = (window as any).mappls;
+  if (!mappls) return;
+
+  // 1. Gather Telemetry Stats
+  let onlineRiders = 0;
+  let offlineRiders = 0;
+  let activeRidersCount = 0;
+  let activeShipmentsSum = 0;
+
+  const activeRiderIds = new Set<string>();
+
+  // Determine active shipments & active riders from ordersCache
+  const activeOrders = (ordersCache || []).filter(o => 
+    o.status !== "delivered" && o.status !== "cancelled"
+  );
+  activeShipmentsSum = activeOrders.length;
+
+  activeOrders.forEach(o => {
+    if (o.deliveryId) {
+      activeRiderIds.add(o.deliveryId);
+    }
+  });
+  activeRidersCount = activeRiderIds.size;
+
+  (ridersCache || []).forEach(r => {
+    if (r.active) {
+      onlineRiders++;
+    } else {
+      offlineRiders++;
+    }
+  });
+
+  // Push Stats into UI
+  const onlineEl = document.getElementById("logistics-stat-online");
+  if (onlineEl) onlineEl.innerText = onlineRiders.toString();
+
+  const activeRidersEl = document.getElementById("logistics-stat-active-riders");
+  if (activeRidersEl) activeRidersEl.innerText = activeRidersCount.toString();
+
+  const offlineEl = document.getElementById("logistics-stat-offline");
+  if (offlineEl) offlineEl.innerText = offlineRiders.toString();
+
+  const shipmentsEl = document.getElementById("logistics-stat-shipments");
+  if (shipmentsEl) shipmentsEl.innerText = activeShipmentsSum.toString();
+
+  // Clear previous overlays
+  logisticsOverlays.forEach((ol: any) => {
+    try {
+      if (ol && typeof ol.remove === "function") {
+        ol.remove();
+      }
+    } catch(e) {}
+  });
+  logisticsOverlays = [];
+
+  // Filter lists & assets
+  const filteredStores = (adminStoresCache || []).filter(s => {
+    if (logisticsStateFilter !== "All" && s.state !== logisticsStateFilter) return false;
+    if (logisticsDistrictFilter !== "All" && s.district !== logisticsDistrictFilter) return false;
+    if (logisticsSearch) {
+      const match = (s.name || "").toLowerCase().includes(logisticsSearch) ||
+                    (s.storeId || "").toLowerCase().includes(logisticsSearch) ||
+                    (s.district || "").toLowerCase().includes(logisticsSearch);
+      if (!match) return false;
+    }
+    return true;
+  });
+
+  const filteredRiders = (ridersCache || []).filter(r => {
+    if (logisticsStateFilter !== "All" && r.state !== logisticsStateFilter) return false;
+    if (logisticsDistrictFilter !== "All" && r.district !== logisticsDistrictFilter) return false;
+    if (logisticsSearch) {
+      const match = (r.name || "").toLowerCase().includes(logisticsSearch) ||
+                    (r.mobile || "").toLowerCase().includes(logisticsSearch) ||
+                    (r.uid || r.deliveryId || "").toLowerCase().includes(logisticsSearch);
+      if (!match) return false;
+    }
+    // Tab filtering
+    if (logisticsFilterTab === "active-deliveries") {
+      return activeRiderIds.has(r.deliveryId || r.uid);
+    }
+    return true;
+  });
+
+  // 2. Plot Map Objects
+
+  // Draw Stores (🏥 representation if not on "Riders Only" tab filter)
+  if (logisticsFilterTab === "all" || logisticsFilterTab === "stores") {
+    filteredStores.forEach(s => {
+      if (s.location?.lat && s.location?.lng) {
+        try {
+          const m = new mappls.Marker({
+            map: logisticsMapInstance,
+            position: { lat: s.location.lat, lng: s.location.lng },
+            html: `<div class="w-8 h-8 rounded-full shadow-lg border-2 border-white flex items-center justify-center bg-teal-500 text-white hover:scale-110 transition-transform cursor-pointer" title="${s.name || "Pharmacy Branch"}"><i class="fa-solid fa-hospital text-[11px]"></i></div>`
+          });
+          
+          // Tooltip click listener
+          m.addListener("click", () => {
+            showToast(`🏥 ${s.name} - ID: ${s.storeId || "N/A"}. Located in ${s.district || "Gonda"}, ${s.state || "UP"}`, "info");
+          });
+          
+          logisticsOverlays.push(m);
+        } catch(me) {
+          console.error("Store marker exception:", me);
+        }
+      }
+    });
+  }
+
+  // Draw Riders (🚴 representation if not on "Stores Only" tab filter)
+  if (logisticsFilterTab === "all" || logisticsFilterTab === "riders" || logisticsFilterTab === "active-deliveries") {
+    filteredRiders.forEach(r => {
+      const live = r.location;
+      if (live?.lat && live?.lng) {
+        try {
+          const isRiderActive = activeRiderIds.has(r.uid || r.deliveryId);
+          const colorClass = isRiderActive ? "bg-amber-500" : (r.active ? "bg-emerald-500" : "bg-slate-500");
+          const m = new mappls.Marker({
+            map: logisticsMapInstance,
+            position: { lat: live.lat, lng: live.lng },
+            html: `<div class="w-8.5 h-8.5 rounded-full shadow-lg border-2 border-slate-900 flex items-center justify-center ${colorClass} text-white hover:scale-110 transition-transform cursor-pointer" title="${r.name || "Rider Branch"}"><i class="fa-solid fa-motorcycle text-xs"></i></div>`
+          });
+
+          const lastUpStr = r.location?.lastUpdated ? new Date(r.location.lastUpdated).toLocaleTimeString() : "N/A";
+          m.addListener("click", () => {
+            showToast(`🚴 Rider: ${r.name || "Agent"} - ID: ${r.uid || "N/A"}. Mobile: ${r.mobile || "N/A"}. Mode: ${isRiderActive ? "Delivering Shipment" : (r.active ? "Online / Idle" : "Offline")}`, "info");
+          });
+
+          logisticsOverlays.push(m);
+        } catch(me) {
+          console.error("Rider marker exception:", me);
+        }
+      }
+    });
+  }
+
+  // 3. Draw Active Shipment Routing paths if selecting focused tracking
+  if (selectedActiveLiveRoute) {
+    const o = selectedActiveLiveRoute;
+    const store = (adminStoresCache || []).find(s => s.storeId === o.storeId);
+    const rider = (ridersCache || []).find(r => r.deliveryId === o.deliveryId || r.uid === o.deliveryId);
+    
+    const sLat = store?.location?.lat || o.storeLocation?.lat;
+    const sLng = store?.location?.lng || o.storeLocation?.lng;
+    const rLat = rider?.location?.lat;
+    const rLng = rider?.location?.lng;
+    const cLat = o.userLocation?.lat;
+    const cLng = o.userLocation?.lng;
+
+    // Direct active panel HUD bindings
+    const hudDetails = document.getElementById("logistics-route-details");
+    if (hudDetails) {
+      const calculatedSpeed = rider?.location?.speed || (rider?.active ? 28 : 0);
+      const relativeTime = rider?.location?.lastUpdated ? formatRelativeTime(rider.location.lastUpdated) : "Just now";
+      hudDetails.innerHTML = `
+        <div class="space-y-1 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+          <p class="text-white font-bold"><i class="fa-solid fa-file-medical text-teal-400 mr-1.5"></i> Order #${o.orderId}</p>
+          <p class="text-[10px] text-slate-400">Store Hub: <strong class="text-slate-200">${o.storeName || "MedsHub Pharmacy"}</strong></p>
+          <p class="text-[10px] text-slate-400">Rider Unit: <strong class="text-slate-200">${rider?.name || o.deliveryName || "Agent"}</strong></p>
+          <p class="text-[10px] text-slate-400 font-mono">Current Speed: <strong class="text-amber-400">${calculatedSpeed} KM/H</strong></p>
+          <p class="text-[10px] text-slate-400 font-mono">Telemetry Signal: <strong class="text-teal-400">${relativeTime}</strong></p>
+          <p class="text-[10px] text-rose-400 font-bold uppercase mt-1 text-[9px]"><i class="fa-solid fa-truck-fast"></i> Transit Status: ${o.status?.toUpperCase() || "SHIPPED"}</p>
+        </div>
+      `;
+    }
+
+    // Plot Route Paths
+    if (sLat && sLng && cLat && cLng) {
+      // 🏥 Store Pin Marker
+      try {
+        const storeMarker = new mappls.Marker({
+          map: logisticsMapInstance,
+          position: { lat: sLat, lng: sLng },
+          html: `<div class="w-10 h-10 rounded-full bg-teal-500 border-2 border-white flex items-center justify-center text-white shadow-2xl relative"><i class="fa-solid fa-hospital text-sm"></i><span class="absolute -top-1.5 -right-1 bg-slate-900 text-[8px] font-black px-1 rounded uppercase border border-slate-700">Hub</span></div>`
+        });
+        logisticsOverlays.push(storeMarker);
+      } catch(pe) {}
+
+      // 🏠 Patient Pin Marker
+      try {
+        const patientMarker = new mappls.Marker({
+          map: logisticsMapInstance,
+          position: { lat: cLat, lng: cLng },
+          html: `<div class="w-10 h-10 rounded-full bg-rose-500 border-2 border-white flex items-center justify-center text-white shadow-2xl relative"><i class="fa-solid fa-house-chimney-medical text-sm"></i><span class="absolute -top-1.5 -right-1 bg-slate-900 text-[8px] font-black px-1 rounded uppercase border border-slate-700">Customer</span></div>`
+        });
+        logisticsOverlays.push(patientMarker);
+      } catch(pe) {}
+
+      // If rider coordinates are active, plot the rider marker & render path blocks
+      if (rLat && rLng) {
+        try {
+          const riderMarker = new mappls.Marker({
+            map: logisticsMapInstance,
+            position: { lat: rLat, lng: rLng },
+            html: `<div class="w-10 h-10 rounded-full bg-amber-500 border-2 border-slate-950 flex items-center justify-center text-white shadow-2xl relative animate-bounce"><i class="fa-solid fa-motorcycle text-sm"></i><span class="absolute -top-1.5 -right-1 bg-slate-950 text-[8px] font-black px-1 rounded uppercase border border-slate-800">Rider</span></div>`
+          });
+          logisticsOverlays.push(riderMarker);
+        } catch(pe) {}
+
+        // Trace Segment 1: Rider -> Store
+        getMapplsRoute(rLat, rLng, sLat, sLng).then(res1 => {
+          if (res1?.polyline) {
+            try {
+              const polyline1 = new mappls.Polyline({
+                map: logisticsMapInstance,
+                paths: res1.polyline.map((p: any) => ({ lat: p[0], lng: p[1] })),
+                strokeColor: "#3b82f6", // Blue solid
+                strokeWeight: 6,
+                strokeOpacity: 0.95
+              });
+              logisticsOverlays.push(polyline1);
+            } catch(e) {}
+          }
+        });
+
+        // Trace Segment 2: Store -> Patient
+        getMapplsRoute(sLat, sLng, cLat, cLng).then(res2 => {
+          if (res2?.polyline) {
+            try {
+              const polyline2 = new mappls.Polyline({
+                map: logisticsMapInstance,
+                paths: res2.polyline.map((p: any) => ({ lat: p[0], lng: p[1] })),
+                strokeColor: "#10b981", // Emerald dashed representation
+                strokeWeight: 5,
+                strokeOpacity: 0.85,
+                dashArray: "10, 10"
+              });
+              logisticsOverlays.push(polyline2);
+            } catch(e) {}
+          }
+        });
+      } else {
+        // Fallback trace directly: Store -> Patient
+        getMapplsRoute(sLat, sLng, cLat, cLng).then(res => {
+          if (res?.polyline) {
+            try {
+              const polyline = new mappls.Polyline({
+                map: logisticsMapInstance,
+                paths: res.polyline.map((p: any) => ({ lat: p[0], lng: p[1] })),
+                strokeColor: "#4f46e5",
+                strokeWeight: 6,
+                strokeOpacity: 0.9
+              });
+              logisticsOverlays.push(polyline);
+            } catch(e) {}
+          }
+        });
+      }
+    }
+  }
+
+  // 4. Render Left Sidebar items Feed
+  const feedList = document.getElementById("logistics-feed-list");
+  if (!feedList) return;
+
+  if (logisticsFilterTab === "stores") {
+    if (filteredStores.length === 0) {
+      feedList.innerHTML = `<p class="text-xs text-slate-500 py-6 text-center">No matching stores found.</p>`;
+      return;
+    }
+    
+    feedList.innerHTML = filteredStores.map(s => {
+      const lat = s.location?.lat || 0;
+      const lng = s.location?.lng || 0;
+      const pinAction = lat && lng ? `onclick="focusLogisticsCoordinates(${lat}, ${lng}, 15)"` : '';
+      return `
+        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 select-none hover:border-teal-500/50 transition-all">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <span class="text-[9px] bg-teal-500/10 text-teal-400 font-bold px-1.5 py-0.5 rounded border border-teal-500/15 uppercase">🏥 STORE HUB</span>
+              <h4 class="text-xs font-bold text-white mt-1.5 tracking-tight">${s.name || "MedsHub Pharmacy"}</h4>
+              <p class="text-[10px] text-slate-400 mt-1 uppercase font-mono">${s.storeId || "N/A"}</p>
+              <p class="text-[10px] text-slate-400 leading-tight mt-1">${s.address || "Billing Area Gonda, Uttar Pradesh"}</p>
+            </div>
+            
+            ${lat && lng ? `
+              <button ${pinAction} class="p-2 bg-slate-950 text-teal-400 hover:text-white hover:bg-teal-500/20 border border-slate-800 hover:border-teal-500/40 rounded-lg text-xs transition-all cursor-pointer" title="Focus Store map view">
+                <i class="fa-solid fa-map-location-dot"></i>
+              </button>
+            ` : ''}
+          </div>
+          <div class="mt-2 pt-2 border-t border-slate-800/80 flex justify-between items-center text-[9px] text-slate-500 font-bold uppercase tracking-wide">
+            <span>District: ${s.district || "Gonda"}</span>
+            <span>State: ${s.state || "Uttar Pradesh"}</span>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+  } else if (logisticsFilterTab === "riders") {
+    if (filteredRiders.length === 0) {
+      feedList.innerHTML = `<p class="text-xs text-slate-500 py-6 text-center">No matching delivery boys found.</p>`;
+      return;
+    }
+
+    feedList.innerHTML = filteredRiders.map(r => {
+      const lat = r.location?.lat || 0;
+      const lng = r.location?.lng || 0;
+      const pinAction = lat && lng ? `onclick="focusLogisticsCoordinates(${lat}, ${lng}, 15)"` : '';
+      const activeDeliveryOrder = activeOrders.find(o => o.deliveryId === r.uid || o.deliveryId === r.deliveryId);
+      const isDelivering = !!activeDeliveryOrder;
+      
+      const badgeText = isDelivering ? "In Transit" : (r.active ? "Online / Idle" : "Offline");
+      const badgeClass = isDelivering ? "bg-amber-500/15 text-amber-400 border border-amber-500/20" : (r.active ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20" : "bg-slate-500/15 text-slate-400 border border-slate-500/20");
+      const lastUpStr = r.location?.lastUpdated ? formatRelativeTime(r.location.lastUpdated) : "No coordinates linked";
+
+      return `
+        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 select-none hover:border-indigo-500/50 transition-all">
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0">
+              <span class="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase ${badgeClass}">${badgeText}</span>
+              <h4 class="text-xs font-bold text-white mt-2 tracking-tight truncate">${r.name || "Delivery Agent"}</h4>
+              <p class="text-[9px] text-slate-500 mt-1 uppercase font-mono truncate">ID: ${r.uid || "N/A"}</p>
+              <p class="text-[10px] text-slate-400 font-sans mt-1">Mobile: ${r.mobile || "N/A"}</p>
+              <p class="text-[10px] text-slate-404 text-slate-500 font-mono mt-0.5">Signal: ${lastUpStr}</p>
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+              ${lat && lng ? `
+                <button ${pinAction} class="p-2 bg-slate-950 text-indigo-400 hover:text-white hover:bg-indigo-500/20 border border-slate-800 hover:border-indigo-500/40 rounded-lg text-xs transition-all cursor-pointer" title="Focus Rider position">
+                  <i class="fa-solid fa-location-crosshairs"></i>
+                </button>
+              ` : ''}
+              ${isDelivering ? `
+                <button onclick="trackActiveLogisticsRoute('${activeDeliveryOrder.orderId}')" class="p-2 bg-amber-500/10 text-amber-500 hover:text-white hover:bg-amber-500 rounded-lg text-xs transition-all cursor-pointer" title="Trace Dispatch Route">
+                  <i class="fa-solid fa-route animate-pulse"></i>
+                </button>
+              ` : ''}
+            </div>
+          </div>
+          <div class="mt-2 pt-2 border-t border-slate-800/80 flex justify-between items-center text-[9px] text-slate-550 text-slate-500 font-bold uppercase tracking-wide">
+            <span>District: ${r.district || "Gonda"}</span>
+            <span>Speed: ${r.location?.speed || (r.active ? '28 KM/H' : '0')}</span>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+  } else if (logisticsFilterTab === "active-deliveries") {
+    if (activeOrders.length === 0) {
+      feedList.innerHTML = `<p class="text-xs text-slate-500 py-6 text-center select-none font-medium">No active delivery assignments running right now.</p>`;
+      return;
+    }
+
+    feedList.innerHTML = activeOrders.map(o => {
+      const isSelected = selectedActiveLiveRoute?.orderId === o.orderId;
+      const rider = (ridersCache || []).find(r => r.deliveryId === o.deliveryId || r.uid === o.deliveryId);
+      const speed = rider?.location?.speed || (rider?.active ? 28 : 0);
+      return `
+        <div class="p-3 rounded-xl bg-slate-900 border ${isSelected ? "border-amber-500 bg-amber-500/5" : "border-slate-800"} select-none hover:border-amber-5/50 transition-all">
+          <div class="flex items-start justify-between gap-1.5">
+            <div>
+              <span class="text-[9px] bg-indigo-500/10 text-indigo-400 font-bold px-1.5 py-0.5 rounded border border-indigo-500/15 uppercase">ACTIVE SHIPMENT</span>
+              <h4 class="text-xs font-black text-slate-100 mt-2">Order #${o.orderId}</h4>
+              <p class="text-[10px] text-slate-400 mt-1 font-sans">Hub: <strong>${o.storeName || "MedsHub Branch"}</strong></p>
+              <p class="text-[10px] text-slate-400 mt-0.5">Rider: <strong class="text-slate-200">${rider?.name || o.deliveryName || "Agent"}</strong></p>
+              <p class="text-[10px] text-slate-400 mt-0.5 truncate">Address: <span class="text-slate-350 text-slate-300 font-sans">${o.userAddress || "Patient Home, Gonda"}</span></p>
+              <p class="text-[10px] text-slate-400 mt-1 font-mono">Speed: <strong class="text-amber-400">${speed} KM/H</strong></p>
+            </div>
+
+            <button onclick="trackActiveLogisticsRoute('${o.orderId}')" class="p-2 bg-slate-950 text-amber-400 hover:text-white hover:bg-amber-500 border border-slate-800 hover:border-amber-500 rounded-lg text-xs transition-all cursor-pointer" title="Track Live Route Path">
+              <i class="fa-solid fa-route animate-pulse"></i>
+            </button>
+          </div>
+          <div class="mt-2 pt-2 border-t border-slate-800/80 flex justify-between items-center text-[9px] text-slate-500 font-bold uppercase select-none">
+            <span class="text-rose-400">Status: ${o.status || "TRANSIT"}</span>
+            <span class="text-slate-400">Total: ₹${o.total || 0}</span>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+  } else {
+    // Default All tab combines matching stores and active riders
+    if (filteredStores.length === 0 && filteredRiders.length === 0) {
+      feedList.innerHTML = `<p class="text-xs text-slate-500 py-6 text-center select-none">No general logistics nodes matched your parameters.</p>`;
+      return;
+    }
+
+    let html = "";
+    
+    // Add up to 5 matching stores
+    filteredStores.slice(0, 5).forEach(s => {
+      const lat = s.location?.lat || 0;
+      const lng = s.location?.lng || 0;
+      const pinAction = lat && lng ? `onclick="focusLogisticsCoordinates(${lat}, ${lng}, 15)"` : '';
+      html += `
+        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 select-none hover:border-teal-500/40 transition-all">
+          <div class="flex items-start justify-between gap-1.5">
+            <div>
+              <span class="text-[9px] bg-teal-500/10 text-teal-400 font-bold px-1.5 py-0.5 rounded border border-teal-500/15 uppercase">🏥 STORE BRANCH</span>
+              <h4 class="text-xs font-bold text-white mt-1.5 truncate max-w-[200px]">${s.name || "Pharmacy Nodes"}</h4>
+              <p class="text-[9px] text-slate-500 mt-1">ID: ${s.storeId || "N/A"}</p>
+            </div>
+            ${lat && lng ? `
+              <button ${pinAction} class="p-2 bg-slate-950 text-teal-400 hover:text-white hover:bg-teal-500/20 border border-slate-800 hover:border-teal-500/40 rounded-lg text-xs transition-all cursor-pointer">
+                <i class="fa-solid fa-map-location-dot"></i>
+              </button>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    });
+
+    // Add list riders
+    filteredRiders.forEach(r => {
+      const lat = r.location?.lat || 0;
+      const lng = r.location?.lng || 0;
+      const pinAction = lat && lng ? `onclick="focusLogisticsCoordinates(${lat}, ${lng}, 15)"` : '';
+      const isRiderActive = activeRiderIds.has(r.uid || r.deliveryId);
+      const colorClass = isRiderActive ? "text-amber-400" : (r.active ? "text-emerald-400" : "text-slate-400");
+      const isDelivering = isRiderActive;
+      const activeDeliveryOrder = activeOrders.find(o => o.deliveryId === r.uid || o.deliveryId === r.deliveryId);
+
+      html += `
+        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 select-none hover:border-indigo-500/40 transition-all">
+          <div class="flex items-start justify-between gap-1.5">
+            <div>
+              <span class="text-[9px] bg-indigo-500/10 ${colorClass} font-bold px-1.5 py-0.5 rounded border border-indigo-500/15 uppercase">${isRiderActive ? "Transit Assignment" : (r.active ? "Online / Ready" : "Offline")}</span>
+              <h4 class="text-xs font-bold text-white mt-1.5 truncate max-w-[200px]">${r.name || "Delivery Agent"}</h4>
+              <p class="text-[9px] text-slate-500 mt-1 truncate">ID: ${r.uid || "N/A"}</p>
+            </div>
+            <div class="flex items-center gap-1">
+              ${lat && lng ? `
+                <button ${pinAction} class="p-2 bg-slate-950 text-indigo-400 hover:text-white hover:bg-indigo-500/25 border border-slate-800 hover:border-indigo-550 rounded-lg text-xs transition-all cursor-pointer">
+                  <i class="fa-solid fa-location-crosshairs"></i>
+                </button>
+              ` : ''}
+              ${isDelivering ? `
+                <button onclick="trackActiveLogisticsRoute('${activeDeliveryOrder.orderId}')" class="p-2 bg-amber-500/10 text-amber-505 text-amber-400 hover:text-white hover:bg-amber-550 border border-slate-800 hover:border-amber-550 rounded-lg text-xs transition-all cursor-pointer">
+                  <i class="fa-solid fa-route animate-pulse"></i>
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    feedList.innerHTML = html;
+  }
+}
+
+function formatRelativeTime(msec: number): string {
+  if (!msec) return "Never";
+  const diff = Date.now() - msec;
+  const secs = Math.floor(diff / 1000);
+  if (secs < 60) return "Just now";
+  const mins = Math.floor(secs / 60);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return new Date(msec).toLocaleDateString();
+}
+
 // Window bindings helper
 Object.assign(window, {
+  focusLogisticsCoordinates,
+  trackActiveLogisticsRoute,
   smcSelectStore,
   closeSmcEditModal,
   smcFocusDeliveryRoute,

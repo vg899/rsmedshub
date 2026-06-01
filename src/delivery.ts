@@ -505,6 +505,16 @@ document.getElementById("btn-force-track-gps")?.addEventListener("click", async 
 // --- RETRIVE POOLS AND ACCUMULATED HISTORIC COMMISSIONS ---
 let lastDiscoveredPoolsCount = -1;
 let initialSyncDone = false;
+let currentRiderDeliveryRadius = 10;
+
+// Dynamic check on maximum system-wide delivery radius limit
+onValue(ref(db, "platform_settings"), (snap) => {
+  if (snap.exists()) {
+    currentRiderDeliveryRadius = parseFloat(snap.val().deliveryRadius) || 10;
+  } else {
+    currentRiderDeliveryRadius = 10;
+  }
+});
 
 function subscribeToDispatchPoolAndOrders() {
   onValue(ref(db, "orders"), (snapshot) => {
@@ -566,8 +576,17 @@ function subscribeToDispatchPoolAndOrders() {
       }).catch((e) => console.error("Error fetching store profile:", e));
     }
 
-    // Available Pools Filter
-    const pools = globalOrdersCache.filter((o) => o.status === "packed" && !o.deliveryId);
+    // Available Pools Filter within maximum allowed radius
+    const pools = globalOrdersCache.filter((o) => {
+      if (o.status !== "packed" || o.deliveryId) return false;
+      if (o.userLocation && o.storeLocation) {
+        const dist = calculateDistance(o.userLocation.lat, o.userLocation.lng, o.storeLocation.lat, o.storeLocation.lng);
+        if (dist > currentRiderDeliveryRadius) {
+          return false;
+        }
+      }
+      return true;
+    });
 
     // Audio sound alert triggers on newly packed orders entering pool lists
     if (initialSyncDone && pools.length > lastDiscoveredPoolsCount && lastDiscoveredPoolsCount >= 0) {

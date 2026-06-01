@@ -252,6 +252,18 @@ document.getElementById("btn-store-signout")?.addEventListener("click", async ()
 // Synchronize Store dashboards and lists
 function syncStoreDashboard() {
   loadDynamicCategories();
+  
+  // Subscribe to dynamic delivery radius
+  onValue(ref(db, "platform_settings"), (snap) => {
+    let radius = 10;
+    if (snap.exists()) {
+      const s = snap.val();
+      radius = parseFloat(s.deliveryRadius) || 10;
+    }
+    const covEl = document.getElementById("store-stat-coverage");
+    if (covEl) covEl.innerText = `${radius} KM`;
+  });
+
   // Subscribe store info details
   onValue(ref(db, `stores/${currentStoreId}`), (snapshot) => {
     if (snapshot.exists()) {
