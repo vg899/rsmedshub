@@ -8,6 +8,7 @@ let loggedInMerchant: any = null;
 let currentStoreId = "";
 let currentStoreDetail: any = null;
 let activeTab: "orders" | "inventory" | "profile" = "orders";
+let currentStorePaymentsDetail: any = null;
 
 // UI Buttons & Tabs references
 const tabOrders = document.getElementById("tab-store-orders") as HTMLButtonElement;
@@ -269,6 +270,128 @@ function syncStoreDashboard() {
     if (snapshot.exists()) {
       currentStoreDetail = snapshot.val();
       document.getElementById("store-city-txt")!.innerText = `📍 ${currentStoreDetail.address?.split(",")[0] || "Bengaluru"}`;
+    }
+  });
+
+  // Subscribe store payment details
+  onValue(ref(db, `storePayments/${currentStoreId}`), (snap) => {
+    if (snap.exists()) {
+      const pData = snap.val();
+      currentStorePaymentsDetail = pData;
+
+      const inpUpi = document.getElementById("store-settle-upi-id") as HTMLInputElement;
+      if (inpUpi) inpUpi.value = pData.storeUpiId || "";
+
+      const inpUpiHolder = document.getElementById("store-settle-upi-holder") as HTMLInputElement;
+      if (inpUpiHolder) inpUpiHolder.value = pData.upiHolderName || "";
+
+      const inpBankName = document.getElementById("store-settle-bank-name") as HTMLInputElement;
+      if (inpBankName) inpBankName.value = pData.bankName || "";
+
+      const inpBankIfsc = document.getElementById("store-settle-bank-ifsc") as HTMLInputElement;
+      if (inpBankIfsc) inpBankIfsc.value = pData.bankIfsc || "";
+
+      const inpBankAccount = document.getElementById("store-settle-bank-account") as HTMLInputElement;
+      if (inpBankAccount) inpBankAccount.value = pData.bankAccountNumber || "";
+
+      // Show verification status
+      const lblStatus = document.getElementById("lbl-store-payment-status");
+      const badgeStatus = document.getElementById("badge-store-payment-status");
+      const status = pData.status || "unverified";
+
+      if (lblStatus && badgeStatus) {
+        if (status === "unverified") {
+          lblStatus.innerText = "No Credentials Configured";
+          badgeStatus.innerText = "Unverified";
+          badgeStatus.className = "bg-slate-100 text-slate-500 px-2 py-0.5 rounded-lg font-black text-[8px] uppercase border border-slate-200";
+        } else if (status === "pending_approval") {
+          lblStatus.innerText = "Verification Pending";
+          badgeStatus.innerText = "Pending";
+          badgeStatus.className = "bg-amber-100 text-amber-700 px-2 py-0.5 rounded-lg font-black text-[8px] uppercase border border-amber-250 animate-pulse";
+        } else if (status === "verified") {
+          lblStatus.innerText = "Verified by Admin";
+          badgeStatus.innerText = "Verified";
+          badgeStatus.className = "bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-lg font-black text-[8px] uppercase border border-emerald-250";
+        } else if (status === "locked") {
+          lblStatus.innerText = "Bank Details Locked";
+          badgeStatus.innerText = "Locked";
+          badgeStatus.className = "bg-rose-100 text-rose-750 px-2 py-0.5 rounded-lg font-black text-[8px] uppercase border border-rose-250 font-black";
+        }
+      }
+
+      // Lock input fields if locked
+      const isLocked = status === "locked";
+      const fields = [
+        "store-settle-upi-id",
+        "store-settle-upi-holder",
+        "store-settle-bank-name",
+        "store-settle-bank-ifsc",
+        "store-settle-bank-account"
+      ];
+      fields.forEach((id) => {
+        const el = document.getElementById(id) as HTMLInputElement;
+        if (el) el.disabled = isLocked;
+      });
+
+      const btnSave = document.getElementById("btn-save-store-settlement") as HTMLButtonElement;
+      if (btnSave) {
+        if (isLocked) {
+          btnSave.disabled = true;
+          btnSave.innerHTML = `<span>🔒 PROFILE LOCKED BY ADMIN</span>`;
+          btnSave.className = "w-full bg-slate-400 text-slate-100 font-bold py-3 rounded-xl transition-all cursor-not-allowed select-none";
+        } else {
+          btnSave.disabled = false;
+          btnSave.innerHTML = `<span>Save Settlement Details</span>`;
+          btnSave.className = "w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-all shadow flex items-center justify-center gap-1.5 cursor-pointer";
+        }
+      }
+    }
+  });
+
+  // Bind Form save for store settlement
+  document.getElementById("form-store-settlement")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (currentStorePaymentsDetail?.status === "locked") {
+      showToast("Store payment details are currently locked by the Admin.", "error");
+      return;
+    }
+
+    const upiIdVal = (document.getElementById("store-settle-upi-id") as HTMLInputElement).value.trim();
+    const upiHolderVal = (document.getElementById("store-settle-upi-holder") as HTMLInputElement).value.trim();
+    const bankNameVal = (document.getElementById("store-settle-bank-name") as HTMLInputElement).value.trim();
+    const bankIfscVal = (document.getElementById("store-settle-bank-ifsc") as HTMLInputElement).value.trim().toUpperCase();
+    const bankAccountVal = (document.getElementById("store-settle-bank-account") as HTMLInputElement).value.trim();
+
+    if (!upiIdVal || !upiHolderVal || !bankNameVal || !bankIfscVal || !bankAccountVal) {
+      showToast("Please provide all required settlement fields.", "error");
+      return;
+    }
+
+    const btnSubmit = document.getElementById("btn-save-store-settlement") as HTMLButtonElement;
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Saving credentials...`;
+
+    try {
+      const payload = {
+        storeId: currentStoreId,
+        storeName: currentStoreDetail?.name || "Connected Partner",
+        storeUpiId: upiIdVal,
+        upiHolderName: upiHolderVal,
+        bankName: bankNameVal,
+        bankIfsc: bankIfscVal,
+        bankAccountNumber: bankAccountVal,
+        status: currentStorePaymentsDetail?.status === "verified" ? "verified" : "pending_approval",
+        updatedAt: Date.now()
+      };
+
+      await update(ref(db, `storePayments/${currentStoreId}`), payload);
+      showToast("Store settlement credentials synchronized successfully!", "success");
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to save store settlement details.", "error");
+    } finally {
+      btnSubmit.disabled = false;
+      btnSubmit.innerHTML = `<span>Save Settlement Details</span>`;
     }
   });
 

@@ -379,6 +379,59 @@
             </button>
           </form>
         </div>
+
+        <!-- Store Settlement Profile Card -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-xs p-4 space-y-4 text-left font-semibold text-xs mt-4">
+          <div class="border-b border-slate-50 pb-2">
+            <h4 class="text-xs font-black text-slate-800 uppercase"><i class="fa-solid fa-credit-card text-emerald-500 mr-1"></i>Store Settlement Profile</h4>
+            <p class="text-[9px] text-slate-400 mt-0.5 font-bold">Provide official bank or UPI credentials for receiving administrative settlements</p>
+          </div>
+
+          <!-- Status indicator -->
+          <div id="store-payment-status-banner" class="rounded-xl p-3 text-[10px] flex items-center justify-between font-display font-medium select-none bg-slate-50 border border-slate-150">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-shield-halved text-emerald-500 text-sm"></i>
+              <div>
+                <span class="block text-[8px] font-black uppercase text-slate-400">Settlement Verification</span>
+                <span id="lbl-store-payment-status" class="font-extrabold text-[10px] text-slate-700">Not Saved</span>
+              </div>
+            </div>
+            <span id="badge-store-payment-status" class="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-lg font-black text-[8px] uppercase border border-slate-200">Unverified</span>
+          </div>
+
+          <form id="form-store-settlement" class="space-y-3.5 text-xs font-semibold">
+            <div>
+              <label class="block text-[9px] text-slate-500 font-bold uppercase mb-1">Store UPI ID</label>
+              <input type="text" id="store-settle-upi-id" required placeholder="e.g. storename@bank" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-indigo-500 font-mono">
+            </div>
+
+            <div>
+              <label class="block text-[9px] text-slate-500 font-bold uppercase mb-1">UPI Holder Name</label>
+              <input type="text" id="store-settle-upi-holder" required placeholder="Name registered with UPI VPA" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-indigo-500">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[9px] text-slate-400 font-bold uppercase mb-1">Bank Name</label>
+                <input type="text" id="store-settle-bank-name" required placeholder="e.g. HDFC Bank, SBI" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-indigo-500">
+              </div>
+              <div>
+                <label class="block text-[9px] text-slate-400 font-bold uppercase mb-1">IFSC Code (11 Digits)</label>
+                <input type="text" id="store-settle-bank-ifsc" required maxlength="11" placeholder="e.g. HDFC0000120" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs uppercase outline-none focus:bg-white focus:border-indigo-500">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-[9px] text-slate-500 font-bold uppercase mb-1">Account Number</label>
+              <input type="text" id="store-settle-bank-account" required placeholder="Enter bank account number" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono outline-none focus:bg-white focus:border-indigo-500">
+            </div>
+
+            <button type="submit" id="btn-save-store-settlement" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-all shadow flex items-center justify-center gap-1.5 cursor-pointer">
+              <i class="fa-solid fa-cloud-arrow-up"></i>
+              <span>Save Settlement Details</span>
+            </button>
+          </form>
+        </div>
       </div>
 
     </section>

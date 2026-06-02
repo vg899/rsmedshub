@@ -1115,6 +1115,18 @@
 
         <!-- Settlement Account & Endpoint Form (UPI + Bank Setup) -->
         <div class="bg-white rounded-3xl p-4 border border-slate-150/80 shadow-sm space-y-4 text-left font-semibold text-xs">
+          <!-- Verification status banner -->
+          <div id="payment-verification-status-banner" class="rounded-2xl p-3 text-xs flex items-center justify-between font-display font-medium select-none bg-slate-50 border border-slate-150">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-shield-halved text-indigo-500 text-sm"></i>
+              <div>
+                <span class="block text-[8px] font-black uppercase text-slate-400">Payment Profile Status</span>
+                <span id="lbl-payment-status" class="font-extrabold text-[10px] text-slate-700">Not Configured</span>
+              </div>
+            </div>
+            <span id="badge-payment-status" class="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-lg font-black text-[8px] uppercase border border-indigo-150">Unverified</span>
+          </div>
+
           <div class="flex items-center justify-between border-b border-slate-50 pb-2">
             <h4 class="text-xs font-black text-slate-900 uppercase font-display tracking-wider flex items-center gap-1.5 select-none">
               <i class="fa-solid fa-credit-card text-indigo-500"></i> Payout Endpoint Setup
@@ -1128,8 +1140,12 @@
           <!-- Section: UPI setup -->
           <div id="sec-paymode-panel-upi" class="space-y-3 font-semibold text-xs text-slate-650">
             <div>
-              <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">UPI Address (Virtual Payment Address)</label>
-              <input type="text" id="inp-settle-upi-id" placeholder="e.g. rider@ybl, 9988776655@paytm" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-sm tracking-wider outline-none focus:border-indigo-500 focus:bg-white text-slate-855 text-slate-800">
+              <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">UPI ID (Virtual Payment Address)</label>
+              <input type="text" id="inp-settle-upi-id" placeholder="e.g. rider@ybl, 9988776655@paytm" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-sm tracking-wider outline-none focus:border-indigo-500 focus:bg-white text-slate-800">
+            </div>
+            <div>
+              <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">UPI Name (As registered in Bank/UPI)</label>
+              <input type="text" id="inp-settle-upi-name" placeholder="Enter Registered UPI Name" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium outline-none focus:border-indigo-500 focus:bg-white text-slate-800">
             </div>
 
             <!-- UPI QR image click to upload -->

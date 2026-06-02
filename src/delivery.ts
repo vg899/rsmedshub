@@ -13,6 +13,7 @@ let riderGPSInterval: any = null;
 let activeStoreProfile: any = null;
 let activeTab = "dashboard";
 let isTerminalInitialized = false;
+let currentRiderPayments: any = null;
 
 // --- TEMPORARY UPLOAD URL STATES ---
 let stateAadhaarFrontUrl = "";
@@ -142,6 +143,95 @@ function syncRiderCoreProfileData() {
 
     // Fully Active Verified Rider profile
     showActiveTerminalView(dData);
+  });
+
+  // Listener to centralize Rider Payment & Settlement Profile
+  onValue(ref(db, `riderPayments/${currentRiderId}`), (snap) => {
+    if (snap.exists()) {
+      const pData = snap.val();
+      currentRiderPayments = pData;
+
+      const inpUpi = document.getElementById("inp-settle-upi-id") as HTMLInputElement;
+      if (inpUpi) inpUpi.value = pData.upiId || "";
+
+      const inpUpiName = document.getElementById("inp-settle-upi-name") as HTMLInputElement;
+      if (inpUpiName) inpUpiName.value = pData.upiName || "";
+
+      const inpBankHolder = document.getElementById("inp-settle-bank-holder") as HTMLInputElement;
+      if (inpBankHolder) inpBankHolder.value = pData.bankAccountHolder || "";
+
+      const inpBankName = document.getElementById("inp-settle-bank-name") as HTMLInputElement;
+      if (inpBankName) inpBankName.value = pData.bankName || "";
+
+      const inpBankIfsc = document.getElementById("inp-settle-bank-ifsc") as HTMLInputElement;
+      if (inpBankIfsc) inpBankIfsc.value = pData.bankIfsc || "";
+
+      const inpBankAccount = document.getElementById("inp-settle-bank-account") as HTMLInputElement;
+      if (inpBankAccount) inpBankAccount.value = pData.bankAccountNumber || "";
+
+      // Verification status display
+      const lblStatus = document.getElementById("lbl-payment-status");
+      const badgeStatus = document.getElementById("badge-payment-status");
+      const status = pData.status || "unverified";
+
+      if (lblStatus && badgeStatus) {
+        if (status === "unverified") {
+          lblStatus.innerText = "No Payment Profile Set";
+          badgeStatus.innerText = "Unverified";
+          badgeStatus.className = "bg-slate-150 text-slate-500 px-2 py-0.5 rounded-lg font-black text-[8px] uppercase border border-slate-200";
+        } else if (status === "pending_approval") {
+          lblStatus.innerText = "Pending Admin Evaluation";
+          badgeStatus.innerText = "Pending";
+          badgeStatus.className = "bg-amber-100 text-amber-700 px-2 py-0.5 rounded-lg font-black text-[8px] uppercase border border-amber-250 animate-pulse";
+        } else if (status === "verified") {
+          lblStatus.innerText = "Approved & Verified";
+          badgeStatus.innerText = "Verified";
+          badgeStatus.className = "bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-lg font-black text-[8px] uppercase border border-emerald-250";
+        } else if (status === "locked") {
+          lblStatus.innerText = "Account Credentials Locked";
+          badgeStatus.innerText = "Locked";
+          badgeStatus.className = "bg-rose-100 text-rose-750 px-2 py-0.5 rounded-lg font-black text-[8px] uppercase border border-rose-250 font-black";
+        }
+      }
+
+      // If status is locked, disable input fields
+      const isLocked = status === "locked";
+      const inputs = [
+        "inp-settle-upi-id",
+        "inp-settle-upi-name",
+        "inp-settle-bank-holder",
+        "inp-settle-bank-name",
+        "inp-settle-bank-ifsc",
+        "inp-settle-bank-account",
+        "inp-settle-qr-upload"
+      ];
+      inputs.forEach((id) => {
+        const el = document.getElementById(id) as HTMLInputElement;
+        if (el) el.disabled = isLocked;
+      });
+
+      const btnSave = document.getElementById("btn-save-upi-profile") as HTMLButtonElement;
+      if (btnSave) {
+        if (isLocked) {
+          btnSave.disabled = true;
+          btnSave.innerText = "🔒 CREDENTIALS LOCKED BY ADMIN";
+          btnSave.className = "w-full bg-slate-350 bg-slate-400 text-slate-100 font-bold py-2 rounded-xl text-[10px] uppercase tracking-wide font-display cursor-not-allowed select-none";
+        } else {
+          btnSave.disabled = false;
+          btnSave.innerText = "Save Payment Endpoint parameters";
+          btnSave.className = "w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 rounded-xl text-[10px] shadow uppercase tracking-wide font-display active:scale-95 transition-all cursor-pointer";
+        }
+      }
+    } else {
+      // Empty payment profile
+      const lblStatus = document.getElementById("lbl-payment-status");
+      const badgeStatus = document.getElementById("badge-payment-status");
+      if (lblStatus) lblStatus.innerText = "Details Not Setup";
+      if (badgeStatus) {
+        badgeStatus.innerText = "Unconfigured";
+        badgeStatus.className = "bg-slate-100 text-slate-500 px-2 py-0.5 rounded-lg font-black text-[8px] uppercase border border-slate-200";
+      }
+    }
   });
 }
 
@@ -1559,17 +1649,23 @@ btnPaymodeBank?.addEventListener("click", () => {
 // --- ACCOUNT DETAILS SAVE CONTROLLER ---
 const btnSavePaymentProfile = document.getElementById("btn-save-upi-profile");
 btnSavePaymentProfile?.addEventListener("click", () => {
+  if (currentRiderPayments?.status === "locked") {
+    showToast("This payment profile has been locked by the administrator.", "error");
+    return;
+  }
+
   showLoader(true);
 
   const upiIdVal = (document.getElementById("inp-settle-upi-id") as HTMLInputElement).value.trim();
+  const upiNameVal = (document.getElementById("inp-settle-upi-name") as HTMLInputElement).value.trim();
   const bankHolderVal = (document.getElementById("inp-settle-bank-holder") as HTMLInputElement).value.trim();
   const bankNameVal = (document.getElementById("inp-settle-bank-name") as HTMLInputElement).value.trim();
   const bankIfscVal = (document.getElementById("inp-settle-bank-ifsc") as HTMLInputElement).value.trim().toUpperCase();
   const bankAccountVal = (document.getElementById("inp-settle-bank-account") as HTMLInputElement).value.trim();
 
   // Basic validation rules
-  if (activePayModeState === "upi" && !upiIdVal) {
-    showToast("Requirement: Please supply your Virtual Payment Address (UPI ID) first.", "error");
+  if (activePayModeState === "upi" && (!upiIdVal || !upiNameVal)) {
+    showToast("Requirement: Please supply both Virtual Payment Address (UPI ID) and Registered UPI Name.", "error");
     showLoader(false);
     return;
   }
@@ -1583,15 +1679,24 @@ btnSavePaymentProfile?.addEventListener("click", () => {
   const updates = {
     paymentModePreferred: activePayModeState,
     upiId: upiIdVal,
-    qrCodeUrl: stateUpiQrCodeUrl || currentRiderDetail?.qrCodeUrl || "",
+    upiName: upiNameVal,
+    qrCodeUrl: stateUpiQrCodeUrl || currentRiderPayments?.qrCodeUrl || "",
     bankAccountHolder: bankHolderVal,
     bankName: bankNameVal,
     bankIfsc: bankIfscVal,
-    bankAccountNumber: bankAccountVal
+    bankAccountNumber: bankAccountVal,
+    status: currentRiderPayments?.status === "verified" ? "verified" : "pending_approval",
+    updatedAt: Date.now()
   };
 
-  update(ref(db, `deliveryboy1/${currentRiderId}`), updates).then(() => {
-    showToast("Settlement endpoint parameters successfully validated and saved!", "success");
+  update(ref(db, `riderPayments/${currentRiderId}`), updates).then(() => {
+    // Also mirror basic updates to deliveryboy1 node for backwards compatibility if needed
+    update(ref(db, `deliveryboy1/${currentRiderId}`), {
+      upiId: upiIdVal,
+      paymentModePreferred: activePayModeState
+    });
+
+    showToast("Payment & Settlement details configured and submitted for Admin verification!", "success");
     showLoader(false);
   }).catch((err) => {
     console.error(err);

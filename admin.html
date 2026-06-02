@@ -1124,43 +1124,60 @@
       <!-- ================================= PANEL: RIDER FINANCE & SETTLEMENT ================================= -->
       <section id="panel-rider-finance" class="admin-panel hidden space-y-6 animate-fade-in text-sans text-xs">
         
-        <!-- Live Counters for Rider Finance Dashboard -->
-        <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        <!-- Live Counters for Salary & Settlement Center -->
+        <div class="grid grid-cols-2 lg:grid-cols-6 gap-4">
           <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs flex flex-col justify-between">
             <div>
-              <span class="text-[10px] uppercase font-bold text-slate-400">Total Rider Earnings</span>
-              <p id="rf-stat-total-earnings" class="text-xl font-extrabold text-slate-900 mt-1">₹0</p>
+              <span class="text-[9px] uppercase font-black text-rose-500 tracking-wider">Rider Salary Pending</span>
+              <p id="rf-stat-rider-salary-pending" class="text-lg font-black text-slate-950 mt-1">₹0</p>
             </div>
-            <span class="text-[9px] text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded-md font-bold mt-2 w-max text-[8px]">Complete Deliveries</span>
+            <span class="text-[8px] text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded-md font-bold mt-2 w-max uppercase">Net Outstanding</span>
           </div>
           <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs flex flex-col justify-between">
             <div>
-              <span class="text-[10px] uppercase font-bold text-slate-400">COD Handled On Hand</span>
-              <p id="rf-stat-cod-collected" class="text-xl font-extrabold text-amber-600 mt-1">₹0</p>
+              <span class="text-[9px] uppercase font-black text-indigo-500 tracking-wider">Rider Salary Paid</span>
+              <p id="rf-stat-rider-salary-paid" class="text-lg font-black text-slate-950 mt-1">₹0</p>
             </div>
-            <span class="text-[9px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-md font-bold mt-2 w-max text-[8px]">Riders Cash Wallet</span>
+            <span class="text-[8px] text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-md font-bold mt-2 w-max uppercase">Direct Disbursals</span>
           </div>
           <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs flex flex-col justify-between">
             <div>
-              <span class="text-[10px] uppercase font-bold text-slate-400 font-sans">Approved COD Deposits</span>
-              <p id="rf-stat-cod-deposited" class="text-xl font-extrabold text-emerald-600 mt-1">₹0</p>
+              <span class="text-[9px] uppercase font-black text-amber-500 tracking-wider">Store Settle Pending</span>
+              <p id="rf-stat-store-settle-pending" class="text-lg font-black text-slate-950 mt-1">₹0</p>
             </div>
-            <span class="text-[9px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md font-bold mt-2 w-max text-[8px]">Deposited to Company</span>
+            <span class="text-[8px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-md font-bold mt-2 w-max uppercase">Pharmacy Dues</span>
           </div>
           <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs flex flex-col justify-between">
             <div>
-              <span class="text-[10px] uppercase font-bold text-slate-400">Pending Settlements</span>
-              <p id="rf-stat-pending-salary" class="text-xl font-extrabold text-rose-600 mt-1">₹0</p>
+              <span class="text-[9px] uppercase font-black text-emerald-500 tracking-wider">Store Settle Paid</span>
+              <p id="rf-stat-store-settle-paid" class="text-lg font-black text-slate-950 mt-1">₹0</p>
             </div>
-            <span id="rf-pending-alerts-badge" class="text-[9px] text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded-md font-bold mt-2 w-max text-[8px]">0 Active Claims</span>
+            <span class="text-[8px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md font-bold mt-2 w-max uppercase">Settlements Cleared</span>
           </div>
           <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs flex flex-col justify-between">
             <div>
-              <span class="text-[10px] uppercase font-bold text-slate-400">Paid Salary Ledger</span>
-              <p id="rf-stat-paid-salary" class="text-xl font-extrabold text-indigo-600 mt-1">₹0</p>
+              <span class="text-[9px] uppercase font-black text-teal-600 tracking-wider">Today's Payout</span>
+              <p id="rf-stat-today-payout" class="text-lg font-black text-slate-950 mt-1">₹0</p>
             </div>
-            <span class="text-[9px] text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-md font-bold mt-2 w-max text-[8px]">Disbursed to date</span>
+            <span class="text-[8px] text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded-md font-bold mt-2 w-max uppercase">Past 24 Hours</span>
           </div>
+          <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs flex flex-col justify-between">
+            <div>
+              <span class="text-[9px] uppercase font-black text-purple-600 tracking-wider">Monthly Payout</span>
+              <p id="rf-stat-monthly-payout" class="text-lg font-black text-slate-950 mt-1">₹0</p>
+            </div>
+            <span class="text-[8px] text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded-md font-bold mt-2 w-max uppercase">Current Cycle</span>
+          </div>
+        </div>
+
+        <!-- Hidden Legacy stats elements for backward-compatibility with cached scripts -->
+        <div class="hidden">
+          <span id="rf-stat-total-earnings">₹0</span>
+          <span id="rf-stat-cod-collected">₹0</span>
+          <span id="rf-stat-cod-deposited">₹0</span>
+          <span id="rf-stat-pending-salary">₹0</span>
+          <span id="rf-stat-paid-salary">₹0</span>
+          <span id="rf-pending-alerts-badge">0 Active Claims</span>
         </div>
 
         <!-- Pending Finance Alerts Summary Block -->
@@ -1190,6 +1207,9 @@
           </button>
           <button id="subtab-cod-btn" class="rf-subtab-btn text-slate-500 hover:text-slate-800 px-4 py-2 rounded-xl font-extrabold text-[10px] tracking-wide transition-all uppercase flex items-center gap-2 cursor-pointer" data-tab="rf-subtab-cod">
             <i class="fa-solid fa-wallet text-amber-500"></i>COD & Cash Wallets <span id="badge-count-pending-deposits" class="bg-amber-500 text-white text-[8px] px-1.5 py-0.2 rounded-full hidden">0</span>
+          </button>
+          <button id="subtab-stores-btn" class="rf-subtab-btn text-slate-500 hover:text-slate-800 px-4 py-2 rounded-xl font-extrabold text-[10px] tracking-wide transition-all uppercase flex items-center gap-2 cursor-pointer" data-tab="rf-subtab-stores">
+            <i class="fa-solid fa-store text-emerald-555 text-emerald-500"></i>Store Settlements
           </button>
         </div>
 
@@ -1335,6 +1355,56 @@
           </div>
         </div>
 
+        <!-- ======================= SUB-TAB PANEL 4: STORE SETTLEMENTS ======================= -->
+        <div id="rf-subtab-stores" class="rf-subtab-panel hidden space-y-6">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Store Settlements Table Panel -->
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-xs overflow-hidden lg:col-span-2">
+              <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+                <h3 class="text-xs font-extrabold text-slate-900"><i class="fa-solid fa-store text-emerald-600 mr-2"></i>Pharmacy Store Settlements Directory</h3>
+                <p class="text-[10px] text-slate-400 mt-0.5 font-sans">Calculate real-time merchant payouts. Manage credentials, approve configurations, or lock banking parameters.</p>
+              </div>
+
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr class="bg-slate-50 border-b border-slate-100 text-slate-400 uppercase font-extrabold text-[9px]">
+                      <th class="p-4">Store Profile</th>
+                      <th class="p-4">Creds Status / Actions</th>
+                      <th class="p-4 text-emerald-700">Total Sales Payout</th>
+                      <th class="p-4 text-indigo-700">Settlements Cleared</th>
+                      <th class="p-4 text-rose-700 font-sans">Dues Pending</th>
+                      <th class="p-4 text-center">Transfer Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbody-rf-store-payroll" class="font-semibold text-slate-700">
+                    <!-- Loaded dynamically via subscribeToStoreSettlements() or recalculateAndRenderFinanceDashboard() -->
+                  </tbody>
+				</table>
+              </div>
+            </div>
+
+            <!-- Store Settlement Ledger History Card -->
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-xs p-5 space-y-4 lg:col-span-1 flex flex-col">
+              <div class="border-b border-slate-50 pb-3 flex flex-col gap-2">
+                <div class="flex items-center justify-between">
+                  <h3 class="text-xs font-extrabold text-slate-900"><i class="fa-solid fa-file-invoice text-emerald-500 mr-2"></i>Settlement Ledger Records</h3>
+                  <button id="btn-rf-export-store-ledger" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[8.5px] font-black uppercase px-2 py-1 rounded-md border border-emerald-100 flex items-center gap-1 cursor-pointer">
+                    <i class="fa-solid fa-download"></i> EXPORT
+                  </button>
+                </div>
+                <p class="text-[10px] text-slate-400 font-sans">Live ledger of direct bank and UPI settlement payouts executed for connected drugstores.</p>
+              </div>
+
+              <div class="flex-1 overflow-y-auto max-h-[380px] min-h-[250px] space-y-2" id="rf-store-ledger-list">
+                <!-- Loaded dynamically -->
+              </div>
+            </div>
+
+          </div>
+        </div>
+
       </section>
 
       <!-- ======================= MODAL: ONE-CLICK PAY RIDER DIALOG ======================= -->
@@ -1383,6 +1453,54 @@
 
             <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-[10px] py-3 rounded-xl tracking-wider uppercase transition-all shadow flex items-center justify-center gap-2 cursor-pointer">
               <i class="fa-solid fa-circle-check text-emerald-400"></i> Authorize & Disburse
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- ======================= MODAL: STORE PAYOUT DIALOG ======================= -->
+      <div id="store-payout-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 font-sans text-xs">
+        <div class="bg-white rounded-3xl max-w-md w-full border border-slate-100 shadow-2xl overflow-hidden animate-fade-in text-slate-700">
+          <div class="px-5 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+            <h3 class="font-extrabold text-slate-900 text-xs tracking-tight uppercase flex items-center gap-1.5"><i class="fa-solid fa-paper-plane text-emerald-500"></i>Process Store Settlement Disbursement</h3>
+            <button id="btn-close-store-payout-modal" type="button" class="w-6 h-6 rounded-full hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-all cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <form id="form-store-process-payout" class="p-5 space-y-4">
+            <input type="hidden" id="store-payout-store-id">
+            
+            <div class="bg-emerald-50 rounded-2xl p-4 border border-emerald-150 flex items-center gap-3">
+              <div class="w-10 h-10 bg-emerald-600 text-white rounded-full flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-store text-md"></i>
+              </div>
+              <div>
+                <h4 id="store-payout-store-name" class="font-extrabold text-slate-800 text-xs">Pharmacy Store Name</h4>
+                <p id="store-payout-store-sub" class="text-[9px] text-emerald-600 font-mono mt-0.5">Pending Settlement: ₹0</p>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-[8.5px] font-black uppercase text-slate-400 mb-1.5">Amount to Disburse (₹)</label>
+              <input type="number" id="store-payout-amount" required min="1" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl font-bold font-mono focus:border-indigo-500 outline-none text-slate-800 text-xs bg-white">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[8.5px] font-black uppercase text-slate-400 mb-1.5">Disbursal VPA/UPI ID</label>
+                <input type="text" id="store-payout-target" readonly class="w-full px-3 py-2 border border-slate-200 bg-slate-50 rounded-xl font-mono text-xs outline-none text-slate-650">
+              </div>
+              <div>
+                <label class="block text-[8.5px] font-black uppercase text-slate-400 mb-1.5">Payout Date</label>
+                <input type="date" id="store-payout-date" required class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs outline-none text-slate-800 bg-white">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-[8.5px] font-black uppercase text-slate-400 mb-1.5">Enter Bank / UPI UTR Transaction Reference Number (Required)</label>
+              <input type="text" id="store-payout-utr" required placeholder="e.g. UTR552399121" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl font-mono text-xs tracking-wider focus:border-indigo-500 outline-none uppercase font-extrabold bg-white text-slate-800">
+            </div>
+
+            <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-[10px] py-3 rounded-xl tracking-wider uppercase transition-all shadow flex items-center justify-center gap-2 cursor-pointer">
+              <i class="fa-solid fa-circle-check text-emerald-400"></i> Mark Store Paid
             </button>
           </form>
         </div>

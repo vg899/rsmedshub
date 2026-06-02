@@ -8,6 +8,10 @@ let activeSection = "panel-overview";
 let systemTimeInterval: any = null;
 let ridersCache: any[] = [];
 let adminStoresCache: any[] = [];
+let riderPaymentsCache: { [key: string]: any } = {};
+let storePaymentsCache: { [key: string]: any } = {};
+let salaryLedgerCache: any[] = [];
+let settlementLedgerCache: any[] = [];
 
 // Advanced Dashboard Cache Variables
 let globalCustomers: any[] = [];
@@ -5388,6 +5392,8 @@ let renderSalaryLedgerRecords: any;
 let renderRiderSettlementClaims: any;
 let renderCodReconciliationTable: any;
 let renderPendingCODDeposits: any;
+let renderStorePayrollTable: any;
+let renderStoreSettlementsLedgerRecords: any;
 
 function initRiderFinanceCenter() {
   console.log("Initializing MedsHub Rider Finance & Settlement Center...");
@@ -5494,6 +5500,75 @@ function initRiderFinanceCenter() {
   document.getElementById("btn-close-rf-payout-modal")?.addEventListener("click", () => {
     document.getElementById("rf-payout-modal")?.classList.add("hidden");
   });
+
+  // WATCH FOR RIDER PAYMENT DETAILS
+  onValue(ref(db, "riderPayments"), (snapshot) => {
+    riderPaymentsCache = {};
+    if (snapshot.exists()) {
+      snapshot.forEach((child) => {
+        riderPaymentsCache[child.key!] = child.val();
+      });
+    }
+    (window as any).recalculateAndRenderFinanceDashboard();
+  });
+
+  // WATCH FOR STORE PAYMENT DETAILS
+  onValue(ref(db, "storePayments"), (snapshot) => {
+    storePaymentsCache = {};
+    if (snapshot.exists()) {
+      snapshot.forEach((child) => {
+        storePaymentsCache[child.key!] = child.val();
+      });
+    }
+    (window as any).recalculateAndRenderFinanceDashboard();
+  });
+
+  // WATCH FOR DIRECT SALARY LEDGER (Paid manually or via withdrawal)
+  onValue(ref(db, "salaryLedger"), (snapshot) => {
+    salaryLedgerCache = [];
+    if (snapshot.exists()) {
+      snapshot.forEach((child) => {
+        salaryLedgerCache.push({
+          key: child.key,
+          ...child.val()
+        });
+      });
+    }
+    salaryLedgerCache.sort((a, b) => b.createdAt - a.createdAt);
+    (window as any).recalculateAndRenderFinanceDashboard();
+  });
+
+  // WATCH FOR STORE SETTLEMENT LEDGER
+  onValue(ref(db, "settlementLedger"), (snapshot) => {
+    settlementLedgerCache = [];
+    if (snapshot.exists()) {
+      snapshot.forEach((child) => {
+        settlementLedgerCache.push({
+          key: child.key,
+          ...child.val()
+        });
+      });
+    }
+    settlementLedgerCache.sort((a, b) => b.createdAt - a.createdAt);
+    (window as any).recalculateAndRenderFinanceDashboard();
+  });
+
+  // Store profile payout Modal Close
+  document.getElementById("btn-close-store-payout-modal")?.addEventListener("click", () => {
+    document.getElementById("store-payout-modal")?.classList.add("hidden");
+  });
+
+  // Store process payout Submission
+  const storePayoutForm = document.getElementById("form-store-process-payout");
+  storePayoutForm?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    processStoreSettlementPayout();
+  });
+
+  // Export Store Payout CSV trigger
+  document.getElementById("btn-rf-export-store-ledger")?.addEventListener("click", () => {
+    triggerStoreSettlementReportGenerate();
+  });
 }
 
 function processFastRiderPayout() {
@@ -5548,8 +5623,6 @@ Object.assign(window, {
     let totalRiderEarnings = 0;
     let totalCodCollected = 0;
     let totalCodDeposited = 0;
-    let totalPendingSalary = 0;
-    let totalPaidSalary = 0;
 
     const riderEarningsMap: { [riderId: string]: number } = {};
     const riderCodHandledMap: { [riderId: string]: number } = {};
@@ -5557,17 +5630,35 @@ Object.assign(window, {
     const riderPaidClaimsMap: { [riderId: string]: number } = {};
     const riderPendingClaimsMap: { [riderId: string]: number } = {};
 
-    ordersCache.forEach((order: any) => {
-      if (order.status === "delivered" && order.deliveryId) {
-        const rId = order.deliveryId;
-        const earningsValue = order.deliveryCharge || 40;
-        totalRiderEarnings += earningsValue;
-        riderEarningsMap[rId] = (riderEarningsMap[rId] || 0) + earningsValue;
+    const commInput = document.getElementById("charge-commission") as HTMLInputElement;
+    const commRate = commInput ? parseFloat(commInput.value) || 10 : 10;
 
-        if (order.paymentMethod === "cod") {
-          const codVal = Number(order.payableAmount || order.totalAmount || order.total || 0);
-          totalCodCollected += codVal;
-          riderCodHandledMap[rId] = (riderCodHandledMap[rId] || 0) + codVal;
+    const storeSalesEarningsMap: { [storeId: string]: number } = {};
+    const storePaidSettlementsMap: { [storeId: string]: number } = {};
+
+    ordersCache.forEach((order: any) => {
+      if (order.status === "delivered") {
+        if (order.deliveryId) {
+          const rId = order.deliveryId;
+          const earningsValue = order.deliveryCharge || 40;
+          totalRiderEarnings += earningsValue;
+          riderEarningsMap[rId] = (riderEarningsMap[rId] || 0) + earningsValue;
+
+          if (order.paymentMethod === "cod") {
+            const codVal = Number(order.payableAmount || order.totalAmount || order.total || 0);
+            totalCodCollected += codVal;
+            riderCodHandledMap[rId] = (riderCodHandledMap[rId] || 0) + codVal;
+          }
+        }
+
+        if (order.storeId) {
+          const sId = order.storeId;
+          const subtotalValue = Number(order.subtotal || 0);
+          const gstValue = Number(order.gst || 0);
+          const commissionDeducted = Math.round(subtotalValue * (commRate / 100));
+          const netStorePayoutValue = subtotalValue + gstValue - commissionDeducted;
+          
+          storeSalesEarningsMap[sId] = (storeSalesEarningsMap[sId] || 0) + netStorePayoutValue;
         }
       }
     });
@@ -5580,16 +5671,106 @@ Object.assign(window, {
       }
     });
 
+    let totalRiderSalaryPaid = 0;
     settlementRequestsCache.forEach((req) => {
       const amt = Number(req.amount || 0);
       if (req.status === "approved" || req.status === "completed" || req.status === "success") {
-        totalPaidSalary += amt;
+        totalRiderSalaryPaid += amt;
         riderPaidClaimsMap[req.riderId] = (riderPaidClaimsMap[req.riderId] || 0) + amt;
       } else if (req.status === "pending") {
-        totalPendingSalary += amt;
         riderPendingClaimsMap[req.riderId] = (riderPendingClaimsMap[req.riderId] || 0) + amt;
       }
     });
+
+    salaryLedgerCache.forEach((ledger) => {
+      if (ledger.status === "approved" || ledger.status === "completed" || ledger.status === "success" || !ledger.status) {
+        const amt = Number(ledger.amount || 0);
+        if (ledger.claimId && ledger.claimId.startsWith("CLAIM_ADMIN_")) {
+          // Prevent double count by making sure it isn't listed in settlementRequests
+          const isRequestMatch = settlementRequestsCache.some((req) => req.claimId === ledger.claimId);
+          if (!isRequestMatch) {
+            totalRiderSalaryPaid += amt;
+            riderPaidClaimsMap[ledger.riderId] = (riderPaidClaimsMap[ledger.riderId] || 0) + amt;
+          }
+        }
+      }
+    });
+
+    let totalStoreSettlePaid = 0;
+    settlementLedgerCache.forEach((ledger) => {
+      const amt = Number(ledger.amount || 0);
+      totalStoreSettlePaid += amt;
+      if (ledger.storeId) {
+        storePaidSettlementsMap[ledger.storeId] = (storePaidSettlementsMap[ledger.storeId] || 0) + amt;
+      }
+    });
+
+    let totalRiderSalaryPending = 0;
+    ridersCache.forEach((r) => {
+      const uid = r.uid || r.deliveryId;
+      const basicEarnings = riderEarningsMap[uid] || 0;
+      
+      const pProfile = riderPaymentsCache[uid] || {};
+      const adjustments = pProfile.adjustments || {};
+      const incentives = Number(adjustments.incentives || 0);
+      const bonuses = Number(adjustments.bonuses || 0);
+      const penalties = Number(adjustments.penalties || 0);
+
+      const netSalary = Math.max(0, basicEarnings + incentives + bonuses - penalties);
+      const paid = riderPaidClaimsMap[uid] || 0;
+      const outstanding = Math.max(0, netSalary - paid);
+      totalRiderSalaryPending += outstanding;
+    });
+
+    let totalStoreSettlePending = 0;
+    adminStoresCache.forEach((s) => {
+      const sId = s.storeId;
+      const totalSalesPayout = storeSalesEarningsMap[sId] || 0;
+      const settledPaid = storePaidSettlementsMap[sId] || 0;
+      const duesPending = Math.max(0, totalSalesPayout - settledPaid);
+      totalStoreSettlePending += duesPending;
+    });
+
+    let totalTodayPayout = 0;
+    let totalMonthlyPayout = 0;
+
+    const ms24h = 24 * 60 * 60 * 1000;
+    const nowEpoch = Date.now();
+    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
+
+    settlementRequestsCache.forEach((r) => {
+      if (r.status === "approved" || r.status === "completed" || r.status === "success") {
+        const t = r.approvedAt || r.createdAt || Date.now();
+        const amt = Number(r.amount || 0);
+        if (nowEpoch - t < ms24h) totalTodayPayout += amt;
+        if (t >= startOfMonth) totalMonthlyPayout += amt;
+      }
+    });
+
+    settlementLedgerCache.forEach((s) => {
+      const t = s.createdAt || Date.now();
+      const amt = Number(s.amount || 0);
+      if (nowEpoch - t < ms24h) totalTodayPayout += amt;
+      if (t >= startOfMonth) totalMonthlyPayout += amt;
+    });
+
+    const c1 = document.getElementById("rf-stat-rider-salary-pending");
+    if (c1) c1.innerText = `₹${totalRiderSalaryPending.toLocaleString('en-IN')}`;
+
+    const c2 = document.getElementById("rf-stat-rider-salary-paid");
+    if (c2) c2.innerText = `₹${totalRiderSalaryPaid.toLocaleString('en-IN')}`;
+
+    const c3 = document.getElementById("rf-stat-store-settle-pending");
+    if (c3) c3.innerText = `₹${totalStoreSettlePending.toLocaleString('en-IN')}`;
+
+    const c4 = document.getElementById("rf-stat-store-settle-paid");
+    if (c4) c4.innerText = `₹${totalStoreSettlePaid.toLocaleString('en-IN')}`;
+
+    const c5 = document.getElementById("rf-stat-today-payout");
+    if (c5) c5.innerText = `₹${totalTodayPayout.toLocaleString('en-IN')}`;
+
+    const c6 = document.getElementById("rf-stat-monthly-payout");
+    if (c6) c6.innerText = `₹${totalMonthlyPayout.toLocaleString('en-IN')}`;
 
     const elTotalEarnings = document.getElementById("rf-stat-total-earnings");
     if (elTotalEarnings) elTotalEarnings.innerText = `₹${totalRiderEarnings}`;
@@ -5602,42 +5783,14 @@ Object.assign(window, {
     if (elCodDeposited) elCodDeposited.innerText = `₹${totalCodDeposited}`;
 
     const elPendingSalary = document.getElementById("rf-stat-pending-salary");
-    if (elPendingSalary) elPendingSalary.innerText = `₹${totalPendingSalary}`;
+    if (elPendingSalary) elPendingSalary.innerText = `₹${totalRiderSalaryPending}`;
 
     const elPaidSalary = document.getElementById("rf-stat-paid-salary");
-    if (elPaidSalary) elPaidSalary.innerText = `₹${totalPaidSalary}`;
-
-    let activeClaimsCount = settlementRequestsCache.filter((r) => r.status === "pending").length;
-    const elAlertBadge = document.getElementById("rf-pending-alerts-badge");
-    if (elAlertBadge) {
-      elAlertBadge.innerText = `${activeClaimsCount} Active Claims`;
-      elAlertBadge.className = `text-[9px] px-1.5 py-0.5 rounded-md font-bold mt-2 w-max text-[8px] ${
-        activeClaimsCount > 0 ? "bg-rose-100 text-rose-700 animate-pulse" : "bg-rose-50 text-rose-600"
-      }`;
-    }
-
-    const bCountClaims = document.getElementById("badge-count-pending-claims");
-    if (bCountClaims) {
-      if (activeClaimsCount > 0) {
-        bCountClaims.innerText = activeClaimsCount.toString();
-        bCountClaims.classList.remove("hidden");
-      } else {
-        bCountClaims.classList.add("hidden");
-      }
-    }
-
-    let activeDepositsCount = codDepositsCache.filter((d) => d.status === "pending").length;
-    const bCountDeposits = document.getElementById("badge-count-pending-deposits");
-    if (bCountDeposits) {
-      if (activeDepositsCount > 0) {
-        bCountDeposits.innerText = activeDepositsCount.toString();
-        bCountDeposits.classList.remove("hidden");
-      } else {
-        bCountDeposits.classList.add("hidden");
-      }
-    }
+    if (elPaidSalary) elPaidSalary.innerText = `₹${totalRiderSalaryPaid}`;
 
     const alertBanner = document.getElementById("rf-pending-alerts-banner");
+    let activeClaimsCount = settlementRequestsCache.filter((r) => r.status === "pending").length;
+    let activeDepositsCount = codDepositsCache.filter((d) => d.status === "pending").length;
     let someRiderWithHighCod = ridersCache.some((r) => {
       const collected = riderCodHandledMap[r.uid] || 0;
       const deposited = riderApprovedDepositsMap[r.uid] || 0;
@@ -5652,11 +5805,34 @@ Object.assign(window, {
       }
     }
 
+    const bCountClaims = document.getElementById("badge-count-pending-claims");
+    if (bCountClaims) {
+      if (activeClaimsCount > 0) {
+        bCountClaims.innerText = activeClaimsCount.toString();
+        bCountClaims.classList.remove("hidden");
+      } else {
+        bCountClaims.classList.add("hidden");
+      }
+    }
+
+    const bCountDeposits = document.getElementById("badge-count-pending-deposits");
+    if (bCountDeposits) {
+      if (activeDepositsCount > 0) {
+        bCountDeposits.innerText = activeDepositsCount.toString();
+        bCountDeposits.classList.remove("hidden");
+      } else {
+        bCountDeposits.classList.add("hidden");
+      }
+    }
+
     renderRidersPayrollTable(riderEarningsMap, riderApprovedDepositsMap, riderPaidClaimsMap, riderPendingClaimsMap, riderCodHandledMap);
     renderSalaryLedgerRecords();
     renderRiderSettlementClaims();
     renderCodReconciliationTable(riderCodHandledMap, riderApprovedDepositsMap);
     renderPendingCODDeposits();
+    
+    renderStorePayrollTable(storeSalesEarningsMap, storePaidSettlementsMap);
+    renderStoreSettlementsLedgerRecords();
   },
 
   setRfLedgerFilter(filter: string) {
@@ -5683,7 +5859,7 @@ Object.assign(window, {
     const lblRiderName = document.getElementById("rf-payout-rider-name");
     if (lblRiderName) lblRiderName.innerText = riderName;
 
-    const lblRiderSub = document.getElementById("rf-payout-rider-sub");
+    const lblRiderSub = document.getElementById("rf-payout-text-amount");
     if (lblRiderSub) lblRiderSub.innerText = `Pending balance available: ₹${maxWithdrawable}`;
 
     const inpAmount = document.getElementById("rf-payout-amount") as HTMLInputElement;
@@ -5824,6 +6000,74 @@ Object.assign(window, {
       console.error(err);
       showToast("Synchronization failure.", "error");
     });
+  },
+
+  async toggleRiderPaymentStatus(uid: string, nextStatus: string) {
+    try {
+      await update(ref(db, `riderPayments/${uid}`), { status: nextStatus });
+      showToast(`Rider payment profile verification is now set to '${nextStatus.toUpperCase()}'.`, "success");
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to update rider payment status.", "error");
+    }
+  },
+
+  async toggleStorePaymentStatus(sid: string, nextStatus: string) {
+    try {
+      await update(ref(db, `storePayments/${sid}`), { status: nextStatus });
+      showToast(`Store payment profile verification is now set to '${nextStatus.toUpperCase()}'.`, "success");
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to update store payment status.", "error");
+    }
+  },
+
+  async saveRiderAdjustments(uid: string) {
+    const incVal = Number((document.getElementById(`inp-inc-${uid}`) as HTMLInputElement)?.value || 0);
+    const bonVal = Number((document.getElementById(`inp-bon-${uid}`) as HTMLInputElement)?.value || 0);
+    const penVal = Number((document.getElementById(`inp-pen-${uid}`) as HTMLInputElement)?.value || 0);
+
+    try {
+      await update(ref(db, `riderPayments/${uid}/adjustments`), {
+        incentives: incVal,
+        bonuses: bonVal,
+        penalties: penVal,
+        updatedAt: Date.now()
+      });
+      showToast("Financial values (incentives/bonuses/penalties) saved successfully!", "success");
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to save adjustments in database.", "error");
+    }
+  },
+
+  triggerStorePayout(storeId: string, storeName: string, pendingAmt: number, upiId: string) {
+    const inpStoreId = document.getElementById("store-payout-store-id") as HTMLInputElement;
+    if (inpStoreId) inpStoreId.value = storeId;
+
+    const lblStoreName = document.getElementById("store-payout-store-name");
+    if (lblStoreName) lblStoreName.innerText = storeName;
+
+    const lblStoreSub = document.getElementById("store-payout-store-sub");
+    if (lblStoreSub) lblStoreSub.innerText = `Pending balance available: ₹${pendingAmt}`;
+
+    const inpAmount = document.getElementById("store-payout-amount") as HTMLInputElement;
+    if (inpAmount) {
+      inpAmount.value = pendingAmt > 0 ? pendingAmt.toString() : "0";
+      inpAmount.max = pendingAmt.toString();
+    }
+
+    const inpTarget = document.getElementById("store-payout-target") as HTMLInputElement;
+    if (inpTarget) inpTarget.value = upiId || "";
+
+    const inpUtr = document.getElementById("store-payout-utr") as HTMLInputElement;
+    if (inpUtr) inpUtr.value = "";
+
+    const inpDate = document.getElementById("store-payout-date") as HTMLInputElement;
+    if (inpDate) inpDate.value = new Date().toISOString().split("T")[0];
+
+    const modal = document.getElementById("store-payout-modal");
+    if (modal) modal.classList.remove("hidden");
   }
 });
 
@@ -5895,7 +6139,6 @@ renderRidersPayrollTable = function(
   }
 
   const calcEarnings = Object.keys(earningsMap).length ? earningsMap : getRidersEarningsMap();
-  const calcApprovedDeposits = Object.keys(approvedDeposits).length ? approvedDeposits : getRidersApprovedDepositsMap();
   const calcPaidClaims = Object.keys(paidClaims).length ? paidClaims : getRidersPaidClaimsMap();
   const calcPendingClaims = Object.keys(pendingClaims).length ? pendingClaims : getRidersPendingClaimsMap();
 
@@ -5908,37 +6151,122 @@ renderRidersPayrollTable = function(
     const uid = r.uid || r.deliveryId;
     const name = r.name || "Express Rider Partner";
     const shortId = uid ? uid.substring(0, 6).toUpperCase() : "N/A";
+    const email = r.email || "No Email";
+
+    const pProfile = riderPaymentsCache[uid] || {};
+    const status = pProfile.status || "unverified";
+    const upiId = pProfile.upiId || r.upiId || "No VPA Registered";
+    const upiName = pProfile.upiName || "N/A";
+    const bankHolder = pProfile.bankAccountHolder || "N/A";
+    const bankName = pProfile.bankName || "N/A";
+    const bankAccountNumber = pProfile.bankAccountNumber || "N/A";
+    const bankIfsc = pProfile.bankIfsc || "N/A";
+
+    let credsDisplayHtml = "";
+    if (pProfile.upiId) {
+      credsDisplayHtml = `<span class="block text-[10px] text-slate-600 font-mono mt-0.5"><i class="fa-solid fa-credit-card text-indigo-400 mr-1"></i> UPI: <strong>${upiId}</strong> (${upiName})</span>`;
+    } else if (pProfile.bankAccountNumber) {
+      credsDisplayHtml = `<span class="block text-[10px] text-slate-600 font-mono mt-0.5"><i class="fa-solid fa-building-columns text-teal-400 mr-1"></i> Bank: <strong>${bankName}</strong> | A/C <strong>${bankAccountNumber}</strong> | IFSC: ${bankIfsc}</span>`;
+    } else {
+      credsDisplayHtml = `<span class="block text-[9px] text-slate-400 italic mt-0.5">No Settlement Setup Completed</span>`;
+    }
+
+    let statusBadgeAndActions = "";
+    if (status === "unverified") {
+      statusBadgeAndActions = `
+        <div class="space-y-1">
+          <span class="bg-slate-100 text-slate-500 text-[8px] px-1.5 py-0.5 rounded font-black tracking-wide uppercase border border-slate-200">Unverified</span>
+          <div class="flex gap-1">
+            <button onclick="toggleRiderPaymentStatus('${uid}', 'locked')" class="bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-150 rounded px-1.5 py-0.5 text-[8.5px] font-black cursor-pointer uppercase">Lock</button>
+          </div>
+        </div>
+      `;
+    } else if (status === "pending_approval") {
+      statusBadgeAndActions = `
+        <div class="space-y-1">
+          <span class="bg-amber-100 text-amber-700 text-[8px] px-1.5 py-0.5 rounded font-black tracking-wide uppercase border border-amber-200 animate-pulse">Pending Approval</span>
+          <div class="flex gap-1.5 mt-1">
+            <button onclick="toggleRiderPaymentStatus('${uid}', 'verified')" class="bg-emerald-600 hover:bg-emerald-700 text-white rounded px-1.5 py-0.5 text-[8.5px] font-black cursor-pointer uppercase">Verify 🟢</button>
+            <button onclick="toggleRiderPaymentStatus('${uid}', 'locked')" class="bg-rose-50 text-rose-700 hover:bg-rose-100 border border-slate-300 rounded px-1.5 py-0.5 text-[8.5px] font-black cursor-pointer uppercase">Lock 🔒</button>
+          </div>
+        </div>
+      `;
+    } else if (status === "verified") {
+      statusBadgeAndActions = `
+        <div class="space-y-1">
+          <span class="bg-emerald-100 text-emerald-700 text-[8px] px-1.5 py-0.5 rounded font-black tracking-wide uppercase border border-emerald-250">Verified 🟢</span>
+          <div class="flex gap-1 mt-1">
+            <button onclick="toggleRiderPaymentStatus('${uid}', 'locked')" class="bg-rose-100 text-rose-700 hover:bg-rose-200 border border-rose-200 rounded px-1.5 py-0.5 text-[8.5px] font-black cursor-pointer uppercase">Lock 🔒</button>
+          </div>
+        </div>
+      `;
+    } else if (status === "locked") {
+      statusBadgeAndActions = `
+        <div class="space-y-1">
+          <span class="bg-rose-100 text-rose-750 text-[8px] px-1.5 py-0.5 rounded font-black tracking-wide uppercase border border-rose-250">Locked 🔒</span>
+          <div class="flex gap-1 mt-1">
+            <button onclick="toggleRiderPaymentStatus('${uid}', 'pending_approval')" class="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-slate-200 rounded px-1.5 py-0.5 text-[8.5px] font-black cursor-pointer uppercase">Unlock 🔓</button>
+          </div>
+        </div>
+      `;
+    }
 
     const allTimeEarnings = calcEarnings[uid] || 0;
+    const adjustments = pProfile.adjustments || {};
+    const incentives = Number(adjustments.incentives || 0);
+    const bonuses = Number(adjustments.bonuses || 0);
+    const penalties = Number(adjustments.penalties || 0);
+
+    const grossEarnings = allTimeEarnings + incentives + bonuses - penalties;
     const paidSalary = calcPaidClaims[uid] || 0;
     const pendingSalary = calcPendingClaims[uid] || 0;
-
-    const currentPendingWithmedshub = Math.max(0, allTimeEarnings - paidSalary - pendingSalary);
-    const email = r.email || "No Email Registered";
+    const currentOutstanding = Math.max(0, grossEarnings - paidSalary - pendingSalary);
 
     return `
-      <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-all font-semibold text-xs text-slate-700">
-        <td class="p-4 flex items-center gap-3">
-          <div class="w-8 h-8 rounded-full bg-slate-100 text-slate-70 shrink-0 border border-slate-100 flex items-center justify-center font-black">
-            <i class="fa-solid fa-motorcycle text-indigo-500"></i>
-          </div>
-          <div>
-            <h4 class="font-bold text-slate-900">${name}</h4>
-            <div class="text-[9px] text-slate-400 mt-0.5 font-mono">ID: ${shortId} | Email: ${email}</div>
+      <tr class="border-b border-slate-150 hover:bg-slate-50/50 transition-all font-semibold text-xs text-slate-700">
+        <td class="p-4">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-slate-100 shrink-0 border border-slate-100 flex items-center justify-center font-black">
+              <i class="fa-solid fa-motorcycle text-indigo-500"></i>
+            </div>
+            <div>
+              <h4 class="font-bold text-slate-900">${name}</h4>
+              <div class="text-[9px] text-slate-400 mt-0.5 font-mono">ID: ${shortId} | Email: ${email}</div>
+              ${credsDisplayHtml}
+            </div>
           </div>
         </td>
         <td class="p-4">
-          <span class="bg-indigo-50 text-indigo-705 text-indigo-700 px-2 py-0.5 rounded font-black text-[9px] uppercase">${r.totalDeliveries || 0} Delivered</span>
+          ${statusBadgeAndActions}
         </td>
-        <td class="p-4 font-mono font-bold text-teal-700 font-sans">₹${allTimeEarnings}</td>
-        <td class="p-4 font-mono text-emerald-700 font-sans">₹${paidSalary}</td>
         <td class="p-4 font-mono">
-          <div class="font-extrabold text-indigo-600 font-sans">₹${currentPendingWithmedshub}</div>
+          <div class="text-teal-700 font-bold mb-1">Delivered: ₹${allTimeEarnings}</div>
+          <div class="space-y-1 mt-1 font-semibold text-[10px]">
+            <div class="flex items-center gap-1.5">
+              <span class="text-slate-400 w-16 uppercase text-[8px] font-bold">Inc (+):</span>
+              <input type="number" id="inp-inc-${uid}" value="${incentives}" class="w-16 p-0.5 border border-slate-200 rounded font-mono text-center text-[10px] bg-slate-50 focus:bg-white outline-indigo-500">
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-slate-400 w-16 uppercase text-[8px] font-bold">Bonus (+):</span>
+              <input type="number" id="inp-bon-${uid}" value="${bonuses}" class="w-16 p-0.5 border border-slate-200 rounded font-mono text-center text-[10px] bg-slate-50 focus:bg-white outline-indigo-500">
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-slate-400 w-16 uppercase text-[8px] font-bold">Penalty (-):</span>
+              <input type="number" id="inp-pen-${uid}" value="${penalties}" class="w-16 p-0.5 border border-slate-200 rounded font-mono text-center text-[10px] bg-slate-50 focus:bg-white outline-indigo-500">
+            </div>
+            <button onclick="saveRiderAdjustments('${uid}')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-150 rounded font-bold px-2 py-0.5 text-[8.5px] uppercase mt-1 w-full block cursor-pointer">
+              <i class="fa-solid fa-save mr-1"></i> Save Adjusts
+            </button>
+          </div>
+        </td>
+        <td class="p-4 font-mono text-emerald-700">₹${paidSalary}</td>
+        <td class="p-4 font-mono">
+          <div class="font-extrabold text-indigo-600">₹${currentOutstanding}</div>
           ${pendingSalary > 0 ? `<div class="text-[8px] text-amber-500 font-sans mt-0.5 font-bold uppercase"><i class="fa-solid fa-hourglass-half"></i> ₹${pendingSalary} claim pending</div>` : ""}
         </td>
         <td class="p-4 text-center">
-          <button onclick="triggerOneClickPayout('${uid}', '${name.replace(/'/g, "\\'")}', ${currentPendingWithmedshub}, '${r.upiId || ""}')" class="bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-[9px] px-2.5 py-1.5 rounded-lg border border-transparent transition-all uppercase cursor-pointer tracking-wider">
-            <i class="fa-solid fa-indian-rupee-sign mr-1"></i>Pay Rider
+          <button onclick="triggerOneClickPayout('${uid}', '${name.replace(/'/g, "\\'")}', ${currentOutstanding}, '${upiId || ""}')" class="bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-[9px] px-2.5 py-1.5 rounded-lg border border-transparent transition-all uppercase cursor-pointer tracking-wider">
+            <i class="fa-solid fa-indian-rupee-sign mr-1"></i>Pay Salary
           </button>
         </td>
       </tr>
@@ -6161,5 +6489,214 @@ renderPendingCODDeposits = function() {
     `;
   }).join("");
 };
+
+renderStorePayrollTable = function(
+  salesEarningsMap: { [sid: string]: number } = {},
+  paidSettlementsMap: { [sid: string]: number } = {}
+) {
+  const tbody = document.getElementById("tbody-rf-store-payroll");
+  if (!tbody) return;
+
+  if (adminStoresCache.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400 font-bold uppercase text-[10px]">No connected drugstore partners found.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = adminStoresCache.map((s) => {
+    const sId = s.storeId;
+    const name = s.name || "Connected Pharmacy";
+    const city = s.city || "Bengaluru";
+    const shortId = sId ? sId.substring(0, 6).toUpperCase() : "N/A";
+
+    const pProfile = storePaymentsCache[sId] || {};
+    const status = pProfile.status || "unverified";
+    const upiId = pProfile.storeUpiId || "No VPA Registered";
+    const upiHolder = pProfile.upiHolderName || "N/A";
+    const bankName = pProfile.bankName || "N/A";
+    const bankAccountNumber = pProfile.bankAccountNumber || "N/A";
+    const bankIfsc = pProfile.bankIfsc || "N/A";
+
+    let credsDisplayHtml = "";
+    if (pProfile.storeUpiId) {
+      credsDisplayHtml = `<span class="block text-[10px] text-slate-600 font-mono mt-0.5"><i class="fa-solid fa-credit-card text-emerald-400 mr-1"></i> UPI: <strong>${upiId}</strong> (${upiHolder})</span>`;
+    } else if (pProfile.bankAccountNumber) {
+      credsDisplayHtml = `<span class="block text-[10px] text-slate-600 font-mono mt-0.5"><i class="fa-solid fa-building-columns text-teal-400 mr-1"></i> Bank: <strong>${bankName}</strong> | A/C <strong>${bankAccountNumber}</strong> | IFSC: ${bankIfsc}</span>`;
+    } else {
+      credsDisplayHtml = `<span class="block text-[9px] text-slate-400 italic mt-0.5">No Settlement Setup Completed</span>`;
+    }
+
+    let statusBadgeAndActions = "";
+    if (status === "unverified") {
+      statusBadgeAndActions = `
+        <div class="space-y-1">
+          <span class="bg-slate-100 text-slate-500 text-[8px] px-1.5 py-0.5 rounded font-black tracking-wide uppercase border border-slate-200">Unverified</span>
+          <div class="flex gap-1">
+            <button onclick="toggleStorePaymentStatus('${sId}', 'locked')" class="bg-rose-50 text-rose-700 hover:bg-rose-100 border border-slate-200 rounded px-1.5 py-0.5 text-[8.5px] font-black cursor-pointer uppercase">Lock</button>
+          </div>
+        </div>
+      `;
+    } else if (status === "pending_approval") {
+      statusBadgeAndActions = `
+        <div class="space-y-1">
+          <span class="bg-amber-100 text-amber-700 text-[8px] px-1.5 py-0.5 rounded font-black tracking-wide uppercase border border-amber-200 animate-pulse">Pending Approval</span>
+          <div class="flex gap-1.5 mt-1">
+            <button onclick="toggleStorePaymentStatus('${sId}', 'verified')" class="bg-emerald-600 hover:bg-emerald-700 text-white rounded px-1.5 py-0.5 text-[8.5px] font-black cursor-pointer uppercase">Verify 🟢</button>
+            <button onclick="toggleStorePaymentStatus('${sId}', 'locked')" class="bg-rose-50 text-rose-700 hover:bg-rose-100 border border-slate-300 rounded px-1.5 py-0.5 text-[8.5px] font-black cursor-pointer uppercase">Lock 🔒</button>
+          </div>
+        </div>
+      `;
+    } else if (status === "verified") {
+      statusBadgeAndActions = `
+        <div class="space-y-1">
+          <span class="bg-emerald-100 text-emerald-700 text-[8px] px-1.5 py-0.5 rounded font-black tracking-wide uppercase border border-emerald-250">Verified 🟢</span>
+          <div class="flex gap-1 mt-1">
+            <button onclick="toggleStorePaymentStatus('${sId}', 'locked')" class="bg-rose-100 text-rose-700 hover:bg-rose-200 border border-rose-200 rounded px-1.5 py-0.5 text-[8.5px] font-black cursor-pointer uppercase">Lock 🔒</button>
+          </div>
+        </div>
+      `;
+    } else if (status === "locked") {
+      statusBadgeAndActions = `
+        <div class="space-y-1">
+          <span class="bg-rose-100 text-rose-750 text-[8px] px-1.5 py-0.5 rounded font-black tracking-wide uppercase border border-rose-250">Locked 🔒</span>
+          <div class="flex gap-1 mt-1">
+            <button onclick="toggleStorePaymentStatus('${sId}', 'pending_approval')" class="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-slate-200 rounded px-1.5 py-0.5 text-[8.5px] font-black cursor-pointer uppercase">Unlock 🔓</button>
+          </div>
+        </div>
+      `;
+    }
+
+    const totalSalesPayout = salesEarningsMap[sId] || 0;
+    const settledPaid = paidSettlementsMap[sId] || 0;
+    const duesPending = Math.max(0, totalSalesPayout - settledPaid);
+
+    return `
+      <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-all font-semibold text-xs text-slate-700">
+        <td class="p-4">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-full bg-slate-100 shrink-0 border border-slate-200 flex items-center justify-center font-black">
+              <i class="fa-solid fa-store text-emerald-500"></i>
+            </div>
+            <div>
+              <h4 class="font-extrabold text-slate-900">${name}</h4>
+              <div class="text-[9px] text-slate-400 font-mono font-medium">ID: ${shortId} | City: ${city}</div>
+              ${credsDisplayHtml}
+            </div>
+          </div>
+        </td>
+        <td class="p-4">
+          ${statusBadgeAndActions}
+        </td>
+        <td class="p-4 font-mono text-teal-700 font-extrabold">₹${totalSalesPayout}</td>
+        <td class="p-4 font-mono text-emerald-700 font-extrabold">₹${settledPaid}</td>
+        <td class="p-4 font-mono text-rose-600 font-black">₹${duesPending}</td>
+        <td class="p-4 text-center">
+          <button onclick="triggerStorePayout('${sId}', '${name.replace(/'/g, "\\'")}', ${duesPending}, '${upiId || ""}')" class="bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-[9px] px-2.5 py-1.5 rounded-lg border border-transparent transition-all uppercase cursor-pointer tracking-wider">
+            <i class="fa-solid fa-indian-rupee-sign mr-1"></i>Pay Store
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join("");
+};
+
+renderStoreSettlementsLedgerRecords = function() {
+  const container = document.getElementById("rf-store-ledger-list");
+  if (!container) return;
+
+  if (settlementLedgerCache.length === 0) {
+    container.innerHTML = `<p class="text-[9px] text-slate-400 font-bold text-center py-6 uppercase font-mono tracking-wide">No storefront settlements ledger available</p>`;
+    return;
+  }
+
+  container.innerHTML = settlementLedgerCache.map((ledger) => {
+    const dateFormatted = ledger.createdAt ? new Date(ledger.createdAt).toLocaleDateString() : "N/A";
+    
+    return `
+      <div class="bg-slate-50 border border-slate-100 rounded-xl p-3 text-xs space-y-1.5 flex flex-col font-semibold">
+        <div class="flex items-center justify-between">
+          <strong class="text-slate-800 text-[11px] leading-tight">${ledger.storeName || "Connected Partner"}</strong>
+          <span class="text-[8px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100/50 px-1 py-0.2 rounded uppercase">UPI</span>
+        </div>
+        <div class="flex items-center justify-between mt-0.5 text-[10px]">
+          <span class="text-slate-400 font-mono">${dateFormatted}</span>
+          <span class="font-extrabold text-emerald-700 font-mono">₹${ledger.amount}</span>
+        </div>
+        <div class="border-t border-slate-200/50 pt-1.5 flex items-center justify-between text-[9px] text-slate-500 font-mono flex-wrap gap-1">
+          <div>Ref ID: #${ledger.key ? ledger.key.substring(ledger.key.length-6).toUpperCase() : "AA"}</div>
+          <div class="font-black text-slate-700">UTR: <strong class="text-emerald-600 font-extrabold select-all">${ledger.utrNumber || "N/A"}</strong></div>
+        </div>
+      </div>
+    `;
+  }).join("");
+};
+
+async function processStoreSettlementPayout() {
+  const storeId = (document.getElementById("store-payout-store-id") as HTMLInputElement).value;
+  const name = document.getElementById("store-payout-store-name")?.innerText || "Store Partner";
+  const amount = Number((document.getElementById("store-payout-amount") as HTMLInputElement).value.trim());
+  const target = (document.getElementById("store-payout-target") as HTMLInputElement).value.trim();
+  const utr = (document.getElementById("store-payout-utr") as HTMLInputElement).value.trim();
+  const rawDate = (document.getElementById("store-payout-date") as HTMLInputElement).value;
+
+  if (!storeId) return;
+
+  if (amount <= 0) {
+    showToast("Disbursement requires a positive amount transfer.", "error");
+    return;
+  }
+
+  if (!utr) {
+    showToast("UTR reference transaction number is required.", "error");
+    return;
+  }
+
+  showToast("Registering store payout history record...", "info");
+  const ledId = "SETTLE_STORE_" + Date.now();
+
+  const ledgerPayload = {
+    key: ledId,
+    storeId,
+    storeName: name,
+    amount,
+    upiId: target,
+    utrNumber: utr.toUpperCase(),
+    createdAt: rawDate ? new Date(rawDate).getTime() : Date.now(),
+    status: "approved"
+  };
+
+  try {
+    await set(ref(db, `settlementLedger/${ledId}`), ledgerPayload);
+    showToast("Store settlement disbursed and added to ledger history!", "success");
+    document.getElementById("store-payout-modal")?.classList.add("hidden");
+  } catch (err) {
+    console.error(err);
+    showToast("Failed to write payout ledger inside Realtime Db.", "error");
+  }
+}
+
+function triggerStoreSettlementReportGenerate() {
+  if (settlementLedgerCache.length === 0) {
+    showToast("No store settlements ledger transaction history available to export.", "info");
+    return;
+  }
+
+  let csvContent = "MedsHub store Payout Settlements Report\nGenerated on: " + new Date().toISOString() + "\n\n";
+  csvContent += "Disbursal Date,Ledger ID,Store Name,Disbursed Settlement (₹),Target VPA,UTR Reference ID\n";
+  
+  settlementLedgerCache.forEach((ledger) => {
+    const dateStr = ledger.createdAt ? new Date(ledger.createdAt).toLocaleDateString() : "N/A";
+    csvContent += `"${dateStr}","${ledger.key}","${ledger.storeName || 'Store'}",${ledger.amount},"${ledger.upiId || ''}","${ledger.utrNumber || 'N/A'}"\n`;
+  });
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", `medshub_store_settlements_${Date.now()}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  showToast("MedsHub Merchant Settlements report generated and downloaded successfully!", "success");
+}
 
 
