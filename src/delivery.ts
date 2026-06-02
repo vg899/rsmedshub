@@ -970,25 +970,19 @@ function renderActiveOrderPipelineLayout() {
 
   renderDashboardActiveOrderCard();
 
+  const runSub = document.getElementById("cnt-active-order-running");
+  const emptySub = document.getElementById("cnt-active-order-empty");
+
   if (!activeOrderPayload) {
     if (navDotBadge) navDotBadge.classList.add("hidden");
     if (navPingBadge) navPingBadge.classList.add("hidden");
-
-    // Hide active components and show empty state
-    const containerActiveTab = document.getElementById("tab-active-order");
-    if (containerActiveTab) {
-      containerActiveTab.innerHTML = `
-        <div class="text-center py-24 text-slate-400 bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col items-center justify-center space-y-3">
-          <div class="w-16 h-16 rounded-full bg-slate-50 text-slate-300 flex items-center justify-center text-2xl">
-            <i class="fa-solid fa-route"></i>
-          </div>
-          <h4 class="text-xs font-bold font-display text-slate-650 uppercase">No Active Transit Order</h4>
-          <p class="text-[9.5px] text-slate-400 leading-normal max-w-xs font-medium">Head to the "Pools" tab, review available packages, and accept a dispatch to lock real-time routing here!</p>
-        </div>
-      `;
-    }
+    if (runSub) runSub.classList.add("hidden");
+    if (emptySub) emptySub.classList.remove("hidden");
     return;
   }
+
+  if (runSub) runSub.classList.remove("hidden");
+  if (emptySub) emptySub.classList.add("hidden");
 
   // Active Job Busy state verified
   if (navDotBadge) navDotBadge.classList.remove("hidden");
