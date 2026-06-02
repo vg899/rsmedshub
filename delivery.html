@@ -35,10 +35,10 @@
     }
   </style>
 </head>
-<body class="bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-slate-800 flex items-center justify-center min-h-screen px-4 font-sans antialiased">
+<body class="bg-[#f8fbff] text-slate-800 h-screen overflow-hidden font-sans antialiased">
 
-  <!-- Desktop Branding Left Panel -->
-  <div class="hidden lg:flex flex-col max-w-sm text-left pr-12 select-none space-y-4">
+  <!-- Desktop Branding Left Panel (Hidden) -->
+  <div class="hidden flex-col max-w-sm text-left pr-12 select-none space-y-4">
     <div class="flex items-center gap-2.5">
       <div class="w-11 h-11 rounded-2xl bg-indigo-600 flex items-center justify-center text-white text-xl shadow-lg shadow-indigo-500/10 border border-indigo-400/20">
         <i class="fa-solid fa-plus-minus fa-rotate-45 text-lg"></i>
@@ -58,58 +58,60 @@
     </div>
   </div>
 
-  <!-- Mobile Screen Container -->
-  <div class="w-full max-w-[410px] h-screen md:h-[840px] bg-[#f8fbff] relative flex flex-col md:rounded-[38px] md:shadow-2xl md:border md:border-slate-800/25 overflow-hidden ring-8 ring-slate-900/15">
+  <!-- Full Screen Container -->
+  <div class="w-full h-screen bg-[#f8fbff] relative flex flex-col overflow-hidden">
     
     <!-- REAL-TIME NEW COHESIVE HEADER -->
-    <header class="bg-white border-b border-slate-100 px-4 py-3 shrink-0 flex items-center justify-between relative z-30 shadow-2xs">
-      <div class="flex items-center gap-2.5">
-        <!-- Circle Profile pic with dynamic fallback -->
-        <div class="relative">
-          <img id="hdr-profile-pic" class="w-10 h-10 rounded-full object-cover border-2 border-indigo-600/10 shadow-xs" src="https://img.icons8.com/color/96/delivery-man.png" alt="Rider Profile" referrerPolicy="no-referrer">
-          <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" id="hdr-profile-status-dot"></span>
+    <header class="bg-white border-b border-slate-100 px-4 py-3 shrink-0 relative z-30 shadow-2xs">
+      <div class="w-full max-w-3xl mx-auto flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <!-- Circle Profile pic with dynamic fallback -->
+          <div class="relative">
+            <img id="hdr-profile-pic" class="w-10 h-10 rounded-full object-cover border-2 border-indigo-600/10 shadow-xs" src="https://img.icons8.com/color/96/delivery-man.png" alt="Rider Profile" referrerPolicy="no-referrer">
+            <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" id="hdr-profile-status-dot"></span>
+          </div>
+          <div class="text-left">
+            <h3 id="delivery-profile-rider-name" class="text-xs font-black text-slate-855 tracking-tight leading-none uppercase font-display">Aman Sharma</h3>
+            <p id="lbl-profile-driver-id-sub" class="text-[9px] text-slate-400 font-extrabold tracking-tight mt-1">Rider ID: RSMD30485</p>
+          </div>
         </div>
-        <div class="text-left">
-          <h3 id="delivery-profile-rider-name" class="text-xs font-black text-slate-850 tracking-tight leading-none uppercase font-display">Aman Sharma</h3>
-          <p id="lbl-profile-driver-id-sub" class="text-[9px] text-slate-400 font-extrabold tracking-tight mt-1">Rider ID: RSMD30485</p>
-        </div>
-      </div>
-      
-      <!-- Right Side Widgets Section: Shifts between Toggle-switch and Earnings container depending on Active Tab -->
-      <div class="flex items-center gap-3">
-        <!-- Dashboard Toggle State Widget -->
-        <div id="hdr-widget-switch" class="flex flex-col items-end gap-0.5">
-          <div class="flex items-center gap-1.5 cursor-pointer select-none" id="hdr-btn-toggle-switch">
-            <span class="text-[8.5px] font-black text-slate-400 uppercase tracking-wider">Online</span>
-            <!-- Custom switch representation -->
-            <div id="hdr-switch-bg" class="w-8 h-4 rounded-full bg-emerald-500 transition-colors duration-300 relative">
-              <div id="hdr-switch-knob" class="w-3.5 h-3.5 rounded-full bg-white absolute top-0.25 left-0.25 transition-transform duration-300 shadow-xs translate-x-[16px]"></div>
+        
+        <!-- Right Side Widgets Section: Shifts between Toggle-switch and Earnings container depending on Active Tab -->
+        <div class="flex items-center gap-3">
+          <!-- Dashboard Toggle State Widget -->
+          <div id="hdr-widget-switch" class="flex flex-col items-end gap-0.5">
+            <div class="flex items-center gap-1.5 cursor-pointer select-none" id="hdr-btn-toggle-switch">
+              <span class="text-[8.5px] font-black text-slate-400 uppercase tracking-wider">Online</span>
+              <!-- Custom switch representation -->
+              <div id="hdr-switch-bg" class="w-8 h-4 rounded-full bg-emerald-500 transition-colors duration-300 relative">
+                <div id="hdr-switch-knob" class="w-3.5 h-3.5 rounded-full bg-white absolute top-0.25 left-0.25 transition-transform duration-300 shadow-xs translate-x-[16px]"></div>
+              </div>
+            </div>
+            <!-- Label status badge -->
+            <span id="tracker-duty-txt" class="text-[8px] font-black text-emerald-600 tracking-wider uppercase">ONLINE</span>
+          </div>
+
+          <!-- Payout/Earning Widget -->
+          <div id="hdr-widget-earnings" class="hidden bg-slate-50 border border-slate-100 rounded-xl px-2 py-0.5 text-right flex flex-col justify-center">
+            <span class="text-[8px] text-slate-400 font-extrabold uppercase tracking-tight leading-none">Earnings</span>
+            <div class="flex items-center gap-1 mt-0.5 leading-none">
+              <span id="hdr-payout-amount" class="text-xs font-black text-slate-800 font-mono tracking-tight leading-none">₹950.50</span>
+              <i class="fa-solid fa-arrow-trend-up text-[9px] text-[#00c853]"></i>
             </div>
           </div>
-          <!-- Label status badge -->
-          <span id="tracker-duty-txt" class="text-[8px] font-black text-emerald-600 tracking-wider uppercase">ONLINE</span>
-        </div>
 
-        <!-- Payout/Earning Widget -->
-        <div id="hdr-widget-earnings" class="hidden bg-slate-50 border border-slate-100 rounded-xl px-2 py-0.5 text-right flex flex-col justify-center">
-          <span class="text-[8px] text-slate-400 font-extrabold uppercase tracking-tight leading-none">Earnings</span>
-          <div class="flex items-center gap-1 mt-0.5 leading-none">
-            <span id="hdr-payout-amount" class="text-xs font-black text-slate-800 font-mono tracking-tight leading-none">₹950.50</span>
-            <i class="fa-solid fa-arrow-trend-up text-[9px] text-[#00c853]"></i>
+          <!-- Notification Bell & Logout combo -->
+          <div class="flex items-center gap-1.5 border-l border-slate-100 pl-2">
+            <!-- Notification Bell -->
+            <div class="relative cursor-pointer active:scale-95 transition-transform pr-1">
+              <i class="fa-regular fa-bell text-slate-500 text-base"></i>
+              <span class="absolute -top-1 -right-0.5 w-3.5 h-3.5 bg-rose-500 text-[8px] text-white rounded-full font-black flex items-center justify-center border border-white">12</span>
+            </div>
+            <!-- Tiny Logout Icon -->
+            <button id="btn-delivery-signout" class="w-8 h-8 rounded-xl hover:bg-slate-50 flex items-center justify-center text-slate-400 hover:text-rose-650 cursor-pointer active:scale-90 transition-all" title="Sign Out">
+              <i class="fa-solid fa-right-from-bracket text-xs"></i>
+            </button>
           </div>
-        </div>
-
-        <!-- Notification Bell & Logout combo -->
-        <div class="flex items-center gap-1.5 border-l border-slate-100 pl-2">
-          <!-- Notification Bell -->
-          <div class="relative cursor-pointer active:scale-95 transition-transform pr-1">
-            <i class="fa-regular fa-bell text-slate-500 text-base"></i>
-            <span class="absolute -top-1 -right-0.5 w-3.5 h-3.5 bg-rose-500 text-[8px] text-white rounded-full font-black flex items-center justify-center border border-white">12</span>
-          </div>
-          <!-- Tiny Logout Icon -->
-          <button id="btn-delivery-signout" class="w-8 h-8 rounded-xl hover:bg-slate-50 flex items-center justify-center text-slate-400 hover:text-rose-650 cursor-pointer active:scale-90 transition-all" title="Sign Out">
-            <i class="fa-solid fa-right-from-bracket text-xs"></i>
-          </button>
         </div>
       </div>
     </header>
@@ -123,7 +125,7 @@
     <!-- ============================================== -->
     <!-- 1. APPLICATION SUSPENDED CONTAINER             -->
     <!-- ============================================== -->
-    <div id="panel-suspended" class="hidden flex-1 overflow-y-auto px-6 py-12 flex flex-col items-center justify-center text-center space-y-4">
+    <div id="panel-suspended" class="hidden flex-1 w-full max-w-3xl mx-auto overflow-y-auto px-6 py-12 flex flex-col items-center justify-center text-center space-y-4">
       <div class="w-20 h-20 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center text-3xl shadow-sm">
         <i class="fa-solid fa-user-slash"></i>
       </div>
@@ -139,7 +141,7 @@
     <!-- ============================================== -->
     <!-- 2. WAITING FOR ACTIVATION (PENDING REVIEW)     -->
     <!-- ============================================== -->
-    <div id="panel-pending-approval" class="hidden flex-1 overflow-y-auto px-6 py-8 space-y-6">
+    <div id="panel-pending-approval" class="hidden flex-1 w-full max-w-3xl mx-auto overflow-y-auto px-6 py-8 space-y-6">
       <div class="text-center space-y-3 py-6">
         <div class="w-20 h-20 bg-amber-50 text-amber-500 rounded-full mx-auto flex items-center justify-center text-3xl shadow-sm animate-pulse">
           <i class="fa-solid fa-shield-halved animate-bounce"></i>
@@ -207,7 +209,7 @@
     <!-- ============================================== -->
     <!-- 3. DOCUMENT ONBOARDING / KYC FORM              -->
     <!-- ============================================== -->
-    <div id="panel-onboarding" class="hidden flex-1 overflow-y-auto px-5 py-6 space-y-5">
+    <div id="panel-onboarding" class="hidden flex-1 w-full max-w-3xl mx-auto overflow-y-auto px-5 py-6 space-y-5">
       <div class="text-center py-2">
         <h2 class="text-xl font-black text-indigo-900 font-display flex items-center justify-center gap-1.5">
           <i class="fa-solid fa-id-card-clip text-indigo-600"></i> KYC Onboarding Hub
@@ -398,7 +400,7 @@
     <!-- ============================================== -->
     <!-- 4. ACTIVE PORTAL DISPATCH MAIN VIEW            -->
     <!-- ============================================== -->
-    <div id="panel-main-terminal" class="hidden flex-1 overflow-y-auto no-scrollbar pb-24 flex flex-col">
+    <div id="panel-main-terminal" class="hidden flex-1 w-full max-w-3xl mx-auto overflow-y-auto no-scrollbar pb-24 flex flex-col">
       
       <!-- ==================== TAB A: RIDER DASHBOARD ==================== -->
       <section id="tab-dashboard" class="px-4 py-4 space-y-4.5 flex-1 select-none overflow-y-auto no-scrollbar slide-fade">
@@ -1024,36 +1026,36 @@
     <!-- ============================================== -->
     <!-- 5. BOTTOM NAVIGATION BAR / TACTICAL BOARD      -->
     <!-- ============================================== -->
-    <nav id="bottom-navigation-nav" class="hidden absolute bottom-0 inset-x-0 bg-white border-t border-slate-150 py-2.5 px-4 z-40 flex items-center justify-between shadow-[0_-4px_16px_rgba(0,0,0,0.04)] select-none">
-      
-      <button data-tab="dashboard" class="flex flex-col items-center justify-center gap-1 text-amber-500 transition-all font-display group cursor-pointer w-12 text-center">
-        <i class="fa-solid fa-chart-pie text-lg group-hover:scale-110 transition-all"></i>
-        <span class="text-[8.5px] font-black uppercase tracking-wider">Home</span>
-      </button>
+    <nav id="bottom-navigation-nav" class="hidden absolute bottom-0 inset-x-0 bg-white border-t border-slate-150 py-2.5 px-4 z-40 shadow-[0_-4px_16px_rgba(0,0,0,0.04)] select-none">
+      <div class="w-full max-w-3xl mx-auto flex items-center justify-between">
+        <button data-tab="dashboard" class="flex flex-col items-center justify-center gap-1 text-amber-500 transition-all font-display group cursor-pointer w-12 text-center">
+          <i class="fa-solid fa-chart-pie text-lg group-hover:scale-110 transition-all"></i>
+          <span class="text-[8.5px] font-black uppercase tracking-wider">Home</span>
+        </button>
 
-      <button data-tab="pools" class="flex flex-col items-center justify-center gap-1 text-slate-400 transition-all font-display group cursor-pointer w-12 text-center relative">
-        <span class="absolute -top-1 -right-1.5 w-4 h-4 bg-indigo-600 text-[8px] text-white rounded-full font-black animate-bounce flex items-center justify-center hidden" id="badge-nav-pools">0</span>
-        <i class="fa-solid fa-box-open text-lg group-hover:scale-110 transition-all"></i>
-        <span class="text-[8.5px] font-black uppercase tracking-wider">Pools</span>
-      </button>
+        <button data-tab="pools" class="flex flex-col items-center justify-center gap-1 text-slate-400 transition-all font-display group cursor-pointer w-12 text-center relative">
+          <span class="absolute -top-1 -right-1.5 w-4 h-4 bg-indigo-600 text-[8px] text-white rounded-full font-black animate-bounce flex items-center justify-center hidden" id="badge-nav-pools">0</span>
+          <i class="fa-solid fa-box-open text-lg group-hover:scale-110 transition-all"></i>
+          <span class="text-[8.5px] font-black uppercase tracking-wider">Pools</span>
+        </button>
 
-      <button data-tab="active-order" class="flex flex-col items-center justify-center gap-1 text-slate-400 transition-all font-display group cursor-pointer w-12 text-center relative">
-        <span class="absolute -top-1 -right-1 bg-amber-500 w-2.5 h-2.5 rounded-full animate-ping hidden" id="badge-nav-active-order-ping"></span>
-        <span class="absolute -top-1 -right-1 bg-amber-500 w-2.5 h-2.5 rounded-full border border-white hidden" id="badge-nav-active-order"></span>
-        <i class="fa-solid fa-location-arrow text-lg group-hover:scale-110 transition-all"></i>
-        <span class="text-[8.5px] font-black uppercase tracking-wider">Transit</span>
-      </button>
+        <button data-tab="active-order" class="flex flex-col items-center justify-center gap-1 text-slate-400 transition-all font-display group cursor-pointer w-12 text-center relative">
+          <span class="absolute -top-1 -right-1 bg-amber-500 w-2.5 h-2.5 rounded-full animate-ping hidden" id="badge-nav-active-order-ping"></span>
+          <span class="absolute -top-1 -right-1 bg-amber-500 w-2.5 h-2.5 rounded-full border border-white hidden" id="badge-nav-active-order"></span>
+          <i class="fa-solid fa-location-arrow text-lg group-hover:scale-110 transition-all"></i>
+          <span class="text-[8.5px] font-black uppercase tracking-wider">Transit</span>
+        </button>
 
-      <button data-tab="settlements" class="flex flex-col items-center justify-center gap-1 text-slate-400 transition-all font-display group cursor-pointer w-12 text-center">
-        <i class="fa-solid fa-indian-rupee-sign text-lg group-hover:scale-110 transition-all"></i>
-        <span class="text-[8.5px] font-black uppercase tracking-wider">Payout</span>
-      </button>
+        <button data-tab="settlements" class="flex flex-col items-center justify-center gap-1 text-slate-400 transition-all font-display group cursor-pointer w-12 text-center">
+          <i class="fa-solid fa-indian-rupee-sign text-lg group-hover:scale-110 transition-all"></i>
+          <span class="text-[8.5px] font-black uppercase tracking-wider">Payout</span>
+        </button>
 
-      <button data-tab="profile" class="flex flex-col items-center justify-center gap-1 text-slate-400 transition-all font-display group cursor-pointer w-12 text-center">
-        <i class="fa-solid fa-user-circle text-lg group-hover:scale-110 transition-all"></i>
-        <span class="text-[8.5px] font-black uppercase tracking-wider">Profile</span>
-      </button>
-
+        <button data-tab="profile" class="flex flex-col items-center justify-center gap-1 text-slate-400 transition-all font-display group cursor-pointer w-12 text-center">
+          <i class="fa-solid fa-user-circle text-lg group-hover:scale-110 transition-all"></i>
+          <span class="text-[8.5px] font-black uppercase tracking-wider">Profile</span>
+        </button>
+      </div>
     </nav>
 
 
