@@ -19,6 +19,10 @@ let stateAadhaarBackUrl = "";
 let stateLicenseImageUrl = "";
 let stateUpiQrCodeUrl = "";
 let stateActiveHandoverProofUrl = "";
+let stateProfilePhotoUrl = "";
+let stateLicenseBackImageUrl = "";
+let stateSelfieVerificationUrl = "";
+let stateCodDepositScreenshotUrl = "";
 
 // --- PRE-CACHED DISPATCH DATA ---
 let globalOrdersCache: any[] = [];
@@ -200,6 +204,9 @@ function showActiveTerminalView(data: any) {
   // Watch notifications and settlement lists
   subscribeToDispatchPoolAndOrders();
   subscribeToSettlementRedemptions();
+  subscribeToCodDeposits();
+  subscribeToLeaderboardsAndIncentives();
+  setupNewDashboardInteractivity();
   renderRiderProfileView(data);
 }
 
@@ -253,6 +260,10 @@ function switchTabPanel(tabName: string) {
 }
 
 // --- KYC REGISTRATION FORM FILE SELECTORS AND AUTO-UPLOADERS ---
+setupKycUploadTrigger("onboard-profile-photo", "img-onboard-profile-photo", "txt-onboard-profile-photo", "icon-onboard-profile-photo", "wrapper-onboard-profile-photo", (url) => {
+  stateProfilePhotoUrl = url;
+});
+
 setupKycUploadTrigger("onboard-aadhaar-front", "img-aadhaar-front", "txt-aadhaar-front", "icon-aadhaar-front", "wrapper-aadhaar-front", (url) => {
   stateAadhaarFrontUrl = url;
 });
@@ -263,6 +274,18 @@ setupKycUploadTrigger("onboard-aadhaar-back", "img-aadhaar-back", "txt-aadhaar-b
 
 setupKycUploadTrigger("onboard-dl-image", "img-dl-image", "txt-dl-image", "icon-dl-image", "wrapper-dl-image", (url) => {
   stateLicenseImageUrl = url;
+});
+
+setupKycUploadTrigger("onboard-dl-back", "img-dl-back", "txt-dl-back", "icon-dl-back", "wrapper-dl-back", (url) => {
+  stateLicenseBackImageUrl = url;
+});
+
+setupKycUploadTrigger("onboard-selfie", "img-selfie-verification", "txt-selfie-verification", "icon-selfie-verification", "wrapper-selfie-verification", (url) => {
+  stateSelfieVerificationUrl = url;
+});
+
+setupKycUploadTrigger("inp-cod-deposit-screenshot", "img-cod-deposit-screenshot", "txt-cod-deposit-screenshot", "icon-cod-deposit-screenshot", "wrapper-cod-deposit-screenshot", (url) => {
+  stateCodDepositScreenshotUrl = url;
 });
 
 setupKycUploadTrigger("inp-settle-qr-upload", "img-qr-upload", "txt-qr-upload", "icon-qr-upload", "wrapper-qr-upload", (url) => {
@@ -330,21 +353,39 @@ const formKyc = document.getElementById("form-onboard-kyc") as HTMLFormElement;
 formKyc?.addEventListener("submit", async (e) => {
   e.preventDefault();
 
+  const fullNameVal = (document.getElementById("onboard-fullname") as HTMLInputElement).value.trim();
+  const emailVal = (document.getElementById("onboard-email") as HTMLInputElement).value.trim();
+  const mobileVal = (document.getElementById("onboard-mobile") as HTMLInputElement).value.trim();
   const stateVal = (document.getElementById("onboard-state") as HTMLInputElement).value.trim();
   const districtVal = (document.getElementById("onboard-district") as HTMLInputElement).value.trim();
+  const addressVal = (document.getElementById("onboard-address") as HTMLTextAreaElement).value.trim();
+  const emergencyContactVal = (document.getElementById("onboard-emergency-contact") as HTMLInputElement).value.trim();
   const aadhaarNumber = (document.getElementById("onboard-aadhaar-number") as HTMLInputElement).value.trim();
   const dlNumber = (document.getElementById("onboard-dl-number") as HTMLInputElement).value.trim();
   const vehicleType = (document.getElementById("onboard-vehicle-type") as HTMLSelectElement).value;
   const vehicleNumber = (document.getElementById("onboard-vehicle-number") as HTMLInputElement).value.trim().toUpperCase();
 
-  // Validate images are uploaded
+  // Validate personal profile photo selfie
+  if (!stateProfilePhotoUrl) {
+    showToast("Requirement: Upload your profile face selfie photo.", "error");
+    return;
+  }
+
+  // Validate Aadhaar images
   if (!stateAadhaarFrontUrl || !stateAadhaarBackUrl) {
     showToast("Requirement: Upload front & back copies of your Aadhaar card.", "error");
     return;
   }
 
-  if (!stateLicenseImageUrl) {
-    showToast("Requirement: Upload clear driver license photograph copy.", "error");
+  // Validate Driving License images
+  if (!stateLicenseImageUrl || !stateLicenseBackImageUrl) {
+    showToast("Requirement: Upload driving license front & back photographs.", "error");
+    return;
+  }
+
+  // Validate Selfie verification
+  if (!stateSelfieVerificationUrl) {
+    showToast("Requirement: Upload verification selfie holding your ID card.", "error");
     return;
   }
 
@@ -352,19 +393,24 @@ formKyc?.addEventListener("submit", async (e) => {
 
   const payload = {
     uid: currentRiderId,
-    fullName: loggedInUser?.displayName || "Express Rider Partner",
-    email: loggedInUser?.email || "",
-    mobile: currentRiderDetail?.mobile || "9988776655",
-    profilePhoto: loggedInUser?.photoURL || currentRiderDetail?.profilePhoto || "https://img.icons8.com/color/96/delivery-man.png",
+    fullName: fullNameVal,
+    email: emailVal,
+    mobile: mobileVal,
+    profilePhoto: stateProfilePhotoUrl,
     aadhaarNumber,
     aadhaarFront: stateAadhaarFrontUrl,
     aadhaarBack: stateAadhaarBackUrl,
     drivingLicenseNumber: dlNumber,
     drivingLicenseImage: stateLicenseImageUrl,
+    drivingLicenseBackImage: stateLicenseBackImageUrl,
+    selfieVerification: stateSelfieVerificationUrl,
     vehicleType,
     vehicleNumber,
     state: stateVal,
     district: districtVal,
+    address: addressVal,
+    emergencyContact: emergencyContactVal,
+    joiningDate: Date.now(),
     status: "free",
     verificationStatus: "Pending",
     totalDeliveries: 0,
@@ -373,8 +419,8 @@ formKyc?.addEventListener("submit", async (e) => {
     createdAt: Date.now(),
     // Keep compatibility fields
     deliveryId: currentRiderId,
-    name: loggedInUser?.displayName || "Express Rider Partner",
-    profilePhotoUrl: loggedInUser?.photoURL || currentRiderDetail?.profilePhotoUrl || "https://img.icons8.com/color/96/delivery-man.png",
+    name: fullNameVal,
+    profilePhotoUrl: stateProfilePhotoUrl,
     aadhaarFrontUrl: stateAadhaarFrontUrl,
     aadhaarBackUrl: stateAadhaarBackUrl,
     licenseNumber: dlNumber,
@@ -388,6 +434,8 @@ formKyc?.addEventListener("submit", async (e) => {
     // Write profile under /deliveryboy1 and /users
     await update(ref(db, `deliveryboy1/${currentRiderId}`), payload);
     await update(ref(db, `users/${currentRiderId}`), {
+      fullName: fullNameVal,
+      mobile: mobileVal,
       aadhaarNumber,
       vehicleNumber,
       district: districtVal,
@@ -1002,27 +1050,72 @@ async function finalizeDeliveryHandoverCompletion(order: any) {
   });
 }
 
-// --- UPI ACCOUNT DETAILS UPDATE CONTROLLER ---
-const btnSaveUpi = document.getElementById("btn-save-upi-profile");
-btnSaveUpi?.addEventListener("click", () => {
+// --- PORTABLE PAYMODE STATE MULTIPLEXING CONTROLLERS ---
+let activePayModeState = "upi";
+
+const btnPaymodeUpi = document.getElementById("btn-toggle-paymode-upi");
+const btnPaymodeBank = document.getElementById("btn-toggle-paymode-bank");
+const secPaymodePanelUpi = document.getElementById("sec-paymode-panel-upi");
+const secPaymodePanelBank = document.getElementById("sec-paymode-panel-bank");
+
+btnPaymodeUpi?.addEventListener("click", () => {
+  activePayModeState = "upi";
+  btnPaymodeUpi.className = "px-2 py-0.5 rounded text-[8.5px] font-extrabold uppercase bg-slate-900 text-white cursor-pointer select-none";
+  if (btnPaymodeBank) btnPaymodeBank.className = "px-2 py-0.5 rounded text-[8.5px] font-extrabold uppercase bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-50 cursor-pointer select-none";
+  
+  secPaymodePanelUpi?.classList.remove("hidden");
+  secPaymodePanelBank?.classList.add("hidden");
+});
+
+btnPaymodeBank?.addEventListener("click", () => {
+  activePayModeState = "bank";
+  btnPaymodeBank.className = "px-2 py-0.5 rounded text-[8.5px] font-extrabold uppercase bg-slate-900 text-white cursor-pointer select-none";
+  if (btnPaymodeUpi) btnPaymodeUpi.className = "px-2 py-0.5 rounded text-[8.5px] font-extrabold uppercase bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-50 cursor-pointer select-none";
+  
+  secPaymodePanelBank?.classList.remove("hidden");
+  secPaymodePanelUpi?.classList.add("hidden");
+});
+
+// --- ACCOUNT DETAILS SAVE CONTROLLER ---
+const btnSavePaymentProfile = document.getElementById("btn-save-upi-profile");
+btnSavePaymentProfile?.addEventListener("click", () => {
+  showLoader(true);
+
   const upiIdVal = (document.getElementById("inp-settle-upi-id") as HTMLInputElement).value.trim();
-  if (!upiIdVal) {
-    showToast("UPI address cannot be empty.", "error");
+  const bankHolderVal = (document.getElementById("inp-settle-bank-holder") as HTMLInputElement).value.trim();
+  const bankNameVal = (document.getElementById("inp-settle-bank-name") as HTMLInputElement).value.trim();
+  const bankIfscVal = (document.getElementById("inp-settle-bank-ifsc") as HTMLInputElement).value.trim().toUpperCase();
+  const bankAccountVal = (document.getElementById("inp-settle-bank-account") as HTMLInputElement).value.trim();
+
+  // Basic validation rules
+  if (activePayModeState === "upi" && !upiIdVal) {
+    showToast("Requirement: Please supply your Virtual Payment Address (UPI ID) first.", "error");
+    showLoader(false);
     return;
   }
 
-  showLoader(true);
+  if (activePayModeState === "bank" && (!bankHolderVal || !bankNameVal || !bankIfscVal || !bankAccountVal)) {
+    showToast("Requirement: Supply Account Holder name, Bank Name, IFSC code and Account Number.", "error");
+    showLoader(false);
+    return;
+  }
+
   const updates = {
+    paymentModePreferred: activePayModeState,
     upiId: upiIdVal,
-    qrCodeUrl: stateUpiQrCodeUrl || currentRiderDetail?.qrCodeUrl || ""
+    qrCodeUrl: stateUpiQrCodeUrl || currentRiderDetail?.qrCodeUrl || "",
+    bankAccountHolder: bankHolderVal,
+    bankName: bankNameVal,
+    bankIfsc: bankIfscVal,
+    bankAccountNumber: bankAccountVal
   };
 
   update(ref(db, `deliveryboy1/${currentRiderId}`), updates).then(() => {
-    showToast("UPI Direct Deposit Account Details Saved!", "success");
+    showToast("Settlement endpoint parameters successfully validated and saved!", "success");
     showLoader(false);
   }).catch((err) => {
     console.error(err);
-    showToast("Saving UPI credentials failed.", "error");
+    showToast("Database synchronization failed. Check connection.", "error");
     showLoader(false);
   });
 });
@@ -1246,4 +1339,367 @@ function updateDutyButtonUI() {
       lblDutySub.className = "text-xs font-black text-slate-400";
     }
   }
+}
+
+// Global cached variables for COD deposits logic tracking
+let localDepositsCache: any[] = [];
+
+// --- REAL-TIME COD DEPOSITS WATCHER ---
+function subscribeToCodDeposits() {
+  onValue(ref(db, `deliveryboy1/${currentRiderId}/cod_deposits`), (snapshot) => {
+    localDepositsCache = [];
+    if (snapshot.exists()) {
+      snapshot.forEach((child) => {
+        localDepositsCache.push({
+          depositId: child.key,
+          ...child.val()
+        });
+      });
+    }
+
+    // Sort descending chronologically
+    localDepositsCache.sort((a, b) => b.createdAt - a.createdAt);
+
+    // Re-render COD Wallet & outstanding indicators
+    recalculateCodPocketBalances();
+  });
+}
+
+function recalculateCodPocketBalances() {
+  // Sum up all cash-on-delivery orders successfully delivered by rider
+  const totalCodCollected = globalOrdersCache
+    .filter((o) => o.status === "delivered" && o.deliveryId === currentRiderId && o.paymentMethod === "cod")
+    .reduce((sum, o) => sum + Number(o.payableAmount || o.totalAmount || 0), 0);
+
+  // Sum up all deposit receipts approved by Admin
+  const totalDepositsApproved = localDepositsCache
+    .filter((d) => d.status === "approved" || d.status === "success" || d.status === "completed")
+    .reduce((sum, d) => sum + Number(d.amount || 0), 0);
+
+  const totalCodOnHand = Math.max(0, totalCodCollected - totalDepositsApproved);
+
+  // Print wallet
+  const elWallet = document.getElementById("lbl-cod-pocket-wallet");
+  if (elWallet) elWallet.innerText = `₹${totalCodOnHand}`;
+
+  const elBadge = document.getElementById("lbl-cod-outstanding-badge");
+  const elAlert = document.getElementById("lbl-cod-outstanding-alert");
+
+  if (totalCodOnHand >= 5000) {
+    if (elBadge) {
+      elBadge.innerText = "LIMIT EXCEEDED";
+      elBadge.className = "px-2 py-0.5 rounded-lg text-[8.5px] font-black uppercase bg-rose-50 text-rose-600 border border-rose-100";
+    }
+    if (elAlert) elAlert.classList.remove("hidden");
+  } else if (totalCodOnHand > 0) {
+    if (elBadge) {
+      elBadge.innerText = "Cash Handled";
+      elBadge.className = "px-2 py-0.5 rounded-lg text-[8.5px] font-black uppercase bg-amber-50 text-amber-600 border border-amber-100";
+    }
+    if (elAlert) elAlert.classList.add("hidden");
+  } else {
+    if (elBadge) {
+      elBadge.innerText = "Safe Limit";
+      elBadge.className = "px-2 py-0.5 rounded-lg text-[8.5px] font-black uppercase bg-emerald-50 text-emerald-600 border border-emerald-100";
+    }
+    if (elAlert) elAlert.classList.add("hidden");
+  }
+
+  // Populate deposits history sublogs list UI
+  const cntLogs = document.getElementById("cnt-cod-deposit-logs");
+  if (cntLogs) {
+    if (localDepositsCache.length === 0) {
+      cntLogs.innerHTML = `<p class="text-[9px] text-slate-400 font-bold text-center py-2 uppercase">No Deposits History Found.</p>`;
+    } else {
+      let htmlStr = "";
+      localDepositsCache.forEach((d) => {
+        let blockBg = "bg-slate-50 border-slate-100";
+        let badgeColor = "bg-slate-100 text-slate-600";
+        if (d.status === "pending") {
+          blockBg = "bg-amber-50/20 border-amber-50";
+          badgeColor = "bg-amber-50 text-amber-700 border border-amber-100";
+        } else if (d.status === "approved" || d.status === "success") {
+          blockBg = "bg-emerald-50/20 border-emerald-50";
+          badgeColor = "bg-emerald-50 text-emerald-700 border border-emerald-100";
+        } else if (d.status === "rejected") {
+          blockBg = "bg-rose-50/20 border-rose-50";
+          badgeColor = "bg-rose-50 text-rose-700 border border-rose-100";
+        }
+
+        const formattedTime = new Date(d.createdAt).toLocaleDateString() + " " + new Date(d.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        htmlStr += `
+          <div class="p-2 ${blockBg} rounded-xl border flex items-center justify-between text-[10px] font-semibold leading-normal">
+            <div>
+              <p class="font-extrabold text-slate-800">₹${d.amount} Deposit</p>
+              <p class="text-[8px] font-mono text-slate-400 mt-0.5 uppercase tracking-wider">${d.utrCode || "No UTR"}</p>
+              <p class="text-[8px] text-slate-400 leading-none mt-1 font-sans">${formattedTime}</p>
+            </div>
+            <div class="text-right space-y-1">
+              <span class="text-[8px] px-1.5 py-0.5 rounded uppercase font-black tracking-widest ${badgeColor}">${d.status}</span>
+              ${d.receiptUrl ? `<a href="${d.receiptUrl}" target="_blank" class="block text-[8px] text-indigo-650 hover:underline font-extrabold font-sans uppercase">Receipt Copy ↗</a>` : ""}
+            </div>
+          </div>
+        `;
+      });
+      cntLogs.innerHTML = htmlStr;
+    }
+  }
+}
+
+// --- DYNAMIC FLEET LEADERBOARD AND REAL-TIME INCENTIVES ---
+function subscribeToLeaderboardsAndIncentives() {
+  onValue(ref(db, "deliveryboy1"), (snapshot) => {
+    if (snapshot.exists()) {
+      const list: any[] = [];
+      snapshot.forEach((sibling) => {
+        const val = sibling.val();
+        list.push({
+          uid: sibling.key,
+          fullName: val.fullName || val.name || "Express Rider Partner",
+          vehicleType: val.vehicleType || "Scooter",
+          totalDeliveries: val.totalDeliveries || 0
+        });
+      });
+
+      // Sort desc
+      list.sort((a, b) => b.totalDeliveries - a.totalDeliveries);
+      
+      // Update dynamic leaderboard template lists
+      const cntLeaderboard = document.getElementById("cnt-leaderboard-list");
+      if (cntLeaderboard) {
+        let htmlStr = "";
+        const showList = list.slice(0, 3);
+        showList.forEach((rider, idx) => {
+          const isMe = rider.uid === currentRiderId;
+          const labelName = isMe ? "You" : rider.fullName;
+          const bgBadge = idx === 0 
+            ? "bg-amber-100 text-amber-700 border border-amber-200" 
+            : idx === 1 
+              ? "bg-slate-100 text-slate-700 border border-slate-200" 
+              : "bg-amber-50 text-amber-900 border border-amber-100";
+          htmlStr += `
+            <div class="flex items-center justify-between font-bold text-[11px] py-1 border-b border-slate-50 last:border-none">
+              <div class="flex items-center gap-2">
+                <span class="w-5 h-5 ${bgBadge} rounded-full flex items-center justify-center font-black">${idx + 1}</span>
+                <span class="${isMe ? 'text-indigo-900 font-extrabold' : 'text-slate-800'}">${labelName}</span>
+                <span class="text-[8.5px] text-slate-400 font-sans uppercase">${rider.vehicleType}</span>
+              </div>
+              <span class="font-mono text-indigo-650 font-black">${rider.totalDeliveries} Orders</span>
+            </div>
+          `;
+        });
+        cntLeaderboard.innerHTML = htmlStr;
+      }
+
+      // Sync incentive streaks indicators for Logged In Rider
+      const myProfile = list.find((r) => r.uid === currentRiderId);
+      const totalDeliveriesCount = myProfile ? myProfile.totalDeliveries : 0;
+      
+      const badgeMyLeaderboardTrips = document.getElementById("lbl-leaderboard-my-trips");
+      if (badgeMyLeaderboardTrips) badgeMyLeaderboardTrips.innerText = `${totalDeliveriesCount} Orders`;
+      
+      const badgeMyLeaderboardVehicle = document.getElementById("lbl-leaderboard-my-vehicle");
+      if (badgeMyLeaderboardVehicle && myProfile) badgeMyLeaderboardVehicle.innerText = myProfile.vehicleType;
+
+      const badgeDaily = document.getElementById("lbl-incentive-streak-active");
+      if (badgeDaily) {
+        if (totalDeliveriesCount >= 5) {
+          badgeDaily.innerText = "Completed ✓";
+          badgeDaily.className = "text-[9px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded font-mono border border-emerald-200";
+        } else {
+          badgeDaily.innerText = `${totalDeliveriesCount}/5 Active`;
+          badgeDaily.className = "text-[9px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded font-mono border border-slate-200";
+        }
+      }
+
+      const badgeWeekly = document.getElementById("lbl-weekly-streak-active");
+      if (badgeWeekly) {
+        if (totalDeliveriesCount >= 20) {
+          badgeWeekly.innerText = "Completed ✓";
+          badgeWeekly.className = "text-[9px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded font-mono border border-emerald-200";
+        } else {
+          badgeWeekly.innerText = `${totalDeliveriesCount}/20 Active`;
+          badgeWeekly.className = "text-[9px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded font-mono border border-slate-200";
+        }
+      }
+    }
+  });
+}
+
+// --- ATTENDANCE & NEW INTERACTIVE DASHBOARD SYSTEM CONTROLLERS ---
+let isAttendanceCheckedIn = false;
+
+function setupNewDashboardInteractivity() {
+  const btnToggleAttendance = document.getElementById("btn-toggle-attendance") as HTMLButtonElement;
+  const lblAttendanceBadge = document.getElementById("lbl-attendance-badge");
+  const lblDutyCheckInTime = document.getElementById("lbl-duty-checkin-time");
+  const selShiftTimeline = document.getElementById("sel-shift-timeline") as HTMLSelectElement;
+  const lblShiftDisplay = document.getElementById("lbl-shift-display");
+
+  // Read initial attendance status from firebase
+  get(ref(db, `deliveryboy1/${currentRiderId}/attendance`)).then((snapshot) => {
+    if (snapshot.exists() && snapshot.val().checkedIn === true) {
+      isAttendanceCheckedIn = true;
+      if (lblAttendanceBadge) {
+        lblAttendanceBadge.innerText = "Checked-In";
+        lblAttendanceBadge.className = "px-2 py-0.5 rounded-lg text-[8.5px] font-black uppercase bg-emerald-50 text-emerald-600 border border-emerald-100";
+      }
+      if (btnToggleAttendance) btnToggleAttendance.innerText = "Check-Out Shift";
+      if (lblDutyCheckInTime) {
+        const savedTime = snapshot.val().checkInTime || Date.now();
+        lblDutyCheckInTime.innerText = new Date(savedTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+      if (selShiftTimeline && snapshot.val().shift) {
+        selShiftTimeline.value = snapshot.val().shift;
+        if (lblShiftDisplay) lblShiftDisplay.innerText = selShiftTimeline.options[selShiftTimeline.selectedIndex].text;
+      }
+    }
+  }).catch((e) => console.error("Error reading initial attendance:", e));
+
+  // Switch shift timeline selection
+  selShiftTimeline?.addEventListener("change", () => {
+    if (lblShiftDisplay && selShiftTimeline) {
+      lblShiftDisplay.innerText = selShiftTimeline.options[selShiftTimeline.selectedIndex].text;
+    }
+  });
+
+  // Toggle shift check ins
+  btnToggleAttendance?.addEventListener("click", () => {
+    showLoader(true);
+    const selectedShift = selShiftTimeline?.value || "Afternoon";
+
+    if (!isAttendanceCheckedIn) {
+      // Check in
+      const checkInPayload = {
+        checkedIn: true,
+        checkInTime: Date.now(),
+        shift: selectedShift
+      };
+
+      update(ref(db, `deliveryboy1/${currentRiderId}/attendance`), checkInPayload).then(() => {
+        isAttendanceCheckedIn = true;
+        if (lblAttendanceBadge) {
+          lblAttendanceBadge.innerText = "Checked-In";
+          lblAttendanceBadge.className = "px-2 py-0.5 rounded-lg text-[8.5px] font-black uppercase bg-emerald-50 text-emerald-600 border border-emerald-100";
+        }
+        if (btnToggleAttendance) {
+          btnToggleAttendance.innerText = "Check-Out Shift";
+          btnToggleAttendance.className = "w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 rounded-xl text-[10.5px] uppercase tracking-wider font-display shrink-0 active:scale-95 transition-all cursor-pointer";
+        }
+        if (lblDutyCheckInTime) {
+          lblDutyCheckInTime.innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+        showToast("Welcome! Shift timing logged. Have a safe ride!", "success");
+        showLoader(false);
+      }).catch((err) => {
+        console.error(err);
+        showToast("Attendance Check-In sync failure.", "error");
+        showLoader(false);
+      });
+    } else {
+      // Check out
+      const checkOutPayload = {
+        checkedIn: false,
+        checkOutTime: Date.now()
+      };
+
+      update(ref(db, `deliveryboy1/${currentRiderId}/attendance`), checkOutPayload).then(() => {
+        isAttendanceCheckedIn = false;
+        if (lblAttendanceBadge) {
+          lblAttendanceBadge.innerText = "Checked-Out";
+          lblAttendanceBadge.className = "px-2 py-0.5 rounded-lg text-[8.5px] font-black uppercase bg-rose-50 text-rose-600 border border-rose-100";
+        }
+        if (btnToggleAttendance) {
+          btnToggleAttendance.innerText = "Check-In Shift";
+          btnToggleAttendance.className = "w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-xl text-[10.5px] uppercase tracking-wider font-display shrink-0 active:scale-95 transition-all cursor-pointer";
+        }
+        if (lblDutyCheckInTime) {
+          lblDutyCheckInTime.innerText = "--:--";
+        }
+        showToast("Good job! Shift logged completed. Stay safe!", "info");
+        showLoader(false);
+      }).catch((err) => {
+        console.error(err);
+        showToast("Attendance Check-Out sync failure.", "error");
+        showLoader(false);
+      });
+    }
+  });
+
+  // COD Collected Receipt Claim Submission Subsystem
+  const formCodReceipt = document.getElementById("form-submit-cod-receipt") as HTMLFormElement;
+  formCodReceipt?.addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    showLoader(true);
+
+    const amount = Number((document.getElementById("inp-cod-deposit-amount") as HTMLInputElement).value.trim());
+    const utr = (document.getElementById("inp-cod-deposit-utr") as HTMLInputElement).value.trim();
+
+    if (amount <= 0) {
+      showToast("Deposit amount must be positive.", "error");
+      showLoader(false);
+      return;
+    }
+
+    if (!utr) {
+      showToast("Requirement: Enter 12 digit transaction UTR number.", "error");
+      showLoader(false);
+      return;
+    }
+
+    if (!stateCodDepositScreenshotUrl) {
+      showToast("Requirement: Upload snapshot receipt screenshot copy.", "error");
+      showLoader(false);
+      return;
+    }
+
+    const depositId = "DEP_" + Date.now().toString();
+
+    const depositClaimPayload = {
+      depositId,
+      riderId: currentRiderId,
+      riderName: currentRiderDetail?.fullName || currentRiderDetail?.name || "Express Rider Partner",
+      amount,
+      utrCode: utr,
+      receiptUrl: stateCodDepositScreenshotUrl,
+      status: "pending",
+      createdAt: Date.now()
+    };
+
+    // Store claim under rider logs and general admin reviews node
+    set(ref(db, `deliveryboy1/${currentRiderId}/cod_deposits/${depositId}`), depositClaimPayload).then(() => {
+      set(ref(db, `cod_deposits/${depositId}`), depositClaimPayload).then(() => {
+        showToast("Receipt submitted! Admin is reviewing deposits transfers.", "success");
+        
+        // Reset subfields
+        formCodReceipt.reset();
+        stateCodDepositScreenshotUrl = "";
+        
+        const previewScreenshot = document.getElementById("img-cod-deposit-screenshot") as HTMLImageElement;
+        if (previewScreenshot) {
+          previewScreenshot.src = "";
+          previewScreenshot.classList.add("hidden");
+        }
+        const labelScreenshot = document.getElementById("txt-cod-deposit-screenshot");
+        if (labelScreenshot) labelScreenshot.innerText = "Snap Payment Screenshot";
+        const iconScreenshot = document.getElementById("icon-cod-deposit-screenshot");
+        if (iconScreenshot) iconScreenshot.className = "fa-solid fa-receipt text-lg text-slate-400 mr-2";
+        const wrapperScreenshot = document.getElementById("wrapper-cod-deposit-screenshot");
+        if (wrapperScreenshot) wrapperScreenshot.className = "border border-dashed border-slate-200 h-20 rounded-xl bg-white flex items-center justify-center p-2 text-center relative cursor-pointer hover:bg-slate-50 transition-all select-none";
+
+        showLoader(false);
+      });
+    }).catch((er) => {
+      console.error(er);
+      showToast("Receipt claim sync failure. Check fields.", "error");
+      showLoader(false);
+    });
+  });
+
+  // Call support hotline click trigger
+  document.getElementById("btn-call-support-hotline")?.addEventListener("click", () => {
+    alert("Dialing Operations Support: +91 9999999999\nSpeak directly to fleet supervisors.");
+    window.location.href = "tel:+919999999999";
+  });
 }

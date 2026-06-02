@@ -2380,22 +2380,26 @@ function viewRiderDetailedInspection(id: string) {
   const inspectorContent = document.getElementById("inspector-modal-content");
   if (!inspectorModal || !inspectorContent) return;
 
-  const name = r.name || "Anonymous Partner";
+  const name = r.fullName || r.name || "Anonymous Partner";
   const email = r.email || "N/A";
   const mobile = r.mobile || "N/A";
   const aadhaar = r.aadhaarNumber || "Not entered";
-  const dlNumber = r.licenseNumber || "Not entered";
+  const dlNumber = r.drivingLicenseNumber || r.licenseNumber || "Not entered";
   const vehicleType = r.vehicleType || "Not specified";
   const vehicleNumber = r.vehicleNumber || "Not specified";
   const state = r.state || "Not specified";
   const district = r.district || "Not specified";
+  const emergencyContact = r.emergencyContact || "N/A";
+  const address = r.address || "N/A";
   const status = getRiderVerificationStatus(r);
   const dateStr = r.createdAt ? new Date(r.createdAt).toLocaleString() : "N/A";
-  const profilePic = r.profilePhotoUrl || r.photoUrl || "https://img.icons8.com/color/96/delivery-man.png";
+  const profilePic = r.profilePhoto || r.profilePhotoUrl || r.photoUrl || "https://img.icons8.com/color/96/delivery-man.png";
 
-  const aadFront = r.aadhaarFrontUrl || "";
-  const aadBack = r.aadhaarBackUrl || "";
-  const dlImage = r.licenseImageUrl || "";
+  const aadFront = r.aadhaarFront || r.aadhaarFrontUrl || "";
+  const aadBack = r.aadhaarBack || r.aadhaarBackUrl || "";
+  const dlImage = r.drivingLicenseImage || r.licenseImageUrl || "";
+  const dlBackImage = r.drivingLicenseBackImage || r.licenseBackImageUrl || "";
+  const selfieIdImage = r.selfieVerification || r.selfieVerificationUrl || "";
 
   let badgeColor = "";
   if (status === "Pending") badgeColor = "bg-yellow-50 text-yellow-700 border-yellow-250";
@@ -2444,7 +2448,7 @@ function viewRiderDetailedInspection(id: string) {
     ` : ""}
 
     <!-- Complete 14 parameters Info Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 text-left text-xs bg-slate-50 p-5 rounded-2xl border border-slate-200">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 text-left text-xs bg-slate-50 p-5 rounded-2xl border border-slate-200 animate-fade-in">
       
       <!-- Box 1: Personal Information -->
       <div class="space-y-3">
@@ -2466,8 +2470,12 @@ function viewRiderDetailedInspection(id: string) {
             <span class="font-mono font-bold text-slate-800 block">${mobile}</span>
           </div>
           <div>
-            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wide block">Registration Date</span>
-            <span class="font-mono text-slate-700 block">${dateStr}</span>
+            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wide block">Emergency Contact</span>
+            <span class="font-mono font-bold text-rose-600 block"><i class="fa-solid fa-phone-flip text-[9px] mr-1"></i>${emergencyContact}</span>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wide block">Permanent Address</span>
+            <span class="font-semibold text-slate-600 block bg-slate-100 p-1.5 rounded border border-slate-150 leading-relaxed text-[10px] mt-0.5">${address}</span>
           </div>
         </div>
       </div>
@@ -2494,6 +2502,10 @@ function viewRiderDetailedInspection(id: string) {
           <div>
             <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wide block">Service District</span>
             <span class="font-bold text-slate-700 block">${district}</span>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wide block">Joining Date</span>
+            <span class="font-mono text-slate-700 block">${dateStr}</span>
           </div>
         </div>
       </div>
@@ -2525,7 +2537,7 @@ function viewRiderDetailedInspection(id: string) {
         <span class="text-[10px] text-slate-400 font-bold">Hosted on Cloudinary Secure Storage</span>
       </h3>
       
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-5 gap-4">
         
         <!-- Aadhaar Card Front -->
         <div class="bg-white border border-slate-200 rounded-xl p-3 space-y-3 shadow-xs">
@@ -2589,10 +2601,10 @@ function viewRiderDetailedInspection(id: string) {
           </div>
         </div>
 
-        <!-- Driving License Copy -->
+        <!-- Driving License Front -->
         <div class="bg-white border border-slate-200 rounded-xl p-3 space-y-3 shadow-xs">
           <div class="flex items-center justify-between">
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Driving License</span>
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">DL Front</span>
             <span class="text-[9px] text-blue-650 font-bold uppercase flex items-center gap-1">
               <i class="fa-solid fa-cloud-arrow-up"></i> Verified
             </span>
@@ -2612,9 +2624,71 @@ function viewRiderDetailedInspection(id: string) {
           </div>
           <div class="flex gap-1.5 pt-1">
             <button onclick="openLightboxImage('${dlImage}', '${name.replace(/'/g, "\\'")} - Driving License', 'Driving License Copy')" class="flex-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-black py-1.5 rounded-lg border border-indigo-100 transition-all text-center cursor-pointer" ${!dlImage ? "disabled" : ""}>
-              <i class="fa-solid fa-expand mr-1"></i> View DL Button
+              <i class="fa-solid fa-expand mr-1"></i> View DL Front
             </button>
             <a href="${dlImage}" target="_blank" download class="bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 p-1.5 rounded-lg transition-all flex items-center justify-center cursor-pointer" title="Download License Document Copy" ${!dlImage ? "style='pointer-events:none; opacity:0.5;'" : ""}>
+              <i class="fa-solid fa-download"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Driving License Back -->
+        <div class="bg-white border border-slate-200 rounded-xl p-3 space-y-3 shadow-xs">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">DL Back</span>
+            <span class="text-[9px] text-blue-650 font-bold uppercase flex items-center gap-1">
+              <i class="fa-solid fa-cloud-arrow-up"></i> Verified
+            </span>
+          </div>
+          <div class="relative rounded-lg overflow-hidden border border-slate-150 aspect-video max-h-32 bg-slate-50 flex items-center justify-center group font-black">
+            ${dlBackImage ? `
+              <img src="${dlBackImage}" class="w-full h-full object-cover transition-all group-hover:scale-105" alt="Driving License Back" referrerPolicy="no-referrer" />
+              <button onclick="openLightboxImage('${dlBackImage}', '${name.replace(/'/g, "\\'")} - DL Back', 'Driving License Back Copy')" class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 text-white text-[10px] font-bold flex items-center justify-center gap-1 transition-opacity cursor-pointer">
+                <i class="fa-solid fa-magnifying-glass-plus"></i> View DL Back Image
+              </button>
+            ` : `
+              <div class="flex flex-col items-center justify-center text-slate-350 gap-1 bg-white">
+                <i class="fa-solid fa-circle-exclamation text-2xl"></i>
+                <span class="text-[10px] font-semibold">Not Uploaded</span>
+              </div>
+            `}
+          </div>
+          <div class="flex gap-1.5 pt-1">
+            <button onclick="openLightboxImage('${dlBackImage}', '${name.replace(/'/g, "\\'")} - DL Back', 'Driving License Back Copy')" class="flex-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-black py-1.5 rounded-lg border border-indigo-100 transition-all text-center cursor-pointer" ${!dlBackImage ? "disabled" : ""}>
+              <i class="fa-solid fa-expand mr-1"></i> View DL Back
+            </button>
+            <a href="${dlBackImage}" target="_blank" download class="bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 p-1.5 rounded-lg transition-all flex items-center justify-center cursor-pointer" title="Download License Back Copy" ${!dlBackImage ? "style='pointer-events:none; opacity:0.5;'" : ""}>
+              <i class="fa-solid fa-download"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Selfie Verification -->
+        <div class="bg-white border border-slate-200 rounded-xl p-3 space-y-3 shadow-xs">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Selfie Verification</span>
+            <span class="text-[9px] text-blue-650 font-bold uppercase flex items-center gap-1">
+              <i class="fa-solid fa-cloud-arrow-up"></i> Verified
+            </span>
+          </div>
+          <div class="relative rounded-lg overflow-hidden border border-slate-150 aspect-video max-h-32 bg-slate-50 flex items-center justify-center group font-black">
+            ${selfieIdImage ? `
+              <img src="${selfieIdImage}" class="w-full h-full object-cover transition-all group-hover:scale-105" alt="Selfie Verification" referrerPolicy="no-referrer" />
+              <button onclick="openLightboxImage('${selfieIdImage}', '${name.replace(/'/g, "\\'")} - Selfie ID', 'Identity Verification Selfie copy')" class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 text-white text-[10px] font-bold flex items-center justify-center gap-1 transition-opacity cursor-pointer">
+                <i class="fa-solid fa-magnifying-glass-plus"></i> View Selfie ID
+              </button>
+            ` : `
+              <div class="flex flex-col items-center justify-center text-slate-350 gap-1 bg-white">
+                <i class="fa-solid fa-circle-exclamation text-2xl"></i>
+                <span class="text-[10px] font-semibold">Not Uploaded</span>
+              </div>
+            `}
+          </div>
+          <div class="flex gap-1.5 pt-1">
+            <button onclick="openLightboxImage('${selfieIdImage}', '${name.replace(/'/g, "\\'")} - Selfie Verification', 'Identity Verification Selfie Copy')" class="flex-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-black py-1.5 rounded-lg border border-indigo-100 transition-all text-center cursor-pointer" ${!selfieIdImage ? "disabled" : ""}>
+              <i class="fa-solid fa-expand mr-1"></i> View Selfie Verification
+            </button>
+            <a href="${selfieIdImage}" target="_blank" download class="bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 p-1.5 rounded-lg transition-all flex items-center justify-center cursor-pointer" title="Download Selfie Document Copy" ${!selfieIdImage ? "style='pointer-events:none; opacity:0.5;'" : ""}>
               <i class="fa-solid fa-download"></i>
             </a>
           </div>

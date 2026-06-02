@@ -164,26 +164,70 @@
 
       <form id="form-onboard-kyc" class="space-y-4 text-xs font-semibold">
         
-        <!-- Field group: Personal profile verification info -->
-        <div class="bg-white p-4 rounded-3xl border border-slate-150/80 shadow-sm space-y-3.5">
+        <!-- Section: Profile/Selfie Face Photo -->
+        <div class="bg-white p-4 rounded-3xl border border-slate-150/80 shadow-sm space-y-3 font-semibold text-xs text-left">
           <h4 class="text-xs font-extrabold text-slate-900 border-b border-slate-50 pb-1.5 uppercase flex items-center gap-1.5">
-            <i class="fa-solid fa-user-check text-slate-500"></i> Local Service Territory
+            <i class="fa-solid fa-camera text-indigo-500"></i> Profile Selfie Photo
+          </h4>
+          <p class="text-[9.5px] text-slate-500">Requirement: Provide a close-up photo of your face for your official digital identity card.</p>
+          <div class="space-y-1">
+            <div id="wrapper-onboard-profile-photo" class="border border-dashed border-slate-200 h-28 rounded-2xl bg-slate-50/50 flex flex-col items-center justify-center p-2 text-center relative cursor-pointer hover:bg-slate-50 transition-all">
+              <i class="fa-solid fa-portrait text-slate-400 text-2xl mb-1" id="icon-onboard-profile-photo"></i>
+              <span class="text-[9.5px] text-indigo-600 font-extrabold" id="txt-onboard-profile-photo">Capture Profile Face Photo</span>
+              <input type="file" id="onboard-profile-photo" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" required>
+              <img id="img-onboard-profile-photo" class="absolute inset-0 w-full h-full object-cover rounded-2xl hidden" alt="Selfie Preview">
+            </div>
+          </div>
+        </div>
+
+        <!-- Field group: Personal profile verification info -->
+        <div class="bg-white p-4 rounded-3xl border border-slate-150/80 shadow-sm space-y-3.5 text-left font-semibold text-xs animate-fade-in">
+          <h4 class="text-xs font-extrabold text-slate-900 border-b border-slate-50 pb-1.5 uppercase flex items-center gap-1.5">
+            <i class="fa-solid fa-user-check text-slate-505 text-slate-500"></i> Personal Information & Address
           </h4>
           
-          <div class="grid grid-cols-2 gap-3">
+          <div class="space-y-3">
             <div>
-              <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">State Name</label>
-              <input type="text" id="onboard-state" required placeholder="e.g. Karnataka" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 focus:bg-white text-xs font-extrabold">
+              <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Full Name</label>
+              <input type="text" id="onboard-fullname" required placeholder="Enter your full legal name" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 focus:bg-white text-xs font-extrabold">
             </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Mobile Number</label>
+                <input type="tel" id="onboard-mobile" required placeholder="10 Digit Phone" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 focus:bg-white text-xs font-extrabold">
+              </div>
+              <div>
+                <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Email Address</label>
+                <input type="email" id="onboard-email" required placeholder="Enter Email" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 focus:bg-white text-xs font-extrabold">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">State Name</label>
+                <input type="text" id="onboard-state" required placeholder="e.g. Karnataka" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 focus:bg-white text-xs font-extrabold">
+              </div>
+              <div>
+                <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">District Name</label>
+                <input type="text" id="onboard-district" required placeholder="e.g. Bengaluru" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 focus:bg-white text-xs font-extrabold">
+              </div>
+            </div>
+
             <div>
-              <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">District Name</label>
-              <input type="text" id="onboard-district" required placeholder="e.g. Bengaluru" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 focus:bg-white text-xs font-extrabold">
+              <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Complete Present Address</label>
+              <textarea id="onboard-address" required placeholder="Enter full address with pin code" rows="2" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 focus:bg-white text-xs font-semibold leading-normal"></textarea>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Emergency Contact Info (Relation & Phone)</label>
+              <input type="text" id="onboard-emergency-contact" required placeholder="e.g. Spouse / Parent - 9876543210" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 focus:bg-white text-xs font-semibold">
             </div>
           </div>
         </div>
 
         <!-- Aadhaar section -->
-        <div class="bg-white p-4 rounded-3xl border border-slate-150/80 shadow-sm space-y-3.5 font-semibold text-xs">
+        <div class="bg-white p-4 rounded-3xl border border-slate-150/80 shadow-sm space-y-3.5 font-semibold text-xs text-left">
           <h4 class="text-xs font-extrabold text-slate-900 border-b border-slate-50 pb-1.5 uppercase flex items-center gap-1.5">
             <i class="fa-solid fa-address-card text-indigo-500"></i> Aadhaar Verification KYC
           </h4>
@@ -219,28 +263,57 @@
         </div>
 
         <!-- Driving License group -->
-        <div class="bg-white p-4 rounded-3xl border border-slate-150/80 shadow-sm space-y-3.5 font-semibold text-xs">
+        <div class="bg-white p-4 rounded-3xl border border-slate-150/80 shadow-sm space-y-3.5 font-semibold text-xs text-left">
           <h4 class="text-xs font-extrabold text-slate-900 border-b border-slate-50 pb-1.5 uppercase flex items-center gap-1.5">
             <i class="fa-solid fa-id-card text-emerald-500"></i> Driving License Verification
           </h4>
           <div>
             <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Driving License (DL) Number</label>
-            <input type="text" id="onboard-dl-number" required placeholder="DL-XXXXXXXXXXXXX" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono focus:border-indigo-500 focus:bg-white">
+            <input type="text" id="onboard-dl-number" required placeholder="DL-XXXXXXXXXXXXX" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono focus:border-indigo-500 focus:bg-white text-xs mr-2 uppercase tracking-wide">
           </div>
+          
+          <div class="grid grid-cols-2 gap-3.5">
+            <!-- DL Front -->
+            <div class="space-y-1">
+              <label class="block text-[10px] font-black text-slate-400 uppercase">DL Front Photo</label>
+              <div id="wrapper-dl-image" class="border border-dashed border-slate-200 h-24 rounded-2xl bg-slate-50/50 flex flex-col items-center justify-center p-2 text-center relative cursor-pointer hover:bg-slate-50 transition-all">
+                <i class="fa-solid fa-cloud-arrow-up text-slate-400 text-lg mb-1" id="icon-dl-image"></i>
+                <span class="text-[9px] text-slate-500" id="txt-dl-image">Upload DL Front</span>
+                <input type="file" id="onboard-dl-image" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" required>
+                <img id="img-dl-image" class="absolute inset-0 w-full h-full object-cover rounded-2xl hidden" alt="DL Front Preview">
+              </div>
+            </div>
+            <!-- DL Back -->
+            <div class="space-y-1">
+              <label class="block text-[10px] font-black text-slate-400 uppercase">DL Back Photo</label>
+              <div id="wrapper-dl-back" class="border border-dashed border-slate-200 h-24 rounded-2xl bg-slate-50/50 flex flex-col items-center justify-center p-2 text-center relative cursor-pointer hover:bg-slate-50 transition-all">
+                <i class="fa-solid fa-cloud-arrow-up text-slate-400 text-lg mb-1" id="icon-dl-back"></i>
+                <span class="text-[9px] text-slate-500" id="txt-dl-back">Upload DL Back</span>
+                <input type="file" id="onboard-dl-back" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" required>
+                <img id="img-dl-back" class="absolute inset-0 w-full h-full object-cover rounded-2xl hidden" alt="DL Back Preview">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Selfie Verification -->
+        <div class="bg-white p-4 rounded-3xl border border-slate-150/80 shadow-sm space-y-3 font-semibold text-xs text-left">
+          <h4 class="text-xs font-extrabold text-slate-900 border-b border-slate-50 pb-1.5 uppercase flex items-center gap-1.5">
+            <i class="fa-solid fa-portrait text-blue-500"></i> Selfie ID Verification
+          </h4>
+          <p class="text-[9.5px] text-slate-500">Requirement: Upload a selfie while holding your Aadhaar / DL next to your face for live identity verification.</p>
           <div class="space-y-1">
-            <label class="block text-[10px] font-black text-slate-400 uppercase">Driving License Badge / Photo</label>
-            <div id="wrapper-dl-image" class="border border-dashed border-slate-200 h-24 rounded-2xl bg-slate-50/50 flex flex-col items-center justify-center p-2 text-center relative cursor-pointer hover:bg-slate-50 transition-all">
-              <i class="fa-solid fa-cloud-arrow-up text-slate-400 text-lg mb-1" id="icon-dl-image"></i>
-              <span class="text-[9px] text-slate-500" id="txt-dl-image">Upload clear license photograph</span>
-              <input type="file" id="onboard-dl-image" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" required>
-              <!-- Image Preview Thumb hidden initially -->
-              <img id="img-dl-image" class="absolute inset-0 w-full h-full object-cover rounded-2xl hidden" alt="License Preview">
+            <div id="wrapper-selfie-verification" class="border border-dashed border-slate-200 h-24 rounded-2xl bg-slate-50/50 flex flex-col items-center justify-center p-2 text-center relative cursor-pointer hover:bg-slate-50 transition-all">
+              <i class="fa-solid fa-camera-rotate text-slate-400 text-lg mb-1" id="icon-selfie-verification"></i>
+              <span class="text-[9px] text-slate-500" id="txt-selfie-verification">Upload Verification Selfie</span>
+              <input type="file" id="onboard-selfie" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" required>
+              <img id="img-selfie-verification" class="absolute inset-0 w-full h-full object-cover rounded-2xl hidden" alt="Selfie Preview">
             </div>
           </div>
         </div>
 
         <!-- Vehicle Details -->
-        <div class="bg-white p-4 rounded-3xl border border-slate-150/80 shadow-sm space-y-3.5 font-semibold text-xs">
+        <div class="bg-white p-4 rounded-3xl border border-slate-150/80 shadow-sm space-y-3.5 font-semibold text-xs text-left shadow-sm">
           <h4 class="text-xs font-extrabold text-slate-900 border-b border-slate-50 pb-1.5 uppercase flex items-center gap-1.5">
             <i class="fa-solid fa-circle-info text-blue-500"></i> Vehicle Allocation Details
           </h4>
@@ -256,14 +329,14 @@
             </div>
             <div>
               <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Vehicle Plate Number</label>
-              <input type="text" id="onboard-vehicle-number" required placeholder="e.g. KA-01-EL-7140" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono focus:border-indigo-500 focus:bg-white text-xs uppercase">
+              <input type="text" id="onboard-vehicle-number" required placeholder="e.g. KA-01-EL-7140" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono focus:border-indigo-500 focus:bg-white text-xs uppercase shadow-sm">
             </div>
           </div>
         </div>
 
         <!-- Action trigger button -->
-        <button id="btn-submit-onboarding-docs" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-2xl shadow-md transition-all active:scale-95 text-xs text-center uppercase tracking-wider font-display">
-          Upload Documents & Save Profile
+        <button id="btn-submit-onboarding-docs" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-2xl shadow-md transition-all active:scale-95 text-xs text-center uppercase tracking-wider font-display cursor-pointer">
+          Upload Documents & Request Activation
         </button>
       </form>
     </div>
@@ -292,6 +365,48 @@
               DUTY: ON
             </button>
           </div>
+        </div>
+
+        <!-- real-time attendance, shifts, alerts, and system notification drawer -->
+        <div class="bg-white rounded-3xl p-4 border border-slate-150/80 shadow-sm space-y-3.5 text-left text-xs">
+          <div class="flex items-center justify-between border-b border-slate-50 pb-2">
+            <h4 class="text-xs font-black text-slate-900 uppercase font-display tracking-wider flex items-center gap-1.5 select-none">
+              <i class="fa-solid fa-clock-rotate-left text-indigo-500 animate-pulse"></i> Attendance & Shifts
+            </h4>
+            <span id="lbl-attendance-badge" class="px-2 py-0.5 rounded-lg text-[8.5px] font-black uppercase bg-rose-50 text-rose-600 border border-rose-100">Checked-Out</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[9.5px] font-black text-slate-400 uppercase mb-1">Select Shift Timeframe</label>
+              <select id="sel-shift-timeline" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 text-xs font-extrabold text-slate-700">
+                <option value="Morning">Morning (07:00 AM - 03:00 PM)</option>
+                <option value="Afternoon" selected>Afternoon (03:00 PM - 11:00 PM)</option>
+                <option value="Evening">Evening (05:00 PM - 09:00 PM)</option>
+                <option value="Night">Night (11:00 PM - 07:00 AM)</option>
+              </select>
+            </div>
+            <div class="flex items-end">
+              <button id="btn-toggle-attendance" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-xl text-[10.5px] uppercase tracking-wider font-display shrink-0 active:scale-95 transition-all cursor-pointer">
+                Check-In Shift
+              </button>
+            </div>
+          </div>
+
+          <!-- Live Timings Log -->
+          <div class="bg-slate-50 rounded-2xl p-2.5 text-[10px] text-slate-550 text-slate-500 flex items-center justify-between font-mono font-bold leading-none border border-slate-100">
+            <span>Shift Timings: <strong id="lbl-shift-display" class="text-slate-800">03:00 PM - 11:00 PM</strong></span>
+            <span>Check-In: <span id="lbl-duty-checkin-time" class="text-indigo-600">--:--</span></span>
+          </div>
+        </div>
+
+        <!-- System Notification & Alert Banner Drawer inside dashboard -->
+        <div id="wrapper-system-notifications" class="bg-indigo-50/50 border border-indigo-100/60 rounded-3xl p-3.5 space-y-2 text-left">
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-indigo-500 animate-ping"></span>
+            <span class="text-[9.5px] font-black text-indigo-900 uppercase">Rider Logistics Broadcasts</span>
+          </div>
+          <p id="lbl-notification-text" class="text-[10px] text-indigo-750 font-semibold leading-normal text-slate-600">Standby ready. All pharmacy orders dispatching via real-time GPS proximity matrices.</p>
         </div>
 
         <!-- Today's Stats Bento Elements -->
@@ -341,6 +456,101 @@
               </h5>
             </div>
 
+          </div>
+        </div>
+
+        <!-- Premium Real-time Incentives, Goals, and Payout Structures -->
+        <div class="bg-white rounded-3xl p-4 border border-slate-150/80 shadow-sm space-y-3.5 text-left text-xs animate-fade-in">
+          <h4 class="text-xs font-black text-slate-900 uppercase font-display tracking-wider flex items-center gap-1.5 border-b border-slate-50 pb-2">
+            <i class="fa-solid fa-hand-holding-dollar text-emerald-500"></i> Incentives & Streaks
+          </h4>
+          
+          <div class="space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-550 text-slate-550 font-bold">Standard Per-Delivery Incentive</span>
+              <span class="font-bold text-slate-800 font-mono text-indigo-650">₹40 / Order</span>
+            </div>
+            
+            <!-- Streak Goal A -->
+            <div class="p-2 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between">
+              <div class="space-y-0.5">
+                <p class="text-[9.5px] font-black text-slate-700 uppercase">Daily Delivery Bonus (5 Orders)</p>
+                <p class="text-[8px] text-slate-450 text-slate-400 leading-none">Reach 5 successful orders today</p>
+              </div>
+              <div class="text-right">
+                <span class="text-[9px] bg-slate-200 text-slate-655 font-bold px-2 py-0.5 rounded font-mono" id="lbl-incentive-streak-active">Pending</span>
+                <span class="text-[9.5px] text-emerald-600 font-black font-mono block mt-1">+₹50 Bonus</span>
+              </div>
+            </div>
+
+            <!-- Streak Goal B -->
+            <div class="p-2 bg-indigo-50/20 rounded-2xl border border-indigo-50 flex items-center justify-between">
+              <div class="space-y-0.5">
+                <p class="text-[9.5px] font-black text-slate-700 uppercase">Weekly Super Milestone (20 Orders)</p>
+                <p class="text-[8px] text-slate-455 text-slate-400 leading-none">Complete 20 orders in current week</p>
+              </div>
+              <div class="text-right">
+                <span class="text-[9px] bg-slate-200 text-slate-655 font-bold px-2 py-0.5 rounded font-mono" id="lbl-weekly-streak-active">Pending</span>
+                <span class="text-[9.5px] text-emerald-600 font-black font-mono block mt-1">+₹200 Bonus</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Local Fleet Live Leaderboard Section -->
+        <div class="bg-white rounded-3xl p-4 border border-slate-150/80 shadow-sm space-y-3 text-left text-xs animate-fade-in select-none">
+          <h4 class="text-xs font-black text-slate-900 uppercase font-display tracking-wider flex items-center gap-1.5 border-b border-slate-50 pb-2">
+            <i class="fa-solid fa-trophy text-amber-500"></i> Fleet Leaderboard
+          </h4>
+          
+          <div class="space-y-2.5" id="cnt-leaderboard-list">
+            <!-- Dynamically populated from script -->
+            <div class="flex items-center justify-between font-bold text-[11px] py-1 border-b border-slate-50">
+              <div class="flex items-center gap-2">
+                <span class="w-5 h-5 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center font-black">1</span>
+                <span class="text-slate-800">Ramesh Kumar</span>
+                <span class="text-[8.5px] text-slate-400 font-sans uppercase">Electric Scooter</span>
+              </div>
+              <span class="font-mono text-indigo-650">32 Orders</span>
+            </div>
+            <div class="flex items-center justify-between font-bold text-[11px] py-1 border-b border-slate-50">
+              <div class="flex items-center gap-2">
+                <span class="w-5 h-5 bg-slate-100 text-slate-700 rounded-full flex items-center justify-center font-black">2</span>
+                <span class="text-slate-800">Vikram Singh</span>
+                <span class="text-[8.5px] text-slate-400 font-sans uppercase">Motorcycle</span>
+              </div>
+              <span class="font-mono text-indigo-650">29 Orders</span>
+            </div>
+            <div class="flex items-center justify-between font-bold text-[11px] py-1">
+              <div class="flex items-center gap-2">
+                <span class="w-5 h-5 bg-amber-50 text-amber-900 rounded-full flex items-center justify-center font-black">3</span>
+                <span class="text-slate-800">You</span>
+                <span id="lbl-leaderboard-my-vehicle" class="text-[8.5px] text-slate-400 font-sans uppercase">Scooter</span>
+              </div>
+              <span id="lbl-leaderboard-my-trips" class="font-mono text-indigo-650">-- Orders</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Help Desk & SOS Assistance Section -->
+        <div class="bg-rose-50/50 border border-rose-100 rounded-3xl p-4 space-y-3.5 text-left text-xs animate-fade-in mb-3">
+          <h4 class="text-xs font-black text-rose-800 uppercase font-display tracking-wider flex items-center gap-1.5 border-b border-rose-100/40 pb-2">
+            <i class="fa-solid fa-headset text-rose-500 animate-pulse"></i> Tactical Help & SOS Center
+          </h4>
+          
+          <div class="grid grid-cols-3 gap-2 text-center select-none">
+            <a href="tel:102" class="p-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl flex flex-col items-center justify-center gap-1 transition-all active:scale-95 border border-rose-500 shadow-md">
+              <i class="fa-solid fa-kit-medical text-lg text-rose-100"></i>
+              <span class="text-[8px] font-black uppercase">MEDICAL SOS</span>
+            </a>
+            <a href="https://wa.me/919999999999" target="_blank" class="p-2.5 bg-emerald-600 hover:bg-emerald-750 text-white rounded-2xl flex flex-col items-center justify-center gap-1 transition-all active:scale-95 border border-emerald-500 shadow-md">
+              <i class="fa-brands fa-whatsapp text-lg text-emerald-100"></i>
+              <span class="text-[8px] font-black uppercase">WA BACKUP</span>
+            </a>
+            <button id="btn-call-support-hotline" class="p-2.5 bg-slate-900 hover:bg-slate-850 text-white rounded-2xl flex flex-col items-center justify-center gap-1 transition-all active:scale-95 border border-slate-700 shadow-md cursor-pointer">
+              <i class="fa-solid fa-phone-volume text-lg text-amber-400"></i>
+              <span class="text-[8px] font-black uppercase">DIAL FLEET</span>
+            </button>
           </div>
         </div>
 
@@ -508,53 +718,166 @@
           </div>
         </div>
 
-        <!-- UPI Profile Setup Form -->
-        <div class="bg-white rounded-3xl p-4 border border-slate-100 shadow-sm space-y-4">
-          <h4 class="text-xs font-extrabold text-slate-900 uppercase font-display tracking-wider border-b border-slate-50 pb-2 flex items-center gap-1.5">
-            <i class="fa-solid fa-credit-card text-slate-500"></i> UPI Settlement Endpoint
-          </h4>
+        <!-- COD Cash Pocket Wallet & Deposits Centre -->
+        <div class="bg-white rounded-3xl p-4 border border-slate-150/80 shadow-sm space-y-3.5 text-left text-xs animate-fade-in relative overflow-hidden">
+          <div class="absolute right-3 top-3 text-amber-500/10 text-6xl font-black shrink-0 pointer-events-none select-none">
+            <i class="fa-solid fa-coins"></i>
+          </div>
+          
+          <div class="flex items-center justify-between border-b border-slate-50 pb-2">
+            <h4 class="text-xs font-black text-slate-900 uppercase font-display tracking-wider flex items-center gap-1.5 select-none">
+              <i class="fa-solid fa-coins text-amber-500"></i> COD Pocket Wallet
+            </h4>
+            <span id="lbl-cod-outstanding-badge" class="px-2 py-0.5 rounded-lg text-[8.5px] font-black uppercase bg-emerald-50 text-emerald-600 border border-emerald-100">Safe Limit</span>
+          </div>
 
-          <div class="space-y-3 font-semibold text-xs text-slate-650">
+          <div class="flex items-baseline justify-between">
+            <div>
+              <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Outstanding Cash On-hand</span>
+              <h3 id="lbl-cod-pocket-wallet" class="text-3xl font-black text-slate-850 font-mono text-slate-800 mt-1">₹0</h3>
+            </div>
+            <div class="text-right">
+              <span class="text-[8.5px] font-bold text-slate-455 text-slate-400 uppercase block">Daily Max Carry Limit</span>
+              <span class="font-extrabold text-rose-600 font-mono mt-0.5 block text-xs">₹5,000.00</span>
+            </div>
+          </div>
+
+          <!-- Alert banner if COD outstanding and pending for over 24 hours -->
+          <div id="lbl-cod-outstanding-alert" class="hidden p-3 bg-rose-50 border border-rose-100 rounded-2xl flex items-start gap-2 text-rose-800 leading-relaxed font-semibold">
+            <i class="fa-solid fa-triangle-exclamation text-rose-500 text-xs mt-0.5 shrink-0 animate-bounce"></i>
+            <div>
+              <p class="text-[9.5px] font-black uppercase">ACTION REQUIRED: Pending Cash Deposit Alert</p>
+              <p class="text-[8px] text-rose-700/80 leading-snug font-medium mt-0.5">Your cash-on-hand wallet has unsubmitted balances older than 24 hours. Submit deposit receipts below to avoid automatic duty limits.</p>
+            </div>
+          </div>
+
+          <!-- Interactive COD deposit receipts form -->
+          <details class="bg-slate-50/50 border border-slate-100 rounded-2xl p-2.5 transition-all duration-300">
+            <summary class="text-[10px] font-black uppercase text-indigo-700 cursor-pointer flex items-center justify-between outline-none select-none">
+              <span>Deposit Collected Cash to Admin</span>
+              <span class="text-[9px] bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded font-bold uppercase shrink-0">Open form</span>
+            </summary>
+            
+            <form id="form-submit-cod-receipt" class="space-y-3 font-semibold text-xs text-slate-650 mt-3 pt-3 border-t border-slate-150/50 animate-fade-in text-left">
+              <div class="p-2.5 bg-amber-50 rounded-xl border border-amber-100/50 text-[9px] text-amber-900 leading-snug">
+                <p class="font-black uppercase mb-1">Official Depositing Channels</p>
+                <p>● <strong>Admin UPI VPA</strong>: <span class="font-mono tracking-wide bg-white px-1 py-0.5 rounded">pharmacy-admin@upi</span></p>
+                <p class="mt-0.5">● <strong>HDFC Bank Account</strong>: <span class="font-mono tracking-wide bg-white px-1 py-0.5 rounded">A/C: 502000492198, IFSC: HDFC0000120</span></p>
+              </div>
+
+              <div>
+                <label class="block text-[9.5px] font-black text-slate-400 uppercase mb-1">Cash Deposit Amount (₹)</label>
+                <input type="number" id="inp-cod-deposit-amount" required placeholder="Enter Deposited Rupees" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-mono text-sm tracking-wider font-extrabold outline-none focus:border-indigo-500 text-slate-805">
+              </div>
+
+              <div>
+                <label class="block text-[9.5px] font-black text-slate-400 uppercase mb-1">UTR / UPI Transaction reference ID</label>
+                <input type="text" id="inp-cod-deposit-utr" required placeholder="12 Digit Transaction Ref ID" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-mono text-xs uppercase tracking-widest outline-none focus:border-indigo-500 text-slate-805">
+              </div>
+
+              <!-- Upload screenshot -->
+              <div class="space-y-1">
+                <label class="block text-[9.5px] font-black text-slate-400 uppercase">screenshot payment proof receipt</label>
+                <div id="wrapper-cod-deposit-screenshot" class="border border-dashed border-slate-200 h-20 rounded-xl bg-white flex items-center justify-center p-2 text-center relative cursor-pointer hover:bg-slate-50 transition-all select-none">
+                  <i class="fa-solid fa-receipt text-lg text-slate-400 mr-2" id="icon-cod-deposit-screenshot"></i>
+                  <span class="text-[9px] text-slate-500 font-extrabold" id="txt-cod-deposit-screenshot">Snap Payment Screenshot</span>
+                  <input type="file" id="inp-cod-deposit-screenshot" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" required>
+                  <img id="img-cod-deposit-screenshot" class="absolute inset-x-2 inset-y-1 w-[90%] h-[90%] object-contain rounded-xl hidden mx-auto" alt="Screenshot Receipt">
+                </div>
+              </div>
+
+              <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-extrabold py-2 rounded-xl text-[10px] uppercase tracking-wide font-display cursor-pointer active:scale-95 transition-all">
+                Submit Deposit Receipt Claim
+              </button>
+            </form>
+          </details>
+
+          <!-- Deposit history sublogs list -->
+          <div class="space-y-2 pt-1 border-t border-slate-50">
+            <p class="text-[9px] font-black tracking-widest uppercase text-slate-400">Cash Deposit History Logs</p>
+            <div id="cnt-cod-deposit-logs" class="space-y-1.5 max-h-36 overflow-y-auto no-scrollbar font-sans font-semibold">
+              <p class="text-[9px] text-slate-400 font-bold text-center py-2 uppercase">No Deposits History Found.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Settlement Account & Endpoint Form (UPI + Bank Setup) -->
+        <div class="bg-white rounded-3xl p-4 border border-slate-150/80 shadow-sm space-y-4 text-left font-semibold text-xs">
+          <div class="flex items-center justify-between border-b border-slate-50 pb-2">
+            <h4 class="text-xs font-black text-slate-900 uppercase font-display tracking-wider flex items-center gap-1.5 select-none">
+              <i class="fa-solid fa-credit-card text-indigo-500"></i> Payout Endpoint Setup
+            </h4>
+            <div class="flex gap-1">
+              <button id="btn-toggle-paymode-upi" class="px-2 py-0.5 rounded text-[8.5px] font-extrabold uppercase bg-slate-900 text-white cursor-pointer select-none">UPI</button>
+              <button id="btn-toggle-paymode-bank" class="px-2 py-0.5 rounded text-[8.5px] font-extrabold uppercase bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-50 cursor-pointer select-none">Bank Account</button>
+            </div>
+          </div>
+
+          <!-- Section: UPI setup -->
+          <div id="sec-paymode-panel-upi" class="space-y-3 font-semibold text-xs text-slate-650">
             <div>
               <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">UPI Address (Virtual Payment Address)</label>
-              <input type="text" id="inp-settle-upi-id" placeholder="e.g. rider@ybl, 9988776655@paytm" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-sm tracking-wider outline-none focus:border-indigo-500 focus:bg-white text-slate-800">
+              <input type="text" id="inp-settle-upi-id" placeholder="e.g. rider@ybl, 9988776655@paytm" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-sm tracking-wider outline-none focus:border-indigo-500 focus:bg-white text-slate-855 text-slate-800">
             </div>
 
             <!-- UPI QR image click to upload -->
             <div class="space-y-1">
               <label class="block text-[10px] font-black text-slate-400 uppercase">UPI Receiver QR Image (QR Copy)</label>
-              <div id="wrapper-qr-upload" class="border border-dashed border-slate-200 h-20 rounded-2xl bg-slate-50/50 flex items-center justify-center p-2 text-center relative cursor-pointer hover:bg-slate-50 transition-all">
+              <div id="wrapper-qr-upload" class="border border-dashed border-slate-200 h-20 rounded-2xl bg-slate-50/50 flex items-center justify-center p-2 text-center relative cursor-pointer hover:bg-slate-50 transition-all select-none">
                 <i class="fa-solid fa-qrcode text-lg text-slate-400 mr-2" id="icon-qr-upload"></i>
-                <span class="text-[9px] text-slate-505 text-slate-500" id="txt-qr-upload">Upload QR Code Attachment</span>
+                <span class="text-[9px] text-slate-500" id="txt-qr-upload">Upload QR Code Attachment</span>
                 <input type="file" id="inp-settle-qr-upload" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer">
                 <!-- Preview Thumb -->
                 <img id="img-qr-upload" class="absolute inset-x-2 inset-y-1 w-[90%] h-[90%] object-contain rounded-xl hidden mx-auto" alt="QR Preview">
               </div>
             </div>
-
-            <button id="btn-save-upi-profile" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 rounded-xl text-[10px] shadow uppercase tracking-wide font-display active:scale-95 transition-all">
-              Save Payment Address
-            </button>
           </div>
+
+          <!-- Section: Bank setup hidden initially -->
+          <div id="sec-paymode-panel-bank" class="hidden space-y-3 font-semibold text-xs text-slate-650">
+            <div>
+              <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Account Holder Full Name</label>
+              <input type="text" id="inp-settle-bank-holder" placeholder="Enter Full Name on Account" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium outline-none focus:border-indigo-500 focus:bg-white text-slate-800">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Bank Name</label>
+                <input type="text" id="inp-settle-bank-name" placeholder="e.g. HDFC Bank, ICICI" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium outline-none focus:border-indigo-500 focus:bg-white text-slate-800">
+              </div>
+              <div>
+                <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">IFSC Code (11 Digits)</label>
+                <input type="text" id="inp-settle-bank-ifsc" placeholder="e.g. HDFC0000120" maxlength="11" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs uppercase tracking-wider outline-none focus:border-indigo-500 focus:bg-white text-slate-800">
+              </div>
+            </div>
+            <div>
+              <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Account Number</label>
+              <input type="text" id="inp-settle-bank-account" placeholder="Enter Account Number" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono tracking-widest outline-none focus:border-indigo-500 focus:bg-white text-slate-800 animate-pulse">
+            </div>
+          </div>
+
+          <button id="btn-save-upi-profile" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 rounded-xl text-[10px] shadow uppercase tracking-wide font-display active:scale-95 transition-all cursor-pointer">
+            Save Payment Endpoint parameters
+          </button>
         </div>
 
         <!-- Initiate Settlement request -->
-        <div class="bg-white rounded-3xl p-4 border border-slate-100 shadow-sm space-y-4">
-          <h4 class="text-xs font-extrabold text-slate-900 uppercase font-display tracking-wider border-b border-slate-50 pb-2">
+        <div class="bg-white rounded-3xl p-4 border border-slate-150/80 shadow-sm space-y-4 text-left">
+          <h4 class="text-xs font-black text-slate-900 uppercase font-display tracking-wider border-b border-slate-50 pb-2">
             Create Redemption Claim
           </h4>
 
           <div class="grid grid-cols-2 gap-3 font-semibold text-xs">
             <div>
               <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Payout Claim Amount</label>
-              <input type="number" id="inp-settle-claim-amount" placeholder="e.g. 500" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 text-sm font-mono text-slate-800">
+              <input type="number" id="inp-settle-claim-amount" placeholder="e.g. 500" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 text-sm font-mono text-slate-805">
             </div>
             <div class="flex items-end">
-              <button id="btn-request-settlement" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-xl text-[11px] shadow uppercase tracking-wider font-display shrink-0 active:scale-95 transition-all">
+              <button id="btn-request-settlement" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-xl text-[11px] shadow uppercase tracking-wider font-display shrink-0 active:scale-95 transition-all cursor-pointer">
                 Request Payout
               </button>
             </div>
           </div>
+        </div> </div>
         </div>
 
         <!-- Settlement History list -->
