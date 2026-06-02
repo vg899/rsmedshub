@@ -12,6 +12,7 @@ let activeOrderPayload: any = null;
 let riderGPSInterval: any = null;
 let activeStoreProfile: any = null;
 let activeTab = "dashboard";
+let isTerminalInitialized = false;
 
 // --- TEMPORARY UPLOAD URL STATES ---
 let stateAadhaarFrontUrl = "";
@@ -198,6 +199,14 @@ function showActiveTerminalView(data: any) {
   const riderNameHeader = document.getElementById("delivery-profile-rider-name");
   if (riderNameHeader) riderNameHeader.innerText = data.name || "Agent Express";
 
+  // Always keep profile UI copy up-to-date
+  renderRiderProfileView(data);
+
+  if (isTerminalInitialized) {
+    return;
+  }
+  isTerminalInitialized = true;
+
   // Bootstrap live location GPS track loops
   bootstrapRiderLiveLocationTracking();
 
@@ -207,7 +216,6 @@ function showActiveTerminalView(data: any) {
   subscribeToCodDeposits();
   subscribeToLeaderboardsAndIncentives();
   setupNewDashboardInteractivity();
-  renderRiderProfileView(data);
   
   // Advanced features initializer
   initAdvancedRiderFeatures(data);
