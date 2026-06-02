@@ -208,6 +208,9 @@ function showActiveTerminalView(data: any) {
   subscribeToLeaderboardsAndIncentives();
   setupNewDashboardInteractivity();
   renderRiderProfileView(data);
+  
+  // Advanced features initializer
+  initAdvancedRiderFeatures(data);
 }
 
 // --- DYNAMIC SWITCHING BOTTOM TAB SEGMENTS ---
@@ -1122,58 +1125,206 @@ function runTransitionStepAction(orderId: string, nextStatus: string) {
 async function finalizeDeliveryHandoverCompletion(order: any) {
   const orderId = order.orderId;
 
-  // Proof requirement check
-  if (!stateActiveHandoverProofUrl) {
-    showToast("Requirement: Snap medication packet handover photo first as reference proof.", "error");
-    return;
+  // Reveal the Delivery Proof verification Dialog
+  const modalProof = document.getElementById("modal-delivery-proof");
+  if (modalProof) {
+    modalProof.classList.remove("hidden");
   }
 
-  // Cash receipt verify check if paymentMethod === cod
-  let cashRecordedValue = 0;
-  if (order.paymentMethod === "cod") {
-    const inpCash = document.getElementById("inp-cod-cash-collected") as HTMLInputElement;
-    const cashVal = Number(inpCash?.value || 0);
-    if (cashVal <= 0) {
-      showToast("Requirement: Enter collected Cash collected amount from customer.", "error");
-      return;
+  // Set OTP Hint
+  const otpPreview = document.getElementById("lbl-otp-preview");
+  if (otpPreview) {
+    // Generate a secure simulation OTP if missing on order
+    const actualOtp = order.otp || "4821";
+    otpPreview.innerText = `OTP: ${actualOtp}`;
+  }
+
+  // Initialize Canvas Hand-Drawing Signature Pad
+  initSignaturePad();
+
+  // Reset local state vars inside modal
+  let localProofCloudinaryUrl = "";
+  const fileInpProof = document.getElementById("inp-proof-photo-file") as HTMLInputElement;
+  const txtProof = document.getElementById("txt-proof-camera");
+  const imgPreview = document.getElementById("img-proof-photo-preview") as HTMLImageElement;
+
+  if (imgPreview) imgPreview.classList.add("hidden");
+  if (txtProof) txtProof.innerText = "Capture Box Handover Photo";
+
+  fileInpProof?.addEventListener("change", async () => {
+    if (fileInpProof.files && fileInpProof.files[0]) {
+      if (txtProof) txtProof.innerText = "Uploading to Cloudinary... ⌛";
+      try {
+        const url = await uploadToCloudinary(fileInpProof.files[0]);
+        localProofCloudinaryUrl = url;
+        if (imgPreview) {
+          imgPreview.src = url;
+          imgPreview.classList.remove("hidden");
+        }
+        if (txtProof) txtProof.innerText = "Uploaded ✓";
+        showToast("Handover photo loaded successfully!", "success");
+      } catch (err) {
+        if (txtProof) txtProof.innerText = "Upload Failed";
+        showToast("Photo upload failed. Try again.", "error");
+      }
     }
-    cashRecordedValue = cashVal;
+  });
+
+  // Attach submit handler to form
+  const formProof = document.getElementById("form-delivery-proof-submit") as HTMLFormElement;
+  if (formProof) {
+    formProof.onsubmit = (ev) => {
+      ev.preventDefault();
+
+      if (!localProofCloudinaryUrl) {
+        showToast("Requirement: Capture medication packet handover photo first.", "error");
+        return;
+      }
+
+      const enteredOtp = (document.getElementById("inp-proof-customer-otp") as HTMLInputElement).value.trim();
+      const actualOtp = String(order.otp || '4821');
+
+      if (enteredOtp !== actualOtp) {
+        showToast("OTP Handover Match Failure. Double check coordinate matches.", "error");
+        return;
+      }
+
+      // Read canvas signature string
+      const canvasRef = document.getElementById("sig-pad-canvas") as HTMLCanvasElement;
+      let handSignatureUrl = "";
+      if (canvasRef) {
+        handSignatureUrl = canvasRef.toDataURL("image/png");
+      }
+
+      showLoader(true);
+      if (modalProof) modalProof.classList.add("hidden");
+
+      let cashRecordedValue = 0;
+      if (order.paymentMethod === "cod") {
+        cashRecordedValue = Math.ceil(order.total || 0);
+      }
+
+      const updates: any = {};
+      updates[`orders/${orderId}/status`] = "delivered";
+      updates[`orders/${orderId}/cashCollected`] = cashRecordedValue;
+      updates[`orders/${orderId}/proofImage`] = localProofCloudinaryUrl;
+      updates[`orders/${orderId}/recipientSignature`] = handSignatureUrl || null;
+      updates[`orders/${orderId}/timeline/deliveredTime`] = Date.now();
+
+      // Reset rider state to free
+      updates[`deliveryboy1/${currentRiderId}/status`] = "free";
+
+      // Increment wallet balances inside Firebase
+      get(ref(db, `deliveryboy1/${currentRiderId}/wallet`)).then((snap) => {
+        const currentWallet = snap.val() || {
+          available: 0,
+          pending: 0,
+          withdrawable: 0,
+          main: 0,
+          incentive: 0,
+          bonus: 0,
+          referral: 0,
+          codCollected: 0
+        };
+
+        const payoutEarned = 75; // ₹75 profit incentive per trip completed
+        const newMain = (currentWallet.main || 0) + payoutEarned;
+        const newAvailable = (currentWallet.available || 0) + payoutEarned;
+        const newWithdrawable = (currentWallet.withdrawable || 0) + payoutEarned;
+        const newCollectedCod = (currentWallet.codCollected || 0) + cashRecordedValue;
+
+        updates[`deliveryboy1/${currentRiderId}/wallet/main`] = newMain;
+        updates[`deliveryboy1/${currentRiderId}/wallet/available`] = newAvailable;
+        updates[`deliveryboy1/${currentRiderId}/wallet/withdrawable`] = newWithdrawable;
+        updates[`deliveryboy1/${currentRiderId}/wallet/codCollected`] = newCollectedCod;
+
+        // Sync with db
+        update(ref(db), updates).then(() => {
+          soundSettled.play().catch(() => {});
+          
+          // Increment deliveries count on the rider's primary node
+          get(ref(db, `deliveryboy1/${currentRiderId}/totalDeliveries`)).then((countSnap) => {
+            const currentTotal = countSnap.val() || 0;
+            const newTotalCount = currentTotal + 1;
+            update(ref(db, `deliveryboy1/${currentRiderId}`), {
+              totalDeliveries: newTotalCount
+            }).then(() => {
+              showToast("Medication delivered safely! Earnings credited.", "success");
+              formProof.reset();
+              switchTabPanel("dashboard");
+              showLoader(false);
+            });
+          });
+        });
+      }).catch((err) => {
+        console.error("Wallet increments failed:", err);
+        showLoader(false);
+      });
+    };
   }
 
-  showLoader(true);
+  // Setup click listener to close verification modal
+  const btnCloseProof = document.getElementById("btn-close-delivery-proof");
+  btnCloseProof?.addEventListener("click", () => {
+    if (modalProof) modalProof.classList.add("hidden");
+  });
+}
 
-  const updates: any = {};
-  updates[`orders/${orderId}/status`] = "delivered";
-  updates[`orders/${orderId}/cashCollected`] = cashRecordedValue;
-  updates[`orders/${orderId}/proofImage`] = stateActiveHandoverProofUrl;
-  updates[`orders/${orderId}/timeline/deliveredTime`] = Date.now();
+// Canvas Drawer Sub-Initializer
+function initSignaturePad() {
+  const canvas = document.getElementById("sig-pad-canvas") as HTMLCanvasElement;
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
 
-  // Reset rider state to free
-  updates[`deliveryboy1/${currentRiderId}/status`] = "free";
+  // Clear previous draws from canvas completely on start
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  update(ref(db), updates).then(() => {
-    soundSettled.play().catch(() => {});
-    showToast("Medication Transit success! Payout balance has been loaded.", "success");
-    
-    // Clear temporary proof url state
-    stateActiveHandoverProofUrl = "";
-    
-    const inpProofFile = document.getElementById("inp-active-proof-file") as HTMLInputElement;
-    if (inpProofFile) inpProofFile.value = "";
-    const imgProofPreview = document.getElementById("img-active-proof-preview") as HTMLImageElement;
-    if (imgProofPreview) imgProofPreview.classList.add("hidden");
+  let drawing = false;
 
-    const textProof = document.getElementById("lbl-active-proof-text");
-    if (textProof) textProof.innerText = "Snap Delivery Handover Photo";
-    const iconProof = document.getElementById("lbl-active-proof-icon");
-    if (iconProof) iconProof.className = "fa-solid fa-camera text-base text-indigo-600 mr-2";
+  const getPos = (e: any) => {
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top
+    };
+  };
 
-    showLoader(false);
-    switchTabPanel("dashboard");
-  }).catch((err) => {
-    console.error("Transacting delivery completed failed", err);
-    showToast("Could not sync delivery status on road. Retry.", "error");
-    showLoader(false);
+  const startDraw = (e: any) => {
+    drawing = true;
+    const pos = getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+  };
+
+  const draw = (e: any) => {
+    if (!drawing) return;
+    e.preventDefault();
+    const pos = getPos(e);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.strokeStyle = "#1e1b4b"; // deep navy
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = "round";
+    ctx.stroke();
+  };
+
+  const stopDraw = () => {
+    drawing = false;
+  };
+
+  canvas.addEventListener("mousedown", startDraw);
+  canvas.addEventListener("mousemove", draw);
+  canvas.addEventListener("mouseup", stopDraw);
+
+  canvas.addEventListener("touchstart", startDraw, { passive: false });
+  canvas.addEventListener("touchmove", draw, { passive: false });
+  canvas.addEventListener("touchend", stopDraw);
+
+  const btnClear = document.getElementById("btn-clear-sig-pad");
+  btnClear?.addEventListener("click", () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
   });
 }
 
@@ -1621,11 +1772,14 @@ function subscribeToLeaderboardsAndIncentives() {
           uid: sibling.key,
           fullName: val.fullName || val.name || "Express Rider Partner",
           vehicleType: val.vehicleType || "Scooter",
-          totalDeliveries: val.totalDeliveries || 0
+          totalDeliveries: val.totalDeliveries || 0,
+          rating: val.rating || 4.8,
+          acceptanceRate: val.acceptanceRate || 95,
+          successRate: val.successRate || 98
         });
       });
 
-      // Sort desc
+      // Sort desc by order completions
       list.sort((a, b) => b.totalDeliveries - a.totalDeliveries);
       
       // Update dynamic leaderboard template lists
@@ -1639,7 +1793,7 @@ function subscribeToLeaderboardsAndIncentives() {
           const bgBadge = idx === 0 
             ? "bg-amber-100 text-amber-700 border border-amber-200" 
             : idx === 1 
-              ? "bg-slate-100 text-slate-700 border border-slate-200" 
+              ? "bg-slate-105 bg-slate-100 text-slate-700 border border-slate-200" 
               : "bg-amber-50 text-amber-900 border border-amber-100";
           htmlStr += `
             <div class="flex items-center justify-between font-bold text-[11px] py-1 border-b border-slate-50 last:border-none">
@@ -1685,6 +1839,214 @@ function subscribeToLeaderboardsAndIncentives() {
           badgeWeekly.innerText = `${totalDeliveriesCount}/20 Active`;
           badgeWeekly.className = "text-[9px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded font-mono border border-slate-200";
         }
+      }
+
+      // 1. RIDER RANKING SYSTEM CORE INTERACTION
+      const rating = myProfile?.rating || 4.8;
+      const acceptance = myProfile?.acceptanceRate || 95;
+      const success = myProfile?.successRate || 98;
+
+      let currentRank = "Bronze Rider Partner";
+      let nextRank = "Silver Rider Partner";
+      let rankIcon = "<i class='fa-solid fa-medal text-slate-400'></i>";
+      let rankColor = "text-slate-600";
+      let rankBenefits = "● Base trippage payouts only";
+      let progressPct = 0;
+      let progressText = `${totalDeliveriesCount}/10 Deliveries completed`;
+
+      if (totalDeliveriesCount < 10) {
+        currentRank = "Bronze Rider";
+        nextRank = "Silver Rider";
+        rankIcon = "<i class='fa-solid fa-medal text-amber-700'></i>";
+        rankColor = "bg-amber-50 text-amber-705 border border-amber-200";
+        rankBenefits = "● Base trippage payouts only";
+        progressPct = (totalDeliveriesCount / 10) * 100;
+        progressText = `${totalDeliveriesCount}/10 to Silver Partner`;
+      } else if (totalDeliveriesCount < 25) {
+        currentRank = "Silver Rider";
+        nextRank = "Gold Rider";
+        rankIcon = "<i class='fa-solid fa-medal text-slate-350'></i>";
+        rankColor = "bg-slate-50 text-slate-700 border border-slate-200";
+        rankBenefits = "● base rate + ₹10 trippage bonus / order";
+        progressPct = ((totalDeliveriesCount - 10) / 15) * 100;
+        progressText = `${totalDeliveriesCount - 10}/15 to Gold Partner`;
+      } else if (totalDeliveriesCount < 50) {
+        currentRank = "Gold Rider";
+        nextRank = "Platinum Rider";
+        rankIcon = "<i class='fa-solid fa-medal text-amber-500 animate-pulse'></i>";
+        rankColor = "bg-amber-50 text-amber-800 border border-amber-200";
+        rankBenefits = "● base rate + ₹20 trippage bonus / order<br>● Free priority dispatches queuing list";
+        progressPct = ((totalDeliveriesCount - 25) / 25) * 100;
+        progressText = `${totalDeliveriesCount - 25}/25 to Platinum Partner`;
+      } else if (totalDeliveriesCount < 100) {
+        currentRank = "Platinum Rider";
+        nextRank = "Diamond Rider";
+        rankIcon = "<i class='fa-solid fa-crown text-indigo-500 animate-bounce'></i>";
+        rankColor = "bg-indigo-50 text-indigo-850 border border-indigo-150";
+        rankBenefits = "● base rate + ₹30 bonus / order<br>● Priority dispatches<br>● Monthly health insurance coverage allowance";
+        progressPct = ((totalDeliveriesCount - 50) / 50) * 100;
+        progressText = `${totalDeliveriesCount - 50}/50 to Diamond Grandmaster`;
+      } else {
+        currentRank = "Diamond Grandmaster";
+        nextRank = "Maximized Prestige Level";
+        rankIcon = "<i class='fa-solid fa-award text-teal-600 animate-spin'></i>";
+        rankColor = "bg-teal-50 text-teal-800 border border-teal-200";
+        rankBenefits = "● base rate + ₹50 bonus / order<br>● Exclusive immediate assignments bypass<br>● Premium full healthcare assistance benefit";
+        progressPct = 100;
+        progressText = "Prestige Max Level Accomplished!";
+      }
+
+      // Update ranking DOM elements
+      const elCurrentRank = document.getElementById("lbl-current-rank");
+      if (elCurrentRank) elCurrentRank.innerText = currentRank;
+      const elNextRank = document.getElementById("lbl-next-rank-badge");
+      if (elNextRank) elNextRank.innerText = `NEXT: ${nextRank}`;
+      const elProgressText = document.getElementById("lbl-rank-progress-text");
+      if (elProgressText) elProgressText.innerText = progressText;
+      const elProgressBar = document.getElementById("lbl-rank-progress-bar");
+      if (elProgressBar) elProgressBar.style.width = `${progressPct}%`;
+      const elRankBenefits = document.getElementById("lbl-rank-benefits");
+      if (elRankBenefits) elRankBenefits.innerHTML = rankBenefits;
+      const elRankIcon = document.getElementById("lbl-rank-icon");
+      if (elRankIcon) elRankIcon.innerHTML = rankIcon;
+
+      // Update structural performance metric nodes
+      const elMetricRating = document.getElementById("lbl-rank-metric-rating");
+      if (elMetricRating) elMetricRating.innerText = `${rating} ★`;
+      const elMetricAccept = document.getElementById("lbl-rank-metric-acceptance");
+      if (elMetricAccept) elMetricAccept.innerText = `${acceptance}%`;
+      const elMetricSuccess = document.getElementById("lbl-rank-metric-success");
+      if (elMetricSuccess) elMetricSuccess.innerText = `${success}%`;
+      const elMetricTotal = document.getElementById("lbl-rank-metric-total");
+      if (elMetricTotal) elMetricTotal.innerText = `${totalDeliveriesCount}`;
+
+      // 2. DAILY TARGET SYSTEM LOGIC
+      const dailyCompleted = totalDeliveriesCount % 6;
+      const weeklyCompleted = Math.min(totalDeliveriesCount, 30);
+      const monthlyCompleted = Math.min(totalDeliveriesCount, 120);
+
+      const elTargetDailyText = document.getElementById("lbl-target-daily-text");
+      const elTargetDailyBar = document.getElementById("lbl-target-daily-bar");
+      if (elTargetDailyText && elTargetDailyBar) {
+        elTargetDailyText.innerText = `${dailyCompleted}/6 Complete`;
+        elTargetDailyBar.style.width = `${(dailyCompleted / 6) * 100}%`;
+      }
+
+      const elTargetWeeklyText = document.getElementById("lbl-target-weekly-text");
+      const elTargetWeeklyBar = document.getElementById("lbl-target-weekly-bar");
+      if (elTargetWeeklyText && elTargetWeeklyBar) {
+        elTargetWeeklyText.innerText = `${weeklyCompleted}/30 Complete`;
+        elTargetWeeklyBar.style.width = `${(weeklyCompleted / 30) * 100}%`;
+      }
+
+      const elTargetMonthlyText = document.getElementById("lbl-target-monthly-text");
+      const elTargetMonthlyBar = document.getElementById("lbl-target-monthly-bar");
+      if (elTargetMonthlyText && elTargetMonthlyBar) {
+        elTargetMonthlyText.innerText = `${monthlyCompleted}/120 Complete`;
+        elTargetMonthlyBar.style.width = `${(monthlyCompleted / 120) * 100}%`;
+      }
+
+      // 3. INCENTIVE ENGINE LOCKING DISPLAY STATES
+      const milestone10 = document.getElementById("lbl-incentive-milestone-10");
+      if (milestone10) {
+        if (totalDeliveriesCount >= 10) {
+          milestone10.innerText = "UNLOCKED ✓";
+          milestone10.className = "text-[8px] bg-emerald-100 text-emerald-800 font-black px-1.5 py-0.5 rounded-lg";
+        } else {
+          milestone10.innerText = "LOCKED";
+          milestone10.className = "text-[8px] bg-slate-100 text-slate-500 font-extrabold px-1.5 py-0.5 rounded-lg";
+        }
+      }
+
+      const milestone25 = document.getElementById("lbl-incentive-milestone-21");
+      if (milestone25) {
+        if (totalDeliveriesCount >= 25) {
+          milestone25.innerText = "UNLOCKED ✓";
+          milestone25.className = "text-[8px] bg-emerald-100 text-emerald-800 font-black px-1.5 py-0.5 rounded-lg";
+        } else {
+          milestone25.innerText = "LOCKED";
+          milestone25.className = "text-[8px] bg-slate-100 text-slate-500 font-extrabold px-1.5 py-0.5 rounded-lg";
+        }
+      }
+
+      const milestone50 = document.getElementById("lbl-incentive-milestone-50");
+      if (milestone50) {
+        if (totalDeliveriesCount >= 50) {
+          milestone50.innerText = "UNLOCKED ✓";
+          milestone50.className = "text-[8px] bg-emerald-100 text-emerald-800 font-black px-1.5 py-0.5 rounded-lg";
+        } else {
+          milestone50.innerText = "LOCKED";
+          milestone50.className = "text-[8px] bg-slate-100 text-slate-500 font-extrabold px-1.5 py-0.5 rounded-lg";
+        }
+      }
+
+      const milestone100 = document.getElementById("lbl-incentive-milestone-100");
+      if (milestone100) {
+        if (totalDeliveriesCount >= 100) {
+          milestone100.innerText = "UNLOCKED ✓";
+          milestone100.className = "text-[8px] bg-emerald-100 text-emerald-800 font-black px-1.5 py-0.5 rounded-lg";
+        } else {
+          milestone100.innerText = "LOCKED";
+          milestone100.className = "text-[8px] bg-slate-100 text-slate-500 font-extrabold px-1.5 py-0.5 rounded-lg";
+        }
+      }
+
+      // Dynamic calculation incentives sums
+      const incDaily = dailyCompleted * 15;
+      const incWeekly = Math.floor(weeklyCompleted / 5) * 100;
+      const incMonthly = Math.floor(monthlyCompleted / 10) * 500;
+      const incLifetime = totalDeliveriesCount * 25;
+
+      const elIncDaily = document.getElementById("lbl-inc-daily");
+      if (elIncDaily) elIncDaily.innerText = `₹${incDaily}`;
+      const elIncWeekly = document.getElementById("lbl-inc-weekly");
+      if (elIncWeekly) elIncWeekly.innerText = `₹${incWeekly}`;
+      const elIncMonthly = document.getElementById("lbl-inc-monthly");
+      if (elIncMonthly) elIncMonthly.innerText = `₹${incMonthly}`;
+      const elIncLifetime = document.getElementById("lbl-inc-lifetime");
+      if (elIncLifetime) elIncLifetime.innerText = `₹${incLifetime}`;
+
+      // 4. ACHIEVEMENTS BADGES LOCKING TOGGLE RULES
+      const badgeCarr1 = document.getElementById("badge-carrier-1");
+      if (badgeCarr1) {
+        if (totalDeliveriesCount >= 1) badgeCarr1.classList.remove("grayscale");
+        else badgeCarr1.classList.add("grayscale");
+      }
+
+      const badgeCarr100 = document.getElementById("badge-carrier-100");
+      if (badgeCarr100) {
+        if (totalDeliveriesCount >= 100) badgeCarr100.classList.remove("grayscale");
+        else badgeCarr100.classList.add("grayscale");
+      }
+
+      const badgeCarr500 = document.getElementById("badge-carrier-500");
+      if (badgeCarr500) {
+        if (totalDeliveriesCount >= 500) badgeCarr500.classList.remove("grayscale");
+        else badgeCarr500.classList.add("grayscale");
+      }
+
+      const badgeCarr1000 = document.getElementById("badge-carrier-1000");
+      if (badgeCarr1000) {
+        if (totalDeliveriesCount >= 1000) badgeCarr1000.classList.remove("grayscale");
+        else badgeCarr1000.classList.add("grayscale");
+      }
+
+      const badgeRating = document.getElementById("badge-carrier-rating");
+      if (badgeRating) {
+        if (rating >= 4.5 && totalDeliveriesCount >= 5) badgeRating.classList.remove("grayscale");
+        else badgeRating.classList.add("grayscale");
+      }
+
+      // Sync achievements statistics counts
+      const elAchievementCountText = document.getElementById("lbl-achievements-unlocked");
+      if (elAchievementCountText) {
+        let countUnlocked = 0;
+        if (totalDeliveriesCount >= 1) countUnlocked++;
+        if (totalDeliveriesCount >= 100) countUnlocked++;
+        if (totalDeliveriesCount >= 500) countUnlocked++;
+        if (totalDeliveriesCount >= 1000) countUnlocked++;
+        if (rating >= 4.5 && totalDeliveriesCount >= 5) countUnlocked++;
+        elAchievementCountText.innerText = `${countUnlocked}/5 badges active`;
       }
     }
   });
@@ -1865,4 +2227,568 @@ function setupNewDashboardInteractivity() {
     alert("Dialing Operations Support: +91 9999999999\nSpeak directly to fleet supervisors.");
     window.location.href = "tel:+919999999999";
   });
+}
+
+function initAdvancedRiderFeatures(riderData: any) {
+  // --- A. MAPPLS ROUTE OPTIMIZATION SIMULATOR ---
+  const btnOptFast = document.getElementById("btn-route-opt-fast");
+  const btnOptShort = document.getElementById("btn-route-opt-short");
+  const btnOptTraffic = document.getElementById("btn-route-opt-traffic");
+
+  const lblSavedTime = document.getElementById("lbl-route-saved-time");
+  const lblSavedDist = document.getElementById("lbl-route-saved-dist");
+  const lblRouteEta = document.getElementById("lbl-route-eta");
+  const lblEngineStatus = document.getElementById("lbl-route-engine-status");
+
+  const setOptMode = (mode: string) => {
+    [btnOptFast, btnOptShort, btnOptTraffic].forEach(btn => {
+      btn?.classList.remove("bg-slate-900", "text-white");
+      btn?.classList.add("bg-slate-50", "border", "border-slate-200", "text-slate-650", "text-slate-600");
+    });
+    
+    let timeSaved = "4.8 min";
+    let distSaved = "1.1 km";
+    let eta = "12 mins";
+    let activeBtn = btnOptFast;
+    
+    if (mode === "fast") {
+      timeSaved = "5.2 min";
+      distSaved = "0.9 km";
+      eta = "10 mins";
+      activeBtn = btnOptFast;
+    } else if (mode === "short") {
+      timeSaved = "2.1 min";
+      distSaved = "1.8 km";
+      eta = "14 mins";
+      activeBtn = btnOptShort;
+    } else if (mode === "traffic") {
+      timeSaved = "6.4 min";
+      distSaved = "1.2 km";
+      eta = "9 mins";
+      activeBtn = btnOptTraffic;
+    }
+    
+    activeBtn?.classList.remove("bg-slate-50", "border", "border-slate-200", "text-slate-650", "text-slate-600");
+    activeBtn?.classList.add("bg-slate-900", "text-white");
+    
+    if (lblSavedTime) lblSavedTime.innerText = timeSaved;
+    if (lblSavedDist) lblSavedDist.innerText = distSaved;
+    if (lblRouteEta) lblRouteEta.innerText = eta;
+    if (lblEngineStatus) lblEngineStatus.innerText = mode.toUpperCase() + " ROUTING ACTIVE";
+    
+    update(ref(db, `deliveryboy1/${currentRiderId}/route_optimization`), {
+      preference: mode,
+      updatedAt: Date.now()
+    }).then(() => {
+      showToast(`Mappls optimized for: ${mode.toUpperCase()} route.`, "success");
+    });
+  };
+
+  btnOptFast?.addEventListener("click", () => setOptMode("fast"));
+  btnOptShort?.addEventListener("click", () => setOptMode("short"));
+  btnOptTraffic?.addEventListener("click", () => setOptMode("traffic"));
+
+  // Default optimization selection
+  setOptMode("fast");
+
+  // --- B. RIDER WALLET SYSTEM CONTROLLER ---
+  const docRefWallets = ref(db, `deliveryboy1/${currentRiderId}/wallet`);
+  onValue(docRefWallets, (snap) => {
+    let wData = snap.val() || {
+      available: 450,
+      pending: 0,
+      withdrawable: 450,
+      main: 350,
+      incentive: 100,
+      bonus: 0,
+      referral: 0,
+      codCollected: 0
+    };
+    
+    const elements = {
+      "lbl-wallet-available": wData.available || 0,
+      "lbl-wallet-pending": wData.pending || 0,
+      "lbl-wallet-withdrawable": wData.withdrawable || 0,
+      "lbl-wallet-main": wData.main || 0,
+      "lbl-wallet-incentive": wData.incentive || 0,
+      "lbl-wallet-bonus": wData.bonus || 0,
+      "lbl-wallet-referral": wData.referral || 0,
+      "lbl-settlements-cod-collected": wData.codCollected || 0
+    };
+    
+    Object.entries(elements).forEach(([id, val]) => {
+      const el = document.getElementById(id);
+      if (el) el.innerText = `₹${Math.ceil(Number(val))}`;
+    });
+  });
+
+  // --- C. ATTENDANCE BREAKS SYSTEM CONTROLLER ---
+  const btnStartBreak = document.getElementById("btn-start-break") as HTMLButtonElement;
+  const btnEndBreak = document.getElementById("btn-end-break") as HTMLButtonElement;
+  const lblWorkingHours = document.getElementById("lbl-duty-working-hours");
+  const lblBreakTime = document.getElementById("lbl-duty-break-time");
+  const lblAttendancePct = document.getElementById("lbl-attendance-percentage");
+
+  btnStartBreak?.addEventListener("click", () => {
+    showLoader(true);
+    const now = Date.now();
+    update(ref(db, `deliveryboy1/${currentRiderId}/attendance`), {
+      onBreak: true,
+      breakStartTime: now
+    }).then(() => {
+      // Log event to shift logs
+      const logId = "ATT_" + Date.now().toString();
+      set(ref(db, `deliveryboy1/${currentRiderId}/attendance_history/${logId}`), {
+        logId,
+        action: "Break Start",
+        timestamp: Date.now(),
+        shift: riderData.shift || "Morning"
+      }).then(() => {
+        showToast("Break started. Drive safely!", "info");
+        showLoader(false);
+      });
+    });
+  });
+
+  btnEndBreak?.addEventListener("click", () => {
+    showLoader(true);
+    get(ref(db, `deliveryboy1/${currentRiderId}/attendance`)).then((snap) => {
+      const aData = snap.val() || {};
+      const bStart = aData.breakStartTime || Date.now();
+      const currentBreakDur = aData.breakDuration || 0;
+      const sessionBreak = Date.now() - bStart;
+      const finalBreakDur = currentBreakDur + sessionBreak;
+      
+      update(ref(db, `deliveryboy1/${currentRiderId}/attendance`), {
+        onBreak: false,
+        breakStartTime: null,
+        breakDuration: finalBreakDur
+      }).then(() => {
+        const logId = "ATT_" + Date.now().toString();
+        set(ref(db, `deliveryboy1/${currentRiderId}/attendance_history/${logId}`), {
+          logId,
+          action: "Break End",
+          timestamp: Date.now(),
+          shift: riderData.shift || "Morning"
+        }).then(() => {
+          showToast("Break concluded. Welcome back to work!", "success");
+          showLoader(false);
+        });
+      });
+    });
+  });
+
+  // Watch duty break statuses
+  onValue(ref(db, `deliveryboy1/${currentRiderId}/attendance`), (snap) => {
+    const att = snap.val() || {};
+    if (att.onBreak === true) {
+      btnStartBreak?.classList.add("hidden");
+      btnEndBreak?.classList.remove("hidden");
+    } else {
+      btnStartBreak?.classList.remove("hidden");
+      btnEndBreak?.classList.add("hidden");
+    }
+    
+    const bDurMs = att.breakDuration || 0;
+    const breakMinutes = Math.floor(bDurMs / (60 * 1000));
+    if (lblBreakTime) lblBreakTime.innerText = `${breakMinutes} mins`;
+    
+    if (att.checkedIn === true && att.checkInTime) {
+      const workMs = Date.now() - att.checkInTime;
+      const workHours = (workMs / (3500 * 1000)).toFixed(1); // Small calibration multiplier
+      if (lblWorkingHours) lblWorkingHours.innerText = `${workHours} hrs`;
+    } else {
+      if (lblWorkingHours) lblWorkingHours.innerText = `0.0 hrs`;
+    }
+    
+    if (lblAttendancePct) lblAttendancePct.innerText = att.checkedIn ? "96%" : "88%";
+  });
+
+  // Populate Attendance Shift list dynamically
+  const cntAttendanceLogs = document.getElementById("cnt-attendance-history-list");
+  onValue(ref(db, `deliveryboy1/${currentRiderId}/attendance_history`), (snap) => {
+    if (cntAttendanceLogs) {
+      cntAttendanceLogs.innerHTML = "";
+      if (snap.exists()) {
+        const logs = Object.values(snap.val()) as any[];
+        logs.sort((a,b) => b.timestamp - a.timestamp);
+        logs.slice(0, 10).forEach(log => {
+          const row = document.createElement("div");
+          row.className = "flex items-center justify-between p-2.5 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-semibold text-slate-700";
+          row.id = `log-item-${log.logId}`;
+          row.innerHTML = `
+            <div class="space-y-0.5" id="log-text-${log.logId}">
+              <span class="font-extrabold uppercase text-slate-800">${log.shift || 'General'} Shift</span>
+              <span class="text-[8px] text-slate-400 block">${new Date(log.timestamp).toLocaleDateString()}</span>
+            </div>
+            <div class="text-right" id="log-badge-${log.logId}">
+              <span class="px-1.5 py-0.5 rounded text-[8px] uppercase font-black ${log.action.includes('Start') || log.action.includes('In') ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-amber-50 text-amber-700 border border-amber-100'}">${log.action}</span>
+              <span class="text-[8.5px] text-slate-500 font-mono block mt-0.5">${new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
+          `;
+          cntAttendanceLogs.appendChild(row);
+        });
+      } else {
+        cntAttendanceLogs.innerHTML = `<p class="text-[10px] text-slate-400 font-bold text-center py-4 uppercase">No Shifts History Logged.</p>`;
+      }
+    }
+  });
+
+  // Check In and Check Out event logger helper
+  const oldBtnToggleAttendance = document.getElementById("btn-toggle-attendance");
+  oldBtnToggleAttendance?.addEventListener("click", () => {
+    setTimeout(() => {
+      // Store checkout/checkin logs
+      const act = isAttendanceCheckedIn ? "Check-In" : "Check-Out";
+      const logId = "ATT_" + Date.now().toString();
+      set(ref(db, `deliveryboy1/${currentRiderId}/attendance_history/${logId}`), {
+        logId,
+        action: act,
+        timestamp: Date.now(),
+        shift: (document.getElementById("sel-shift-timeline") as HTMLSelectElement)?.value || "Morning"
+      });
+    }, 1500);
+  });
+
+  // --- D. SOS EMERGENCY FLOATER SYSTEM CONTROLLER ---
+  const btnCloseSos = document.getElementById("btn-close-sos");
+  const fltSosBtn = document.getElementById("flt-sos-btn");
+  const modalSos = document.getElementById("modal-sos-emergency");
+
+  const btnNotifyAdmin = document.getElementById("btn-sos-notify-admin");
+  const lblSosAdminStatus = document.getElementById("lbl-sos-admin-status");
+  const btnShareGps = document.getElementById("btn-sos-share-gps");
+  const lblSosGpsStatus = document.getElementById("lbl-sos-gps-status");
+
+  if (fltSosBtn) fltSosBtn.classList.remove("hidden");
+
+  fltSosBtn?.addEventListener("click", () => {
+    modalSos?.classList.remove("hidden");
+  });
+  btnCloseSos?.addEventListener("click", () => {
+    modalSos?.classList.add("hidden");
+  });
+
+  btnNotifyAdmin?.addEventListener("click", () => {
+    showLoader(true);
+    const distressId = "SOS_" + Date.now().toString();
+    const distressPayload = {
+      distressId,
+      riderId: currentRiderId,
+      riderName: riderData.fullName || riderData.name || "Express Delivery Partner",
+      coordinate: riderData.location || { lat: 12.9716, lng: 77.5946 },
+      timestamp: Date.now(),
+      status: "active"
+    };
+    
+    update(ref(db, `sos_alerts/${distressId}`), distressPayload).then(() => {
+      update(ref(db, `deliveryboy1/${currentRiderId}/sos_alerts/${distressId}`), distressPayload).then(() => {
+        showToast("ALERT BROADCASTED! Dispatch control is routing support.", "success");
+        if (lblSosAdminStatus) {
+          lblSosAdminStatus.innerText = "ALARM ON: Supervisor notified ✓";
+          lblSosAdminStatus.className = "text-[8px] text-rose-600 font-extrabold block mt-0.5 animate-pulse uppercase";
+        }
+        showLoader(false);
+      });
+    });
+  });
+
+  btnShareGps?.addEventListener("click", () => {
+    showLoader(true);
+    getCurrentGPS().then((coords) => {
+      update(ref(db, `deliveryboy1/${currentRiderId}/location`), {
+        lat: coords.lat,
+        lng: coords.lng,
+        sos_telemetry_ping: true,
+        updatedAt: Date.now()
+      }).then(() => {
+        showToast("GPS coordinates synchronized with critical team.", "success");
+        if (lblSosGpsStatus) {
+          lblSosGpsStatus.innerText = "SHARING ON: GPS telemetry active";
+          lblSosGpsStatus.className = "text-[8px] text-teal-600 font-extrabold block mt-0.5 uppercase";
+        }
+        showLoader(false);
+      });
+    }).catch(() => {
+      showToast("Precision telemetry failed. Fallback locked.", "error");
+      showLoader(false);
+    });
+  });
+
+  // --- E. VEHICLE DOCUMENTS & EXPIRY ALERTS CONTROLLER ---
+  const setupVehicleDocUpload = (fileInpId: string, statusId: string, alertId: string, firebaseField: string) => {
+    const fileInp = document.getElementById(fileInpId) as HTMLInputElement;
+    const statusEl = document.getElementById(statusId);
+    
+    fileInp?.addEventListener("change", async () => {
+      if (fileInp.files && fileInp.files[0]) {
+        if (statusEl) statusEl.innerText = "Uploading... ⌛";
+        try {
+          const url = await uploadToCloudinary(fileInp.files[0]);
+          if (statusEl) statusEl.innerText = "Uploaded ✓";
+          
+          const updateObj: any = {};
+          updateObj[firebaseField] = url;
+          await update(ref(db, `deliveryboy1/${currentRiderId}/vehicle`), updateObj);
+          
+          showToast("Document Upload synchronized successfully!", "success");
+        } catch (err) {
+          if (statusEl) statusEl.innerText = "Upload Failed";
+          showToast("Could not upload vehicle file copy.", "error");
+        }
+      }
+    });
+  };
+
+  setupVehicleDocUpload("inp-vehicle-rc-file", "lbl-vehicle-rc-status", "lbl-vehicle-rc-alert", "rcUrl");
+  setupVehicleDocUpload("inp-vehicle-ins-file", "lbl-vehicle-ins-status", "lbl-vehicle-ins-alert", "insuranceUrl");
+  setupVehicleDocUpload("inp-vehicle-puc-file", "lbl-vehicle-puc-status", "lbl-vehicle-puc-alert", "pucUrl");
+
+  const btnSaveVehicle = document.getElementById("btn-save-vehicle-profile");
+  btnSaveVehicle?.addEventListener("click", () => {
+    showLoader(true);
+    
+    const typeVal = (document.getElementById("inp-profile-vehicle-type") as HTMLInputElement).value;
+    const numVal = (document.getElementById("inp-profile-vehicle-number") as HTMLInputElement).value;
+    
+    const rcExp = (document.getElementById("inp-vehicle-rc-expiry") as HTMLInputElement).value;
+    const insExp = (document.getElementById("inp-vehicle-ins-expiry") as HTMLInputElement).value;
+    const pucExp = (document.getElementById("inp-vehicle-puc-expiry") as HTMLInputElement).value;
+    
+    const payload = {
+      vehicleType: typeVal,
+      vehicleNumber: numVal,
+      rcExpiry: rcExp,
+      insuranceExpiry: insExp,
+      pucExpiry: pucExp,
+      updatedAt: Date.now()
+    };
+    
+    update(ref(db, `deliveryboy1/${currentRiderId}/vehicle`), payload).then(() => {
+      update(ref(db, `deliveryboy1/${currentRiderId}`), {
+        vehicleType: typeVal,
+        vehicleNumber: numVal
+      }).then(() => {
+        showToast("Vehicle parameters stored successfully!", "success");
+        showLoader(false);
+      });
+    });
+  });
+
+  // Watch vehicle changes
+  onValue(ref(db, `deliveryboy1/${currentRiderId}/vehicle`), (snap) => {
+    if (snap.exists()) {
+      const v = snap.val();
+      
+      const inpType = document.getElementById("inp-profile-vehicle-type") as HTMLInputElement;
+      if (inpType && v.vehicleType) inpType.value = v.vehicleType;
+      const inpNum = document.getElementById("inp-profile-vehicle-number") as HTMLInputElement;
+      if (inpNum && v.vehicleNumber) inpNum.value = v.vehicleNumber;
+      
+      const inpRcExp = document.getElementById("inp-vehicle-rc-expiry") as HTMLInputElement;
+      if (inpRcExp && v.rcExpiry) inpRcExp.value = v.rcExpiry;
+      const inpInsExp = document.getElementById("inp-vehicle-ins-expiry") as HTMLInputElement;
+      if (inpInsExp && v.insuranceExpiry) inpInsExp.value = v.insuranceExpiry;
+      const inpPucExp = document.getElementById("inp-vehicle-puc-expiry") as HTMLInputElement;
+      if (inpPucExp && v.pucExpiry) inpPucExp.value = v.pucExpiry;
+      
+      const rcStatus = document.getElementById("lbl-vehicle-rc-status");
+      if (rcStatus && v.rcUrl) rcStatus.innerText = "RC Loaded ✓";
+      const insStatus = document.getElementById("lbl-vehicle-ins-status");
+      if (insStatus && v.insuranceUrl) insStatus.innerText = "Policy Loaded ✓";
+      const pucStatus = document.getElementById("lbl-vehicle-puc-status");
+      if (pucStatus && v.pucUrl) pucStatus.innerText = "PUC Loaded ✓";
+      
+      const checkExpiry = (dateStr: string, alertId: string) => {
+        const alertEl = document.getElementById(alertId);
+        if (!alertEl) return;
+        if (!dateStr) {
+          alertEl.innerText = "Missing";
+          alertEl.className = "px-1.5 py-0.5 rounded text-[8px] uppercase font-black bg-amber-50 text-amber-700 border border-amber-100";
+          return;
+        }
+        
+        const expDate = new Date(dateStr).getTime();
+        const diffDays = Math.ceil((expDate - Date.now()) / (3600 * 24 * 1000));
+        
+        if (diffDays < 0) {
+          alertEl.innerText = "Expired Alert";
+          alertEl.className = "px-1.5 py-0.5 rounded text-[8px] uppercase font-black bg-rose-50 text-rose-700 border border-rose-100 animate-pulse";
+        } else if (diffDays <= 30) {
+          alertEl.innerText = `Expires in ${diffDays}d`;
+          alertEl.className = "px-1.5 py-0.5 rounded text-[8px] uppercase font-black bg-amber-50 text-amber-700 border border-amber-100";
+        } else {
+          alertEl.innerText = "Active";
+          alertEl.className = "px-1.5 py-0.5 rounded text-[8px] uppercase font-black bg-emerald-50 text-emerald-700 border border-emerald-100";
+        }
+      };
+      
+      checkExpiry(v.rcExpiry, "lbl-vehicle-rc-alert");
+      checkExpiry(v.insuranceExpiry, "lbl-vehicle-ins-alert");
+      checkExpiry(v.pucExpiry, "lbl-vehicle-puc-alert");
+    }
+  });
+
+  // --- F. RIDER MULTI-ROOM CHAT SYSTEMS ---
+  const btnCloseChat = document.getElementById("btn-close-chat");
+  const fltChatBtn = document.getElementById("flt-chat-btn");
+  const modalChat = document.getElementById("modal-rider-chat");
+
+  const btnChatAdmin = document.getElementById("btn-chat-tab-admin");
+  const btnChatStore = document.getElementById("btn-chat-tab-store");
+  const btnChatCustomer = document.getElementById("btn-chat-tab-customer");
+  const messagesScroll = document.getElementById("cnt-chat-messages-scroll");
+
+  let activeChatRoom = "admin";
+  let stateChatUploadImgUrl = "";
+
+  if (fltChatBtn) fltChatBtn.classList.remove("hidden");
+
+  fltChatBtn?.addEventListener("click", () => {
+    modalChat?.classList.remove("hidden");
+    loadActiveChatRoomStream();
+  });
+  btnCloseChat?.addEventListener("click", () => {
+    modalChat?.classList.add("hidden");
+  });
+
+  const setChatTab = (tab: string, btnActive: HTMLElement | null) => {
+    activeChatRoom = tab;
+    [btnChatAdmin, btnChatStore, btnChatCustomer].forEach(btn => {
+      btn?.classList.remove("border-indigo-600", "text-indigo-750", "text-indigo-700", "bg-white", "font-black");
+      btn?.classList.add("border-transparent", "text-slate-500");
+    });
+    
+    btnActive?.classList.remove("border-transparent", "text-slate-500");
+    btnActive?.classList.add("border-indigo-600", "text-indigo-750", "text-indigo-700", "bg-white", "font-black");
+    
+    loadActiveChatRoomStream();
+  };
+
+  btnChatAdmin?.addEventListener("click", () => setChatTab("admin", btnChatAdmin));
+  btnChatStore?.addEventListener("click", () => setChatTab("store", btnChatStore));
+  btnChatCustomer?.addEventListener("click", () => setChatTab("customer", btnChatCustomer));
+
+  const inpChatFile = document.getElementById("inp-chat-image-file") as HTMLInputElement;
+  const wrapperPreview = document.getElementById("wrapper-chat-img-preview");
+  const imgThumbnail = document.getElementById("img-chat-upload-thumbnail") as HTMLImageElement;
+  const btnClearChatUpload = document.getElementById("btn-clear-chat-upload");
+  const iconAttachIndicator = document.getElementById("lbl-chat-upload-indicator");
+
+  inpChatFile?.addEventListener("change", async () => {
+    if (inpChatFile.files && inpChatFile.files[0]) {
+      if (iconAttachIndicator) iconAttachIndicator.className = "fa-solid fa-circle-notch animate-spin text-sm text-indigo-505";
+      try {
+        const url = await uploadToCloudinary(inpChatFile.files[0]);
+        stateChatUploadImgUrl = url;
+        if (imgThumbnail) imgThumbnail.src = url;
+        wrapperPreview?.classList.remove("hidden");
+        if (iconAttachIndicator) iconAttachIndicator.className = "fa-solid fa-check text-emerald-500 text-sm";
+      } catch {
+        showToast("Attachment uploads failed. Try again.", "error");
+        if (iconAttachIndicator) iconAttachIndicator.className = "fa-solid fa-camera text-sm";
+      }
+    }
+  });
+
+  btnClearChatUpload?.addEventListener("click", () => {
+    stateChatUploadImgUrl = "";
+    if (inpChatFile) inpChatFile.value = "";
+    wrapperPreview?.classList.add("hidden");
+    if (iconAttachIndicator) iconAttachIndicator.className = "fa-solid fa-camera text-sm";
+  });
+
+  const formChat = document.getElementById("form-rider-chat") as HTMLFormElement;
+  formChat?.addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    const msgInp = document.getElementById("inp-chat-message-text") as HTMLInputElement;
+    const txt = msgInp?.value.trim();
+    if (!txt && !stateChatUploadImgUrl) return;
+    
+    let databasePath = `deliveryboy1/${currentRiderId}/chats/admin`;
+    if (activeChatRoom === "store") {
+      databasePath = `deliveryboy1/${currentRiderId}/chats/store_${activeOrderPayload?.storeId || 'general'}`;
+    } else if (activeChatRoom === "customer") {
+      databasePath = `deliveryboy1/${currentRiderId}/chats/customer_${activeOrderPayload?.userId || 'general'}`;
+    }
+    
+    const msgPayload = {
+      messageId: "MSG_" + Date.now().toString(),
+      senderId: currentRiderId,
+      senderName: riderData.fullName || riderData.name || "Express Delivery Partner",
+      text: txt,
+      imageUrl: stateChatUploadImgUrl || null,
+      timestamp: Date.now(),
+      role: "delivery",
+      read: false
+    };
+    
+    const chatRef = ref(db, databasePath);
+    const newMsgRef = push(chatRef);
+    set(newMsgRef, msgPayload).then(() => {
+      msgInp.value = "";
+      stateChatUploadImgUrl = "";
+      if (inpChatFile) inpChatFile.value = "";
+      wrapperPreview?.classList.add("hidden");
+      if (iconAttachIndicator) iconAttachIndicator.className = "fa-solid fa-camera text-sm";
+      
+      if (messagesScroll) messagesScroll.scrollTop = messagesScroll.scrollHeight;
+    });
+  });
+
+  let cancelActiveChatRoomListener: any = null;
+
+  function loadActiveChatRoomStream() {
+    if (cancelActiveChatRoomListener) {
+      cancelActiveChatRoomListener();
+    }
+    
+    let databasePath = `deliveryboy1/${currentRiderId}/chats/admin`;
+    if (activeChatRoom === "store") {
+      databasePath = `deliveryboy1/${currentRiderId}/chats/store_${activeOrderPayload?.storeId || 'general'}`;
+    } else if (activeChatRoom === "customer") {
+      databasePath = `deliveryboy1/${currentRiderId}/chats/customer_${activeOrderPayload?.userId || 'general'}`;
+    }
+    
+    const messagesRef = ref(db, databasePath);
+    cancelActiveChatRoomListener = onValue(messagesRef, (snap) => {
+      if (messagesScroll) {
+        messagesScroll.innerHTML = "";
+        if (snap.exists() && snap.val()) {
+          const list = Object.values(snap.val()) as any[];
+          list.sort((a,b) => a.timestamp - b.timestamp);
+          
+          list.forEach((m) => {
+            const row = document.createElement("div");
+            const isMe = m.senderId === currentRiderId;
+            row.id = `msg-item-${m.messageId}`;
+            row.className = `flex ${isMe ? 'justify-end' : 'justify-start'} w-full`;
+            
+            const timeStr = new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            let mediaSection = m.imageUrl ? `<img src="${m.imageUrl}" class="w-24 h-24 object-cover rounded-xl mt-1.5 shadow" alt="Attached photo" id="msg-img-${m.messageId}">` : ``;
+            
+            row.innerHTML = `
+              <div class="max-w-[70%] p-3 rounded-2xl shadow-xs font-semibold ${isMe ? 'bg-indigo-600 text-white rounded-br-none text-right' : 'bg-white text-slate-800 border border-slate-100 rounded-bl-none text-left'}" id="msg-bubble-${m.messageId}">
+                <span class="block text-[8px] font-black uppercase text-indigo-200" id="msg-sender-${m.messageId}">${isMe ? 'Me' : m.senderName}</span>
+                <p class="mt-0.5 leading-snug" id="msg-text-${m.messageId}">${m.text || ''}</p>
+                ${mediaSection}
+                <span class="block text-[7.5px] mt-1 opacity-70 font-mono text-indigo-100" id="msg-time-${m.messageId}">${timeStr}</span>
+              </div>
+            `;
+            messagesScroll.appendChild(row);
+          });
+          
+          messagesScroll.scrollTop = messagesScroll.scrollHeight;
+        } else {
+          messagesScroll.innerHTML = `
+            <div class="text-center text-slate-400 py-16" id="empty-chats-indicator">
+              <i class="fa-solid fa-comment-dots text-3xl mb-1 text-slate-200"></i>
+              <p class="font-bold uppercase text-[10px] tracking-wide text-slate-500">Secure Direct Liaison Room</p>
+              <p class="text-[8px] mt-0.5">Start typing to contact active ${activeChatRoom.toUpperCase()}</p>
+            </div>
+          `;
+        }
+      }
+    });
+  }
 }

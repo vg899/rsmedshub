@@ -428,18 +428,42 @@
                   <option value="Night">Night (11:00 PM - 07:00 AM)</option>
                 </select>
               </div>
-              <div class="flex items-end">
+              <div class="flex items-end text-left">
                 <button id="btn-toggle-attendance" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-2 rounded-xl text-[9px] uppercase tracking-wider font-display shrink-0 active:scale-95 transition-all cursor-pointer">
                   Check-In Shift
                 </button>
               </div>
             </div>
 
-            <!-- Live Timings Log -->
-            <div class="bg-slate-50 rounded-xl p-2 text-[9px] text-slate-500 flex items-center justify-between font-mono font-bold leading-none border border-slate-100">
-              <span>Shift: <strong id="lbl-shift-display" class="text-slate-700">03:00 PM - 11:00 PM</strong></span>
-              <span>Check-In: <span id="lbl-duty-checkin-time" class="text-indigo-600">--:--</span></span>
+            <!-- Intermediary Break Controls system -->
+            <div class="grid grid-cols-2 gap-2 mt-1">
+              <button id="btn-start-break" class="py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 font-extrabold text-[8.5px] rounded-xl uppercase transition-all shadow-2xs cursor-pointer flex items-center justify-center gap-1 active:scale-95">
+                <i class="fa-solid fa-mug-hot text-amber-500 animate-pulse"></i>Break Start
+              </button>
+              <button id="btn-end-break" class="py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-extrabold text-[8.5px] rounded-xl uppercase transition-all shadow-2xs cursor-pointer flex items-center justify-center gap-1 active:scale-95">
+                <i class="fa-solid fa-play text-emerald-500"></i>Break End
+              </button>
             </div>
+
+            <!-- Live Attendance Details Logs Grid -->
+            <div class="grid grid-cols-2 gap-2 bg-slate-50 rounded-xl p-2.5 border border-slate-100 text-[9px] font-mono font-bold text-slate-600 leading-tight select-none">
+              <div class="space-y-1">
+                <p>Check-In: <span id="lbl-duty-checkin-time" class="text-indigo-600">--:--</span></p>
+                <p>Work Hours: <span id="lbl-duty-working-hours" class="text-slate-800">0.0 hrs</span></p>
+              </div>
+              <div class="space-y-1">
+                <p>Break Duration: <span id="lbl-duty-break-time" class="text-amber-600">0m</span></p>
+                <p>Attendance Score: <span id="lbl-attendance-percentage" class="text-emerald-600 font-black">100%</span></p>
+              </div>
+            </div>
+
+            <!-- Expanded Attendance history details -->
+            <details class="bg-white border border-slate-150/40 rounded-xl p-2 text-[9px] font-sans font-bold text-slate-500">
+              <summary class="cursor-pointer select-none outline-none uppercase text-indigo-700 font-sans tracking-wide">View Shift History Log</summary>
+              <div id="cnt-attendance-history-list" class="space-y-1.5 mt-2 max-h-24 overflow-y-auto no-scrollbar font-sans font-semibold">
+                <p class="text-[8px] text-slate-400 font-bold text-center py-1 uppercase">No shift history logged today.</p>
+              </div>
+            </details>
           </div>
         </div>
 
@@ -493,11 +517,188 @@
               <span class="absolute top-0 right-0 w-2.5 h-2.5 rounded-full bg-indigo-500 animate-ping"></span>
             </div>
             <div class="space-y-1">
-              <h4 class="text-xs font-black text-slate-705 tracking-wider uppercase font-display text-slate-705">No Active Transit Order</h4>
+              <h4 class="text-xs font-black text-slate-705 tracking-wider uppercase font-display">No Active Transit Order</h4>
               <p class="text-[9.5px] text-slate-400 leading-normal max-w-[240px] font-medium mx-auto">Waiting for nearby pharmacies. Your Online duty state is currently active</p>
             </div>
           </div>
         </div>
+
+        <!-- RIDER RANKING & BENEFITS CARD -->
+        <div class="bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-2xl p-3.5 border border-indigo-500/15 shadow-sm text-left text-xs select-none relative overflow-hidden animate-fade-in">
+          <div class="absolute right-3 top-3 opacity-15 text-5xl">
+            <i id="lbl-rank-icon" class="fa-solid fa-medal text-amber-500"></i>
+          </div>
+          <div class="flex items-center justify-between">
+            <div class="space-y-0.5">
+              <span class="text-[8px] text-indigo-300 font-extrabold uppercase tracking-widest font-display">RIDER PROTOCOL RANK</span>
+              <h3 id="lbl-current-rank" class="text-xs font-black uppercase text-amber-400 tracking-tight font-display">Bronze Level</h3>
+            </div>
+            <span id="lbl-next-rank-badge" class="px-2 py-0.5 rounded bg-white/10 text-white font-extrabold text-[8px] uppercase font-mono tracking-wider border border-white/10">Silver Next</span>
+          </div>
+
+          <!-- Rank Progress Meter Bar -->
+          <div class="mt-3.5 space-y-1">
+            <div class="flex justify-between text-[8px] text-slate-300 font-semibold tracking-wide uppercase">
+              <span>Next Rank Progress</span>
+              <span id="lbl-rank-progress-text" class="font-mono">0 / 10 Deliveries</span>
+            </div>
+            <div class="h-1.5 w-full bg-white/10 rounded-full relative overflow-hidden">
+              <div id="lbl-rank-progress-bar" class="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full transition-all duration-500" style="width: 10%"></div>
+            </div>
+          </div>
+
+          <!-- Rank Benefits metrics grid -->
+          <div class="grid grid-cols-4 gap-1.5 mt-3 border-t border-white/5 pt-2 text-[8px] text-slate-300 font-mono font-bold uppercase select-none">
+            <div>
+              <p class="text-slate-500 text-[6.5px] leading-tight mb-0.5">Rating min</p>
+              <span id="lbl-rank-metric-rating" class="text-white">4.5 ★</span>
+            </div>
+            <div>
+              <p class="text-slate-500 text-[6.5px] leading-tight mb-0.5">Accept Rate</p>
+              <span id="lbl-rank-metric-acceptance" class="text-white">95%</span>
+            </div>
+            <div>
+              <p class="text-slate-500 text-[6.5px] leading-tight mb-0.5">Success Rate</p>
+              <span id="lbl-rank-metric-success" class="text-white">98%</span>
+            </div>
+            <div>
+              <p class="text-slate-500 text-[6.5px] leading-tight mb-0.5">Deliveries</p>
+              <span id="lbl-rank-metric-total" class="text-white font-mono">0</span>
+            </div>
+          </div>
+          
+          <div class="mt-2 bg-indigo-500/10 p-1.5 rounded-lg border border-indigo-400/10 text-[8px] leading-tight text-indigo-200 font-sans">
+            🎁 Current Benefits: <strong id="lbl-rank-benefits" class="text-white">Standard Delivery Payout, basic tech support SLA.</strong>
+          </div>
+        </div>
+
+        <!-- DAILY TARGET & MILESTONES PROGRESS SYSTEM -->
+        <div class="bg-white rounded-2xl p-3.5 border border-slate-100 shadow-2xs space-y-3.5 text-left text-xs select-none">
+          <div class="flex items-center justify-between border-b border-slate-50 pb-2 leading-none">
+            <h4 class="text-xs font-black text-slate-800 uppercase font-display tracking-wider flex items-center gap-1.5">
+              <i class="fa-solid fa-circle-bullseye text-indigo-600 animate-pulse"></i> Operational Delivery Targets
+            </h4>
+            <span class="text-[8.5px] bg-emerald-50 text-emerald-700 font-black px-1.5 py-0.5 rounded border border-emerald-100 uppercase">Rewards Active</span>
+          </div>
+
+          <div class="grid grid-cols-1 gap-3.5">
+            <!-- Daily target progress bar -->
+            <div class="space-y-1">
+              <div class="flex justify-between text-[9px] font-black uppercase text-slate-400 font-mono">
+                <span>Daily Target</span>
+                <span id="lbl-target-daily-text">0 / 10 Completed</span>
+              </div>
+              <div class="h-2 bg-slate-100 rounded-full w-full overflow-hidden">
+                <div id="lbl-target-daily-bar" class="h-full bg-indigo-600 rounded-full transition-all duration-300" style="width: 0%"></div>
+              </div>
+            </div>
+
+            <!-- Weekly and Monthly target grid -->
+            <div class="grid grid-cols-2 gap-3 pb-0.5">
+              <div class="p-2.5 bg-slate-50 border border-slate-100 rounded-xl space-y-1.5">
+                <div class="flex justify-between text-[8px] font-black uppercase text-slate-400 font-mono">
+                  <span>Weekly</span>
+                  <span id="lbl-target-weekly-text">0 / 50</span>
+                </div>
+                <div class="h-1 bg-slate-200 rounded-full w-full overflow-hidden">
+                  <div id="lbl-target-weekly-bar" class="h-full bg-emerald-500 rounded-full" style="width: 0%"></div>
+                </div>
+              </div>
+              <div class="p-2.5 bg-slate-50 border border-slate-100 rounded-xl space-y-1.5">
+                <div class="flex justify-between text-[8px] font-black uppercase text-slate-400 font-mono">
+                  <span>Monthly</span>
+                  <span id="lbl-target-monthly-text">0 / 200</span>
+                </div>
+                <div class="h-1 bg-slate-200 rounded-full w-full overflow-hidden">
+                  <div id="lbl-target-monthly-bar" class="h-full bg-amber-500 rounded-full" style="width: 0%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- DYNAMIC INCENTIVE ENGINE & REWARDS MODULE -->
+        <button onclick="document.getElementById('incentive-engine-collapse').classList.toggle('hidden')" class="w-full bg-white rounded-2xl p-3.5 border border-slate-100 shadow-2xs flex items-center justify-between text-xs font-semibold leading-none text-left">
+          <h4 class="text-xs font-black text-slate-800 uppercase font-display tracking-wider flex items-center gap-1.5 leading-none">
+            <i class="fa-solid fa-gift text-teal-600 mr-0.5 animate-bounce"></i> Real-time Incentives Engine
+          </h4>
+          <span class="text-[9px] text-indigo-600 font-extrabold uppercase shrink-0 flex items-center gap-1">Open meter <i class="fa-solid fa-chevron-down text-[8px]"></i></span>
+        </button>
+
+        <div id="incentive-engine-collapse" class="hidden bg-white/50 border border-slate-100 rounded-2xl p-3.5 space-y-3.5 text-left text-xs shadow-2xs">
+          <!-- Multi tier display -->
+          <div class="grid grid-cols-4 gap-1.5 text-center select-none leading-none">
+            <div class="bg-white p-2 border border-slate-100 rounded-xl flex flex-col justify-between h-14">
+              <span class="text-[7.5px] text-slate-400 font-bold block">10 Trips</span>
+              <p class="font-bold text-[10px] text-slate-805 font-mono mt-1">+₹100</p>
+              <span id="lbl-incentive-milestone-10" class="text-[7px] text-slate-400 font-black block uppercase tracking-tight">Locked</span>
+            </div>
+            <div class="bg-white p-2 border border-slate-100 rounded-xl flex flex-col justify-between h-14">
+              <span class="text-[7.5px] text-slate-400 font-bold block">25 Trips</span>
+              <p class="font-bold text-[10px] text-slate-805 font-mono mt-1">+₹300</p>
+              <span id="lbl-incentive-milestone-21" class="text-[7px] text-slate-400 font-black block uppercase tracking-tight">Locked</span>
+            </div>
+            <div class="bg-white p-2 border border-slate-100 rounded-xl flex flex-col justify-between h-14">
+              <span class="text-[7.5px] text-slate-400 font-bold block">50 Trips</span>
+              <p class="font-bold text-[10px] text-slate-805 font-mono mt-1">+₹800</p>
+              <span id="lbl-incentive-milestone-50" class="text-[7px] text-slate-400 font-black block uppercase tracking-tight">Locked</span>
+            </div>
+            <div class="bg-white p-2 border border-slate-100 rounded-xl flex flex-col justify-between h-14">
+              <span class="text-[7.5px] text-slate-400 font-bold block">100 Trips</span>
+              <p class="font-bold text-[10px] text-slate-805 font-mono mt-1">+₹2000</p>
+              <span id="lbl-incentive-milestone-100" class="text-[7px] text-slate-400 font-black block uppercase tracking-tight">Locked</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-4 gap-2 border-t border-slate-50 pt-3 select-none leading-none">
+            <div class="bg-white/40 p-2.5 rounded-xl border border-slate-50/50">
+              <span class="block text-[7px] font-bold text-slate-405 uppercase">Daily</span>
+              <strong id="lbl-inc-daily" class="font-bold text-[10px] text-slate-800 font-mono mt-1 block">₹0</strong>
+            </div>
+            <div class="bg-white/40 p-2.5 rounded-xl border border-slate-50/50">
+              <span class="block text-[7px] font-bold text-slate-405 uppercase">Weekly</span>
+              <strong id="lbl-inc-weekly" class="font-bold text-[10px] text-slate-800 font-mono mt-1 block">₹0</strong>
+            </div>
+            <div class="bg-white/40 p-2.5 rounded-xl border border-slate-50/50">
+              <span class="block text-[7px] font-bold text-slate-405 uppercase">Monthly</span>
+              <strong id="lbl-inc-monthly" class="font-bold text-[10px] text-slate-800 font-mono mt-1 block">₹0</strong>
+            </div>
+            <div class="bg-white/40 p-2.5 rounded-xl border border-slate-50/50">
+              <span class="block text-[7px] font-bold text-slate-405 uppercase">Lifetime</span>
+              <strong id="lbl-inc-lifetime" class="font-bold text-[10px] text-slate-800 font-mono mt-1 block">₹0</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- ACHIEVEMENT BADGES SHELF -->
+        <details class="bg-white rounded-2xl p-3.5 border border-slate-100 shadow-2xs text-left text-xs select-none">
+          <summary class="cursor-pointer select-none outline-none font-bold text-slate-800 uppercase font-display tracking-wider flex items-center justify-between">
+            <span class="flex items-center gap-1.5"><i class="fa-solid fa-ribbon text-indigo-500"></i> Career Achievements Badge Shelf</span>
+            <span class="text-[8px] uppercase text-indigo-650 font-black shrink-0 font-sans">View Badges</span>
+          </summary>
+          <div class="grid grid-cols-5 gap-2 mt-3 select-none text-center">
+            <div id="badge-carrier-1" class="p-1 filter grayscale flex flex-col items-center justify-center">
+              <div class="w-10 h-10 rounded-full bg-slate-50 ring-2 ring-indigo-500/10 flex items-center justify-center text-indigo-600 mb-1 leading-none text-xs"><i class="fa-solid fa-rocket"></i></div>
+              <span class="text-[7px] font-black uppercase text-slate-500 block leading-none">Rookie</span>
+            </div>
+            <div id="badge-carrier-100" class="p-1 filter grayscale flex flex-col items-center justify-center">
+              <div class="w-10 h-10 rounded-full bg-slate-50 ring-2 ring-indigo-500/10 flex items-center justify-center text-teal-600 mb-1 leading-none text-xs"><i class="fa-solid fa-shield-halved"></i></div>
+              <span class="text-[7px] font-black uppercase text-slate-500 block leading-none">Centurion</span>
+            </div>
+            <div id="badge-carrier-500" class="p-1 filter grayscale flex flex-col items-center justify-center">
+              <div class="w-10 h-10 rounded-full bg-slate-50 ring-2 ring-indigo-500/10 flex items-center justify-center text-amber-500 mb-1 leading-none text-xs"><i class="fa-solid fa-crown"></i></div>
+              <span class="text-[7px] font-black uppercase text-slate-500 block leading-none">Legend</span>
+            </div>
+            <div id="badge-carrier-1000" class="p-1 filter grayscale flex flex-col items-center justify-center">
+              <div class="w-10 h-10 rounded-full bg-slate-50 ring-2 ring-indigo-500/10 flex items-center justify-center text-rose-500 mb-1 leading-none text-xs"><i class="fa-solid fa-meteor"></i></div>
+              <span class="text-[7px] font-black uppercase text-slate-500 block leading-none">Lord</span>
+            </div>
+            <div id="badge-carrier-rating" class="p-1 filter grayscale flex flex-col items-center justify-center">
+              <div class="w-10 h-10 rounded-full bg-slate-50 ring-2 ring-indigo-500/10 flex items-center justify-center text-emerald-600 mb-1 leading-none text-xs"><i class="fa-solid fa-thumbs-up"></i></div>
+              <span class="text-[7px] font-black uppercase text-slate-500 block leading-none">Top Rated</span>
+            </div>
+          </div>
+        </details>
 
         <!-- My Tasks Section (Screen 1 Style) -->
         <div class="space-y-2 text-left">
@@ -656,6 +857,32 @@
           </div>
         </div>
 
+        <!-- MAPPLS ROUTE OPTIMIZATION AND ETA PREDICTOR CARD -->
+        <div class="bg-white rounded-3xl border border-slate-150/40 p-4 shadow-sm space-y-3.5 text-left text-xs select-none relative overflow-hidden">
+          <div class="flex items-center justify-between border-b border-slate-50 pb-2 leading-none">
+            <span class="text-[10.5px] font-black text-slate-905 tracking-wider uppercase font-display flex items-center gap-1.5"><i class="fa-solid fa-route text-indigo-600"></i> Mappls AI Route Optimizer</span>
+            <span class="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 font-extrabold text-[8px] uppercase tracking-wide">Optimization Active</span>
+          </div>
+
+          <div class="grid grid-cols-3 gap-1 px-0.5">
+            <button id="btn-route-opt-fast" class="py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-[8px] rounded-lg uppercase transition-all select-none cursor-pointer text-center">Fastest</button>
+            <button id="btn-route-opt-short" class="py-1.5 bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-600 font-extrabold text-[8px] rounded-lg uppercase transition-all select-none cursor-pointer text-center">Shortest</button>
+            <button id="btn-route-opt-traffic" class="py-1.5 bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-650 font-extrabold text-[8px] rounded-lg uppercase transition-all select-none cursor-pointer text-center">Traffic-Aware</button>
+          </div>
+
+          <!-- Optimization Output Stats -->
+          <div class="grid grid-cols-2 gap-2 bg-indigo-50/20 border border-indigo-100/30 p-2.5 rounded-2xl text-[9px] font-mono font-bold leading-normal text-indigo-900 select-none">
+            <div class="space-y-1">
+              <p><i class="fa-solid fa-clock text-indigo-500 mr-0.5"></i> Time Saved: <strong id="lbl-route-saved-time" class="text-indigo-905">4.8 min</strong></p>
+              <p><i class="fa-solid fa-road text-indigo-500 mr-0.5"></i> Dist Saved: <strong id="lbl-route-saved-dist" class="text-indigo-905">1.1 km</strong></p>
+            </div>
+            <div class="space-y-1 text-right">
+              <p>Mappls ETA: <strong id="lbl-route-eta" class="text-indigo-900">12 mins</strong></p>
+              <p>Opt Type: <strong id="lbl-route-engine-status" class="text-emerald-600 font-bold uppercase">Fastest</strong></p>
+            </div>
+          </div>
+        </div>
+
         <!-- Pickup Pharmacy Details Card -->
         <div class="bg-white rounded-3xl border border-slate-100 p-4 shadow-sm space-y-3 font-medium text-xs">
           <div class="p-3 bg-indigo-50/30 rounded-2xl border border-indigo-100/50 space-y-1">
@@ -753,18 +980,81 @@
       <!-- ==================== TAB D: SETTLEMENTS TERMINAL ==================== -->
       <section id="tab-settlements" class="px-4 py-4 space-y-5 flex-1 hidden">
         
-        <!-- Pending stats overlay card -->
-        <div class="bg-gradient-to-r from-indigo-700 to-indigo-800 p-4 text-white rounded-3xl shadow-lg relative overflow-hidden">
-          <div class="absolute -right-6 -bottom-6 opacity-10 text-8xl text-white/10 shrink-0">
-            <i class="fa-solid fa-indian-rupee-sign"></i>
+        <!-- RIDER WALLET CENTER -->
+        <div class="space-y-3 select-none">
+          <div class="flex items-center justify-between">
+            <span class="text-[9px] font-black tracking-widest uppercase text-slate-400 font-display">Rider Wallet Center</span>
+            <span class="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100 font-black text-[8px] uppercase font-mono tracking-wider">5 Sub-wallets Live</span>
           </div>
-          <div class="space-y-1 relative z-10">
-            <span class="text-[9px] font-black tracking-widest uppercase text-indigo-300 font-display">Unsettled Rider Dues</span>
-            <div class="flex items-baseline gap-1">
-              <h2 id="lbl-settle-payout-balance" class="text-2xl font-black font-display font-mono">₹0</h2>
-              <span class="text-[9px] text-indigo-200">Pending disbursement</span>
+
+          <!-- Master Balances card -->
+          <div class="bg-gradient-to-r from-indigo-700 to-indigo-850 text-white rounded-3xl p-4.5 shadow-lg relative overflow-hidden">
+            <div class="absolute -right-6 -bottom-6 opacity-10 text-8xl text-white pointer-events-none select-none">
+              <i class="fa-solid fa-wallet"></i>
             </div>
-            <p class="text-[8.5px] leading-relaxed text-indigo-100 font-medium">To withdraw, initialize settlement request processing below. Claims are reviewed within 24 hours.</p>
+            <div class="grid grid-cols-3 gap-2 text-left relative z-10 border-b border-white/10 pb-3">
+              <div>
+                <p class="text-[7.5px] text-indigo-200 font-black uppercase tracking-wider mb-1">Available to request</p>
+                <h3 id="lbl-wallet-available" class="text-base font-black font-mono">₹0</h3>
+              </div>
+              <div>
+                <p class="text-[7.5px] text-indigo-200 font-black uppercase tracking-wider mb-1">Pending Approval</p>
+                <h3 id="lbl-wallet-pending" class="text-base font-black font-mono text-amber-300">₹0</h3>
+              </div>
+              <div>
+                <p class="text-[7.5px] text-indigo-200 font-black uppercase tracking-wider mb-1">Withdrawable Limit</p>
+                <h3 id="lbl-wallet-withdrawable" class="text-base font-black font-mono text-emerald-355 text-emerald-400">₹0</h3>
+              </div>
+            </div>
+            <p class="text-[8px] text-indigo-100 mt-2.5 leading-normal font-sans">Set UPI / Bank account parameters below and request instant payout claim settlement requests.</p>
+          </div>
+
+          <!-- Grid of Wallet Types -->
+          <div class="grid grid-cols-2 gap-2 text-left font-semibold text-xs leading-none">
+            <!-- 1. Main Earnings Wallet -->
+            <div class="bg-white rounded-2xl p-3 border border-slate-100 shadow-2xs space-y-1">
+              <div class="flex justify-between items-center text-[7.5px] text-slate-400 font-black uppercase tracking-wider">
+                <span>Main Earnings</span>
+                <i class="fa-solid fa-money-check-dollar text-indigo-500"></i>
+              </div>
+              <h4 id="lbl-wallet-main" class="text-sm font-black text-slate-805 font-mono mt-0.5">₹0</h4>
+              <p class="text-[7px] text-slate-400 mt-1 font-sans">Base trup margins</p>
+            </div>
+            <!-- 2. Incentive Wallet -->
+            <div class="bg-white rounded-2xl p-3 border border-slate-100 shadow-2xs space-y-1">
+              <div class="flex justify-between items-center text-[7.5px] text-slate-400 font-black uppercase tracking-wider">
+                <span>Incentive Pocket</span>
+                <i class="fa-solid fa-gift text-amber-500"></i>
+              </div>
+              <h4 id="lbl-wallet-incentive" class="text-sm font-black text-slate-805 font-mono mt-0.5">₹0</h4>
+              <p class="text-[7px] text-slate-400 mt-1 font-sans">Trips milestone payouts</p>
+            </div>
+            <!-- 3. Bonus Wallet -->
+            <div class="bg-white rounded-2xl p-3 border border-slate-100 shadow-2xs space-y-1">
+              <div class="flex justify-between items-center text-[7.5px] text-slate-400 font-black uppercase tracking-wider">
+                <span>Bonus & Special</span>
+                <i class="fa-solid fa-award text-rose-550 mr-0.5 text-rose-500"></i>
+              </div>
+              <h4 id="lbl-wallet-bonus" class="text-sm font-black text-slate-805 font-mono mt-0.5">₹0</h4>
+              <p class="text-[7px] text-slate-400 mt-1 font-sans">Rain & festival metrics</p>
+            </div>
+            <!-- 4. Referral Wallet -->
+            <div class="bg-white rounded-2xl p-3 border border-slate-100 shadow-2xs space-y-1">
+              <div class="flex justify-between items-center text-[7.5px] text-slate-400 font-black uppercase tracking-wider">
+                <span>Referrals Balance</span>
+                <i class="fa-solid fa-people-group text-slate-400"></i>
+              </div>
+              <h4 id="lbl-wallet-referral" class="text-sm font-black text-slate-805 font-mono mt-0.5">₹0</h4>
+              <p class="text-[7px] text-slate-400 mt-1 font-sans">Partner referral payouts</p>
+            </div>
+          </div>
+          <!-- 5. COD Cash Managed Wallet -->
+          <div class="bg-amber-50/20 border border-amber-100 rounded-2xl p-3 flex justify-between items-center">
+            <div class="space-y-0.5">
+              <span class="text-[7.5px] text-amber-800 font-black uppercase tracking-wider">COD Cash Managed (In-pocket)</span>
+              <p class="text-[10px] text-slate-500 font-sans">Cash collected from COD drug bookings</p>
+            </div>
+            <strong id="lbl-settlements-cod-collected" class="text-sm font-black text-amber-850 font-mono">₹0</strong>
           </div>
         </div>
 
@@ -1018,6 +1308,91 @@
           </div>
         </div>
 
+        <!-- VEHICLE MANAGEMENT CENTER -->
+        <div class="bg-white rounded-3xl p-4 border border-slate-100 shadow-sm space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-50 pb-2">
+            <h4 class="text-xs font-extrabold text-slate-900 uppercase font-display tracking-widest">
+              Vehicle Management Center
+            </h4>
+            <span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-100 font-extrabold text-[8px] uppercase tracking-wider">REGULATORY COMPLIANT</span>
+          </div>
+
+          <div class="space-y-3">
+            <div class="p-3 bg-indigo-50/20 border border-indigo-100/30 rounded-2xl grid grid-cols-2 gap-3 text-xs font-semibold">
+              <div>
+                <p class="text-slate-500 text-[8px] uppercase mb-0.5">Vehicle Model Type</p>
+                <input type="text" id="inp-profile-vehicle-type" placeholder="e.g. EV Scooter" class="w-full bg-white border border-slate-200 rounded-lg p-1.5 text-[10px] text-slate-800 focus:border-indigo-500 outline-none">
+              </div>
+              <div>
+                <p class="text-slate-500 text-[8px] uppercase mb-0.5">Registration Number</p>
+                <input type="text" id="inp-profile-vehicle-number" placeholder="e.g. KA51ED1022" class="w-full bg-white border border-slate-200 rounded-lg p-1.5 text-[10px] text-slate-800 uppercase focus:border-indigo-500 outline-none">
+              </div>
+            </div>
+
+            <!-- Upload Forms & expiration dates -->
+            <div class="space-y-2.5 text-[10px] font-semibold text-slate-700 text-left">
+              <!-- RC upload -->
+              <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
+                <div class="flex justify-between items-center">
+                  <span class="font-extrabold font-sans uppercase">Registration Certificate (RC)</span>
+                  <span id="lbl-vehicle-rc-alert" class="px-1.5 py-0.5 rounded text-[8px] uppercase font-black bg-emerald-50 text-emerald-700 border border-emerald-100">Active</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="block text-[7px] text-slate-400 uppercase font-black">RC Expiry Date</label>
+                    <input type="date" id="inp-vehicle-rc-expiry" class="w-full bg-white border border-slate-200 rounded-xl p-1 font-mono text-[9px] text-slate-800 outline-none">
+                  </div>
+                  <div class="relative h-10 border border-dashed border-slate-200 rounded-xl flex items-center justify-center cursor-pointer bg-white">
+                    <span id="lbl-vehicle-rc-status" class="text-[8px] text-slate-500 font-extrabold">Upload RC Copy</span>
+                    <input type="file" id="inp-vehicle-rc-file" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Insurance upload -->
+              <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
+                <div class="flex justify-between items-center">
+                  <span class="font-extrabold font-sans uppercase">Insurance Policy</span>
+                  <span id="lbl-vehicle-ins-alert" class="px-1.5 py-0.5 rounded text-[8px] uppercase font-black bg-emerald-50 text-emerald-700 border border-emerald-100">Active</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="block text-[7px] text-slate-400 uppercase font-black">Insurance Expiry</label>
+                    <input type="date" id="inp-vehicle-ins-expiry" class="w-full bg-white border border-slate-200 rounded-xl p-1 font-mono text-[9px] text-slate-800 outline-none">
+                  </div>
+                  <div class="relative h-10 border border-dashed border-slate-200 rounded-xl flex items-center justify-center cursor-pointer bg-white">
+                    <span id="lbl-vehicle-ins-status" class="text-[8px] text-slate-500 font-extrabold">Upload Policy</span>
+                    <input type="file" id="inp-vehicle-ins-file" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer">
+                  </div>
+                </div>
+              </div>
+
+              <!-- PUC upload -->
+              <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
+                <div class="flex justify-between items-center">
+                  <span class="font-extrabold font-sans uppercase">Pollution Certificate (PUC)</span>
+                  <span id="lbl-vehicle-puc-alert" class="px-1.5 py-0.5 rounded text-[8px] uppercase font-black bg-emerald-50 text-emerald-700 border border-emerald-100">Active</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="block text-[7px] text-slate-400 uppercase font-black">PUC Expiry</label>
+                    <input type="date" id="inp-vehicle-puc-expiry" class="w-full bg-white border border-slate-200 rounded-xl p-1 font-mono text-[9px] text-slate-800 outline-none">
+                  </div>
+                  <div class="relative h-10 border border-dashed border-slate-200 rounded-xl flex items-center justify-center cursor-pointer bg-white">
+                    <span id="lbl-vehicle-puc-status" class="text-[8px] text-slate-500 font-extrabold">Upload PUC</span>
+                    <input type="file" id="inp-vehicle-puc-file" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Save details button -->
+            <button id="btn-save-vehicle-profile" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-extrabold py-2 rounded-xl text-[10px] uppercase tracking-wide font-display active:scale-95 transition-all cursor-pointer">
+              Save Vehicle parameters
+            </button>
+          </div>
+        </div>
+
       </section>
 
     </div>
@@ -1057,6 +1432,199 @@
         </button>
       </div>
     </nav>
+
+
+    <!-- ============================================== -->
+    <!-- FLOATING FLOATER CHANNELS & EMERGENCY CONTROLS -->
+    <!-- ============================================== -->
+    <!-- Floating Chat Center Floater -->
+    <button id="flt-chat-btn" class="hidden fixed bottom-36 right-4 w-12 h-12 rounded-full bg-indigo-600 hover:bg-indigo-750 text-white flex items-center justify-center shadow-lg border border-indigo-500 cursor-pointer z-40 active:scale-95 transition-all select-none group">
+      <i class="fa-solid fa-comments text-lg group-hover:scale-110 transition-all"></i>
+      <span class="absolute -top-1 -left-1 bg-rose-650 bg-rose-600 border border-white text-[8px] text-white font-black w-4.5 h-4.5 rounded-full flex items-center justify-center animate-bounce hidden" id="flt-chat-badge">0</span>
+    </button>
+
+    <!-- Floating Panic SOS Alert Floater -->
+    <button id="flt-sos-btn" class="hidden fixed bottom-22 right-4 w-12 h-12 rounded-full bg-rose-600 hover:bg-rose-750 text-white flex items-center justify-center shadow-lg border border-rose-500 cursor-pointer z-40 animate-pulse select-none group">
+      <i class="fa-solid fa-triangle-exclamation text-lg group-hover:scale-110 transition-all"></i>
+    </button>
+
+
+    <!-- ============================================== -->
+    <!-- OVERLAY MODALS & INTERACTION CENTRES           -->
+    <!-- ============================================== -->
+    <!-- 1. SOS PANIC EMERGENCY MODAL OVERLAY -->
+    <div id="modal-sos-emergency" class="hidden fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl relative border border-rose-100 text-left animate-fade-in text-sans text-xs">
+        <button id="btn-close-sos" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-sm cursor-pointer select-none">
+          <i class="fa-solid fa-times"></i>
+        </button>
+
+        <div class="space-y-1 border-b border-rose-50 pb-2.5">
+          <h3 class="text-rose-700 font-black text-sm tracking-tight flex items-center gap-1.5 uppercase font-display select-none">
+            <i class="fa-solid fa-circle-exclamation text-rose-600 animate-pulse text-lg"></i> Rider Distress Center (SOS)
+          </h3>
+          <p class="text-[9px] text-slate-400 font-bold uppercase leading-snug">Emergency operations protocols are active</p>
+        </div>
+
+        <p class="text-[10px] text-slate-500 leading-relaxed font-sans">Triggering an SOS immediately logs critical telemetry under your ID, broadcasts coordinates to MedsHub Dispatch Supervisors, and prompts live support supervisor dialing.</p>
+
+        <div class="grid grid-cols-1 gap-2.5 pt-1.5">
+          <!-- Action A: Medical hotline -->
+          <a href="tel:102" class="p-3 border border-rose-200 bg-rose-50 hover:bg-rose-100/50 rounded-2xl flex items-center gap-3 active:scale-98 transition-all cursor-pointer">
+            <div class="w-8 h-8 rounded-full bg-rose-600 text-white flex items-center justify-center text-sm shadow shrink-0"><i class="fa-solid fa-ambulance"></i></div>
+            <div class="text-left leading-none">
+              <span class="block text-[10.5px] font-black text-rose-800 uppercase tracking-wide">Dial Medical Emergency (102)</span>
+              <span class="text-[8px] text-rose-605 text-rose-550 font-bold block mt-0.5">Launches primary system dialing pad</span>
+            </div>
+          </a>
+
+          <!-- Action B: Notify Admin Real-time -->
+          <button id="btn-sos-notify-admin" class="w-full p-3 border border-indigo-200 bg-indigo-50/50 hover:bg-indigo-100/30 rounded-2xl flex items-center gap-3 text-left active:scale-98 transition-all cursor-pointer">
+            <div class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm shadow shrink-0"><i class="fa-solid fa-headset"></i></div>
+            <div class="leading-none">
+              <span class="block text-[10.5px] font-black text-indigo-900 uppercase tracking-wide">Signal MedsHub Control Center</span>
+              <span class="text-[8px] text-indigo-650 font-bold block mt-0.5" id="lbl-sos-admin-status">Triggers flashing warning on supervisors app</span>
+            </div>
+          </button>
+
+          <!-- Action C: Share coordinates GPS tracking -->
+          <button id="btn-sos-share-gps" class="w-full p-3 border border-teal-200 bg-teal-50/30 hover:bg-teal-50 rounded-2xl flex items-center gap-3 text-left active:scale-98 transition-all cursor-pointer">
+            <div class="w-8 h-8 rounded-full bg-teal-605 bg-teal-600 text-white flex items-center justify-center text-sm shadow shrink-0"><i class="fa-solid fa-location-crosshairs"></i></div>
+            <div class="leading-none">
+              <span class="block text-[10.5px] font-black text-teal-805 text-teal-800 uppercase tracking-wide">Share My Precise Telemetry</span>
+              <span class="text-[8px] text-teal-650 font-bold block mt-0.5" id="lbl-sos-gps-status">Transmits active real-time GPS coordinates</span>
+            </div>
+          </button>
+        </div>
+
+        <div class="p-2.5 bg-rose-50/20 rounded-xl border border-rose-100/40 text-[8px] leading-tight text-rose-700 font-semibold select-none">
+          ⚠️ False triggering of the SOS alert limits courier verification status and triggers mandatory compliance reviews. Keep for actual hazards.
+        </div>
+      </div>
+    </div>
+
+
+    <!-- 2. REAL-TIME CHAT CENTER MODAL OVERLAY -->
+    <div id="modal-rider-chat" class="hidden fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl w-full max-w-sm h-[85vh] flex flex-col shadow-2xl relative border border-slate-100 text-left animate-fade-in text-sans text-xs">
+        <button id="btn-close-chat" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-sm cursor-pointer select-none">
+          <i class="fa-solid fa-times"></i>
+        </button>
+
+        <div class="p-4 border-b border-slate-50 space-y-1">
+          <h3 class="text-indigo-900 font-extrabold text-sm tracking-tight flex items-center gap-1.5 uppercase font-display leading-none select-none">
+            <i class="fa-solid fa-comments text-indigo-500"></i> Rider Chat Center
+          </h3>
+          <p class="text-[9px] text-slate-400 font-bold uppercase leading-none">Real-time messaging channels</p>
+        </div>
+
+        <!-- Chat Channel Select Tabs -->
+        <div class="grid grid-cols-3 border-b border-slate-100 bg-slate-50/80 text-center text-[8.5px] font-black uppercase tracking-wider text-slate-500 font-display select-none">
+          <button id="btn-chat-tab-admin" class="py-2.5 border-b-2 border-indigo-600 text-indigo-700 bg-white font-black cursor-pointer">Admin Desk</button>
+          <button id="btn-chat-tab-store" class="py-2.5 border-b-2 border-transparent hover:text-slate-700 cursor-pointer">Pharmacy</button>
+          <button id="btn-chat-tab-customer" class="py-2.5 border-b-2 border-transparent hover:text-slate-700 cursor-pointer">Customer</button>
+        </div>
+
+        <!-- Chat Conversation Area -->
+        <div id="cnt-chat-messages-scroll" class="flex-1 p-3.5 space-y-3 overflow-y-auto bg-slate-50/30 text-[10px] leading-relaxed">
+          <!-- Messages parsed here -->
+          <div class="text-center text-slate-400 py-16">
+            <i class="fa-solid fa-envelope-open text-2xl mb-1 text-slate-205"></i>
+            <p class="font-bold">No Chat Messages logged</p>
+            <p class="text-[8px] mt-0.5">Select a channel above and type to interact</p>
+          </div>
+        </div>
+
+        <!-- Image preview if any selected upload -->
+        <div id="wrapper-chat-img-preview" class="hidden p-2 bg-slate-100 border-t border-slate-200 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <img id="img-chat-upload-thumbnail" class="w-8 h-8 object-cover rounded-md" alt="Thumb">
+            <span class="text-[8.5px] text-slate-500 font-bold">Image ready for courier transmission ✓</span>
+          </div>
+          <button id="btn-clear-chat-upload" class="text-rose-500 font-black text-xs cursor-pointer"><i class="fa-solid fa-trash"></i></button>
+        </div>
+
+        <!-- Messaging Inputs Footer -->
+        <form id="form-rider-chat" class="p-3 bg-white border-t border-slate-100 flex items-center gap-2">
+          <!-- Attachment camera -->
+          <div class="relative w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 shrink-0 cursor-pointer hover:bg-slate-200 transition-all">
+            <i id="lbl-chat-upload-indicator" class="fa-solid fa-camera text-sm"></i>
+            <input type="file" id="inp-chat-image-file" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer">
+          </div>
+
+          <input type="text" id="inp-chat-message-text" required placeholder="Type secure message..." class="flex-1 bg-slate-50 border border-slate-250/20 focus:border-indigo-500 outline-none rounded-xl py-1.5 px-3 font-semibold text-slate-805 focus:bg-white text-[11px]">
+          
+          <button type="submit" class="w-8 h-8 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center shadow shrink-0 active:scale-95 transition-all cursor-pointer">
+            <i class="fa-solid fa-paper-plane text-xs"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+
+
+    <!-- 3. PHOTO & DRAW DELIVERY PROOF VERIFICATION OVERLAY MODAL -->
+    <div id="modal-delivery-proof" class="hidden fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl w-full max-w-sm p-4.5 space-y-4 shadow-2xl relative border border-emerald-100 text-left animate-fade-in text-sans text-xs flex flex-col max-h-[90vh]">
+        <button id="btn-close-delivery-proof" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-sm cursor-pointer select-none">
+          <i class="fa-solid fa-times"></i>
+        </button>
+
+        <div class="border-b border-emerald-50 pb-2.5 space-y-0.5">
+          <h3 class="text-emerald-700 font-extrabold text-xs tracking-tight flex items-center gap-1.5 uppercase font-display leading-none select-none">
+            <i class="fa-solid fa-shield-check text-emerald-600 text-sm animate-pulse"></i> Handover Proof & Verification
+          </h3>
+          <p class="text-[8.5px] text-slate-405 text-slate-400 font-bold uppercase tracking-wide leading-none">Secure Narcotics & standard drug handover protocols</p>
+        </div>
+
+        <div class="flex-1 overflow-y-auto no-scrollbar space-y-3 pb-2 text-[10px] leading-relaxed">
+          <p class="text-[10px] text-slate-500 font-sans leading-normal">Our system requires physical delivery photo proof plus the confidential OTP sent to the customer before handover can be completed.</p>
+
+          <form id="form-delivery-proof-submit" class="space-y-3.5 text-left text-xs font-semibold">
+            <!-- Part A: Camera Capture Photo proof -->
+            <div class="space-y-1">
+              <label class="block text-[8.5px] font-black uppercase text-slate-400">Step 1: Secure Handover Photo Proof (Cloudinary)</label>
+              <div id="wrapper-proof-camera" class="border border-dashed border-slate-200 h-28 rounded-2xl bg-slate-50/50 flex flex-col items-center justify-center p-2 text-center relative cursor-pointer hover:bg-slate-50 transition-all select-none">
+                <i class="fa-solid fa-camera-retro text-2xl text-slate-400 mb-1" id="icon-proof-camera"></i>
+                <span class="text-[9px] text-slate-500 leading-snug font-extrabold text-slate-500" id="txt-proof-camera">Capture Box Handover Photo</span>
+                <p class="text-[7.5px] text-slate-400 mt-0.5">Focus on pharmacy drug container seal</p>
+                <input type="file" id="inp-proof-photo-file" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" required>
+                <!-- Image Preview element -->
+                <img id="img-proof-photo-preview" class="absolute inset-x-2 inset-y-1.5 w-[92%] h-[90%] object-cover rounded-xl hidden mx-auto" alt="Proof Snap">
+              </div>
+            </div>
+
+            <!-- Part B: Drawing signature pad -->
+            <div class="space-y-1">
+              <div class="flex justify-between items-center text-[8.5px] font-black uppercase text-slate-405 text-slate-400">
+                <span>Step 2: Recipient Signature Drawing pad (Optional)</span>
+                <button type="button" id="btn-clear-sig-pad" class="text-indigo-650 hover:underline uppercase text-[7px] font-black font-sans cursor-pointer focus:outline-none">Clear Pad</button>
+              </div>
+              <div class="border border-slate-200 rounded-2xl bg-slate-100 overflow-hidden relative">
+                <canvas id="sig-pad-canvas" class="w-full h-24 cursor-crosshair bg-white" style="touch-action: none;"></canvas>
+                <p class="absolute bottom-1 right-2 text-[7px] text-slate-400 font-mono select-none pointer-events-none">Reciept Hand Drawn</p>
+              </div>
+            </div>
+
+            <!-- Part C: Verifying Customer OTP -->
+            <div class="space-y-1">
+              <div class="flex justify-between items-center bg-teal-50 text-teal-800 p-2 rounded-lg font-bold border border-teal-100 select-none">
+                <span class="text-[8px] font-black uppercase">Recipient Handover OTP Token</span>
+                <span id="lbl-otp-preview" class="text-[10px] font-mono tracking-widest bg-white rounded-md px-1.5 py-0.5">OTP: ----</span>
+              </div>
+              <div class="mt-1">
+                <label class="block text-[8.5px] font-black uppercase text-slate-400 mb-1">Step 3: Enter 4-Digit Handover OTP</label>
+                <input type="text" id="inp-proof-customer-otp" maxlength="4" placeholder="Enter OTP Token" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-center text-sm font-extrabold tracking-widest outline-none focus:border-emerald-500 focus:bg-white text-slate-805">
+              </div>
+            </div>
+
+            <!-- Submit trigger -->
+            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-2.5 rounded-xl text-[10.5px] uppercase tracking-wide font-display cursor-pointer active:scale-95 transition-all mt-4">
+              Securely Conclude Handover
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
 
 
     <!-- TOAST ELEMENT NOTIFICATIONS DYNAMIC CARDS -->
