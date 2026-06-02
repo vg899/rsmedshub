@@ -90,7 +90,7 @@
         </span>
         <input type="text" id="search-medicine-input" placeholder="Medicine Search" class="w-full pl-10 pr-10 py-3 rounded-full border-none bg-white text-slate-800 outline-none placeholder:text-slate-400 text-xs font-semibold shadow-inner transition-all focus:ring-2 focus:ring-blue-300">
         <!-- Voice-activation placeholder decoration icon -->
-        <span class="absolute inset-y-0 right-0 pr-1.5 flex items-center text-rose-500 hover:scale-105 transition-all cursor-pointer z-10">
+        <span id="btn-voice-search" class="absolute inset-y-0 right-0 pr-1.5 flex items-center text-rose-500 hover:scale-105 transition-all cursor-pointer z-10">
           <i class="fa-solid fa-microphone text-xs bg-rose-50/10 p-2 text-rose-500 hover:bg-rose-50/25 rounded-full transition-all"></i>
         </span>
       </div>
@@ -111,6 +111,84 @@
     <!-- MAIN DASHBOARD CONTENT SCROLLABLE SLEEVE -->
     <section id="user-main-scroll" class="flex-1 overflow-y-auto px-4 py-4 space-y-5 pb-24 custom-scrollbar">
       
+      <!-- TOP DYNAMIC GREETING & LOYALTY STATUS HUD -->
+      <div class="bg-gradient-to-br from-slate-900 to-indigo-950 p-4 rounded-3xl text-white border border-slate-800 shadow-lg space-y-3 animate-fade-in font-sans">
+        <div class="flex justify-between items-start">
+          <div class="space-y-0.5">
+            <span class="text-[9px] uppercase tracking-widest text-indigo-300 font-extrabold" id="home-greeting-prefix">Welcome Back</span>
+            <h1 class="text-base font-black text-white" id="home-greeting-username">Patient User</h1>
+          </div>
+          <div class="text-right">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/10 text-white border border-white/15 rounded-full text-[9px] font-black uppercase tracking-wider cursor-pointer hover:bg-white/20 transition-all select-none" onclick="document.getElementById('btn-opt-coupons').click()">
+              <i class="fa-solid fa-crown text-amber-400"></i>
+              <span id="tier-pill-display">Silver Care</span>
+            </span>
+          </div>
+        </div>
+        
+        <div class="bg-white/5 border border-white/10 p-2.5 rounded-2xl flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-indigo-505 bg-indigo-500/10 flex items-center justify-center text-amber-400 shrink-0 select-none">
+              <i class="fa-solid fa-coins animate-bounce"></i>
+            </div>
+            <div>
+              <p class="text-[9px] text-indigo-200 font-bold leading-none">Meds Coins Balance</p>
+              <h4 class="text-xs font-black text-white mt-1" id="home-coins-display">250 Coins</h4>
+            </div>
+          </div>
+          <span class="text-[8.5px] bg-indigo-500 hover:bg-indigo-600 text-white font-extrabold px-3 py-1 rounded-lg uppercase tracking-wider cursor-pointer" onclick="document.getElementById('btn-opt-coupons').click()">Redeem</span>
+        </div>
+      </div>
+
+      <!-- RED SOS EMERGENCY PATIENT HELP BUTTON -->
+      <div class="bg-rose-50 border border-rose-100 p-3 rounded-2xl flex items-center justify-between gap-3 shadow-3xs animate-fade-in font-sans">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 bg-rose-500 text-white rounded-full flex items-center justify-center animate-pulse text-sm shrink-0">
+            <i class="fa-solid fa-truck-medical"></i>
+          </div>
+          <div class="leading-tight">
+            <h4 class="text-xs font-black text-rose-950 uppercase tracking-wide">Emergency clinical SOS</h4>
+            <p class="text-[9.5px] text-slate-500 mt-0.5">Instant triage: 24/7 pharmacist lines & ambulance links</p>
+          </div>
+        </div>
+        <button id="btn-home-sos-trigger" class="bg-rose-600 hover:bg-rose-700 hover:scale-103 active:scale-97 text-white font-extrabold text-[9px] px-3.5 py-1.5 rounded-xl uppercase tracking-wider transition-all cursor-pointer shadow-sm shadow-rose-300">SOS Trigger</button>
+      </div>
+
+      <!-- 6-CELL HEALTHCARE & RETENTION BENTO GRID -->
+      <div class="grid grid-cols-3 gap-2.5 font-sans">
+        
+        <div class="bg-violet-50 hover:bg-violet-100 border border-violet-100 p-3 rounded-2xl text-center flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all hover:scale-103 active:scale-97" onclick="document.getElementById('btn-opt-ai-assistant').click()">
+          <span class="w-8 h-8 rounded-full bg-violet-600 text-white flex items-center justify-center text-xs shadow-xs"><i class="fa-solid fa-brain"></i></span>
+          <span class="text-[9px] font-black text-violet-950 uppercase tracking-tight leading-tight">AI assistant</span>
+        </div>
+
+        <div class="bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 p-3 rounded-2xl text-center flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all hover:scale-103 active:scale-97" onclick="document.getElementById('btn-opt-prescription-vault').click()">
+          <span class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs shadow-xs"><i class="fa-solid fa-file-prescription"></i></span>
+          <span class="text-[9px] font-black text-emerald-950 uppercase tracking-tight leading-tight">Rx Vault</span>
+        </div>
+
+        <div class="bg-amber-50 hover:bg-amber-100 border border-amber-100 p-3 rounded-2xl text-center flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all hover:scale-103 active:scale-97" onclick="document.getElementById('btn-opt-refill-reminders').click()">
+          <span class="w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs shadow-xs"><i class="fa-solid fa-clock-rotate-left"></i></span>
+          <span class="text-[9px] font-black text-amber-950 uppercase tracking-tight leading-tight">Refill Alarms</span>
+        </div>
+
+        <div class="bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 p-3 rounded-2xl text-center flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all hover:scale-103 active:scale-97" onclick="document.getElementById('btn-opt-family-profiles').click()">
+          <span class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs shadow-xs"><i class="fa-solid fa-people-roof"></i></span>
+          <span class="text-[9px] font-black text-indigo-950 uppercase tracking-tight leading-tight">Fam Profiles</span>
+        </div>
+
+        <div class="bg-cyan-50 hover:bg-cyan-100 border border-cyan-100 p-3 rounded-2xl text-center flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all hover:scale-103 active:scale-97" onclick="document.getElementById('btn-opt-health-records').click()">
+          <span class="w-8 h-8 rounded-full bg-cyan-600 text-white flex items-center justify-center text-xs shadow-xs"><i class="fa-solid fa-folder-open"></i></span>
+          <span class="text-[9px] font-black text-cyan-950 uppercase tracking-tight leading-tight">Health Hub</span>
+        </div>
+
+        <div class="bg-rose-50 hover:bg-rose-100 border border-rose-100 p-3 rounded-2xl text-center flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all hover:scale-103 active:scale-97" onclick="document.getElementById('btn-opt-subscriptions').click()">
+          <span class="w-8 h-8 rounded-full bg-rose-600 text-white flex items-center justify-center text-xs shadow-xs"><i class="fa-solid fa-rotate animate-pulse"></i></span>
+          <span class="text-[9px] font-black text-rose-950 uppercase tracking-tight leading-tight">Refill Cycles</span>
+        </div>
+
+      </div>
+
       <!-- SERVICE UNAVAILABLE VIEW -->
       <div id="service-unavailable-view" class="hidden flex flex-col items-center justify-center text-center p-6 py-10 bg-white border border-rose-100 rounded-3xl shadow-sm space-y-4 animate-fade-in">
         <div class="w-16 h-16 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center border border-rose-105 shadow-xs relative border border-rose-100">
@@ -461,12 +539,72 @@
         </button>
 
         <!-- Menu Option 10: Health Profile -->
-        <button id="btn-opt-health-profile" class="w-full flex items-center justify-between p-3.5 bg-white border border-slate-100 rounded-2xl hover:bg-blue-50/20 hover:border-blue-400/20 hover:shadow-xs transition-all text-left cursor-pointer">
+        <button id="btn-opt-health-profile" class="w-full flex items-center justify-between p-3.5 bg-white border border-slate-100 rounded-2xl hover:bg-blue-50/20 hover:border-blue-400/20 hover:shadow-xs transition-all text-left cursor-pointer font-sans">
           <div class="flex items-center gap-3">
             <span class="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-id-card-clip"></i></span>
             <div>
               <h5 class="text-xs font-black text-slate-800 uppercase tracking-wide">Health Profile</h5>
               <p class="text-[9px] text-slate-400 font-semibold leading-tight mt-0.5">Store Blood group, height, weight, allergies info</p>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-slate-300 text-[10px]"></i>
+        </button>
+
+        <!-- Menu Option 10B: Family Profiles -->
+        <button id="btn-opt-family-profiles" class="w-full flex items-center justify-between p-3.5 bg-white border border-slate-100 rounded-2xl hover:bg-blue-50/20 hover:border-blue-400/20 hover:shadow-xs transition-all text-left cursor-pointer">
+          <div class="flex items-center gap-3">
+            <span class="w-9 h-9 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-people-roof"></i></span>
+            <div>
+              <h5 class="text-xs font-black text-slate-800 uppercase tracking-wide">Family Profiles</h5>
+              <p class="text-[9px] text-slate-400 font-semibold leading-tight mt-0.5">Link family members, medical details, chronic states</p>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-slate-300 text-[10px]"></i>
+        </button>
+
+        <!-- Menu Option 10C: Medicine Refill Reminders -->
+        <button id="btn-opt-refill-reminders" class="w-full flex items-center justify-between p-3.5 bg-white border border-slate-100 rounded-2xl hover:bg-blue-50/20 hover:border-blue-400/20 hover:shadow-xs transition-all text-left cursor-pointer font-sans">
+          <div class="flex items-center gap-3">
+            <span class="w-9 h-9 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-clock-rotate-left"></i></span>
+            <div>
+              <h5 class="text-xs font-black text-slate-800 uppercase tracking-wide">Medicine Refill & Alarms</h5>
+              <p class="text-[9px] text-slate-400 font-semibold leading-tight mt-0.5">Configure custom daily, weekly, or monthly pill reminders</p>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-slate-300 text-[10px]"></i>
+        </button>
+
+        <!-- Menu Option 10D: Prescription Vault -->
+        <button id="btn-opt-prescription-vault" class="w-full flex items-center justify-between p-3.5 bg-white border border-slate-100 rounded-2xl hover:bg-blue-50/20 hover:border-blue-400/20 hover:shadow-xs transition-all text-left cursor-pointer font-sans">
+          <div class="flex items-center gap-3">
+            <span class="w-9 h-9 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-file-prescription"></i></span>
+            <div>
+              <h5 class="text-xs font-black text-slate-800 uppercase tracking-wide">Prescription Vault</h5>
+              <p class="text-[9px] text-slate-400 font-semibold leading-tight mt-0.5">Store prescription slips, view, download or fast reorder</p>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-slate-300 text-[10px]"></i>
+        </button>
+
+        <!-- Menu Option 10E: Health Records Center -->
+        <button id="btn-opt-health-records" class="w-full flex items-center justify-between p-3.5 bg-white border border-slate-100 rounded-2xl hover:bg-blue-50/20 hover:border-blue-400/20 hover:shadow-xs transition-all text-left cursor-pointer font-sans">
+          <div class="flex items-center gap-3">
+            <span class="w-9 h-9 rounded-full bg-cyan-50 text-cyan-600 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-folder-open"></i></span>
+            <div>
+              <h5 class="text-xs font-black text-slate-800 uppercase tracking-wide">Health Records Hub</h5>
+              <p class="text-[9px] text-slate-400 font-semibold leading-tight mt-0.5">Upload, classify & search clinical reports, vaccines or lab diagnostics</p>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-slate-300 text-[10px]"></i>
+        </button>
+
+        <!-- Menu Option 10F: Subscription Medicines -->
+        <button id="btn-opt-subscriptions" class="w-full flex items-center justify-between p-3.5 bg-white border border-slate-100 rounded-2xl hover:bg-blue-50/20 hover:border-blue-400/20 hover:shadow-xs transition-all text-left cursor-pointer font-sans">
+          <div class="flex items-center gap-3">
+            <span class="w-9 h-9 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-rotate"></i></span>
+            <div>
+              <h5 class="text-xs font-black text-slate-800 uppercase tracking-wide">Chronic Refill Cycles</h5>
+              <p class="text-[9px] text-slate-400 font-semibold leading-tight mt-0.5">Manage auto reorder medicines on weekly or monthly cycles</p>
             </div>
           </div>
           <i class="fa-solid fa-chevron-right text-slate-300 text-[10px]"></i>

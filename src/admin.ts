@@ -125,6 +125,7 @@ function initDashboard() {
   initStoreManagementCenter();
 
   // Initialize Advanced Hubs
+  initRiderFinanceCenter();
   initNotificationsCenter();
   initReviewsComplaintsHub();
   initCloudinaryMediaHub();
@@ -268,6 +269,9 @@ function subscribeToStats() {
       renderRidersTable(items);
       if (typeof (window as any).renderVerificationCenter === "function") {
         (window as any).renderVerificationCenter(items);
+      }
+      if (typeof (window as any).recalculateAndRenderFinanceDashboard === "function") {
+        (window as any).recalculateAndRenderFinanceDashboard();
       }
     } catch (err) {
       console.error("Error in onValue(delivery):", err);
@@ -738,6 +742,9 @@ function subscribeToOrders() {
 
       applyOrdersFilter();
       renderSettlementFinance();
+      if (typeof (window as any).recalculateAndRenderFinanceDashboard === "function") {
+        (window as any).recalculateAndRenderFinanceDashboard();
+      }
       buildAnalyticsChart(ordersCache, completedEarnings);
     } catch (err) {
       console.error("Error inside subscribeToOrders:", err);
@@ -3763,6 +3770,175 @@ function inspectPatientDossier(uid: string) {
     }
   }
 
+  // 1. Load active Family health profiles
+  const familyGrid = document.getElementById("usr-inspect-family-grid");
+  if (familyGrid) {
+    familyGrid.innerHTML = `<p class="text-slate-400 text-xs italic py-1 col-span-2">Loading family roster...</p>`;
+    get(ref(db, `users/${uid}/familyProfiles`)).then((snap) => {
+      if (snap.exists()) {
+        const roster = Object.values(snap.val() || {});
+        if (roster.length > 0) {
+          familyGrid.innerHTML = roster.map((mem: any) => `
+            <div class="bg-indigo-50/50 p-3 rounded-xl border border-indigo-150 relative space-y-1">
+              <span class="absolute top-2 right-2 px-1.5 py-0.2 bg-indigo-100 text-indigo-800 text-[8px] font-black rounded uppercase">${mem.relation || "Family"}</span>
+              <h5 class="text-xs font-black text-indigo-950">${mem.name || "Unnamed"}</h5>
+              <p class="text-[9.5px] text-slate-500 font-medium">Age: <span class="font-bold text-slate-700">${mem.age || "N/A"}</span> | Gen: <span class="font-bold text-slate-700">${mem.gender || "N/A"}</span> | Blood: <span class="font-bold font-mono text-indigo-700">${mem.bloodGroup || "O+"}</span></p>
+              ${mem.allergies ? `<p class="text-[9px] text-rose-600 font-bold bg-rose-50 px-1.5 py-0.5 rounded">Allergies: ${mem.allergies}</p>` : ""}
+              ${mem.chronic ? `<p class="text-[9px] text-slate-600 font-medium bg-slate-100 px-1.5 py-0.5 rounded">Chronic: ${mem.chronic}</p>` : ""}
+            </div>
+          `).join("");
+        } else {
+          familyGrid.innerHTML = `<p class="text-slate-400 text-xs italic py-1 col-span-2">No linked family profiles synced with this dossier.</p>`;
+        }
+      } else {
+        familyGrid.innerHTML = `<p class="text-slate-400 text-xs italic py-1 col-span-2">No linked family profiles synced with this dossier.</p>`;
+      }
+    }).catch(() => {
+      familyGrid.innerHTML = `<p class="text-rose-500 text-xs italic py-1 col-span-2">Roster retrieval failed.</p>`;
+    });
+  }
+
+  // 2. Load active recurring medicine subscriptions
+  const subList = document.getElementById("usr-inspect-subscriptions-list");
+  if (subList) {
+    subList.innerHTML = `<p class="text-slate-400 text-xs italic py-1">Loading subscription records...</p>`;
+    get(ref(db, `users/${uid}/subscriptions`)).then((snap) => {
+      if (snap.exists()) {
+        const subs = Object.values(snap.val() || {});
+        if (subs.length > 0) {
+          subList.innerHTML = subs.map((sub: any) => {
+            const nextDelivery = sub.nextDeliveryDate ? new Date(sub.nextDeliveryDate).toLocaleDateString() : "Pending Scheduling";
+            return `
+              <div class="bg-emerald-50/40 p-3 rounded-xl border border-emerald-150 flex items-center justify-between font-semibold flex-wrap gap-2">
+                <div class="space-y-1">
+                  <h5 class="text-xs font-black text-emerald-900">${sub.medicineName || "Prescription Refill Cycle"}</h5>
+                  <p class="text-[9.5px] text-slate-500">Frequency: <span class="text-emerald-700 font-bold uppercase">${sub.frequency || "Monthly"}</span> | Quantity: <span class="font-bold text-slate-700">${sub.quantity || 1} packs</span></p>
+                  <p class="text-[9px] text-slate-400 font-mono">Next Automatic Dispatch: ${nextDelivery}</p>
+                </div>
+                <div class="text-right">
+                  <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[8px] font-black rounded uppercase">Active Refill Plan</span>
+                </div>
+              </div>
+            `;
+          }).join("");
+        } else {
+          subList.innerHTML = `<p class="text-slate-400 text-xs italic py-1">No chronic or periodic medicine refill subscriptions active.</p>`;
+        }
+      } else {
+        subList.innerHTML = `<p class="text-slate-400 text-xs italic py-1">No chronic or periodic medicine refill subscriptions active.</p>`;
+      }
+    }).catch(() => {
+      subList.innerHTML = `<p class="text-rose-500 text-xs italic py-1">Subscription retrieval failed.</p>`;
+    });
+  }
+
+  // 3. Load Prescription Vault files & health documents
+  const recordsGrid = document.getElementById("usr-inspect-records-grid");
+  if (recordsGrid) {
+    recordsGrid.innerHTML = `<p class="text-slate-400 text-xs italic py-1">Retrieving health records storage...</p>`;
+    // Fetch from both nodes and combine
+    Promise.all([
+      get(ref(db, `users/${uid}/prescriptionVault`)),
+      get(ref(db, `users/${uid}/healthRecords`))
+    ]).then(([vaultSnap, healthSnap]) => {
+      let combined: any[] = [];
+      if (vaultSnap.exists()) {
+        const arr = Object.values(vaultSnap.val() || {});
+        arr.forEach((item: any) => {
+          combined.push({ ...item, recordType: "Prescription Sync" });
+        });
+      }
+      if (healthSnap.exists()) {
+        const arr = Object.values(healthSnap.val() || {});
+        arr.forEach((item: any) => {
+          combined.push({ ...item, recordType: item.category || "Clinical Record" });
+        });
+      }
+
+      if (combined.length > 0) {
+        recordsGrid.innerHTML = combined.map((file: any) => {
+          const uploadeDate = file.createdAt || file.uploadedAt ? new Date(file.createdAt || file.uploadedAt).toLocaleDateString() : "N/A";
+          const fileLocUrl = file.url || file.cloudinaryUrl || file.fileUrl || "";
+          return `
+            <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex items-center justify-between gap-3 text-xs">
+              <div class="flex items-center gap-2 min-w-0">
+                <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                  <i class="fa-solid fa-file-pdf text-sm"></i>
+                </div>
+                <div class="min-w-0">
+                  <h5 class="font-bold text-slate-800 truncate">${file.title || file.fileName || "Medical File Block"}</h5>
+                  <div class="text-[9px] text-slate-400 font-semibold font-mono uppercase mt-0.5">Type: ${file.recordType} | Date: ${uploadeDate}</div>
+                </div>
+              </div>
+              <div class="shrink-0 flex items-center gap-1.5 font-bold">
+                ${fileLocUrl ? `
+                  <a href="${fileLocUrl}" target="_blank" referrerPolicy="no-referrer" class="px-2.5 py-1 text-[8px] tracking-wide uppercase font-black bg-indigo-600 text-white hover:bg-indigo-700 rounded-md transition-all flex items-center gap-1">
+                    <i class="fa-solid fa-eye"></i> View File
+                  </a>
+                ` : `<span class="text-[8px] text-slate-400 uppercase font-bold bg-slate-100 px-1.5 py-0.5 rounded">Offline Doc</span>`}
+              </div>
+            </div>
+          `;
+        }).join("");
+      } else {
+        recordsGrid.innerHTML = `<p class="text-slate-400 text-xs italic py-1">No uploaded files in vault (Prescriptions / Reports / Vaccine logs).</p>`;
+      }
+    }).catch((e) => {
+      console.error(e);
+      recordsGrid.innerHTML = `<p class="text-rose-500 text-xs py-1">Clinics archives fetch failed.</p>`;
+    });
+  }
+
+  // 4. Load Loyalty and Referral milestones
+  const loyaltyContainer = document.getElementById("usr-inspect-loyalty-container");
+  if (loyaltyContainer) {
+    loyaltyContainer.innerHTML = `<p class="text-slate-400 text-[10px] italic">Loading loyalty history...</p>`;
+    get(ref(db, `users/${uid}`)).then((userSnap) => {
+      if (userSnap.exists()) {
+        const patient = userSnap.val();
+        const coins = patient.coins !== undefined ? patient.coins : 250;
+        const refCode = patient.referralCode || `${(patient.name || "USER").substring(0, 4).toUpperCase()}${uid.substring(0, 4).toUpperCase()}`;
+        const refCount = patient.referralCount || 0;
+        const refEarnings = patient.referralEarnings || 0;
+        
+        let tier = "Silver Wellness Member";
+        let tierColor = "text-slate-500 bg-slate-100 border-slate-200";
+        if (coins >= 1000) {
+          tier = "Platinum Elite Care";
+          tierColor = "text-violet-750 bg-violet-100/60 border-violet-200 text-violet-700";
+        } else if (coins >= 500) {
+          tier = "Gold Premium Care";
+          tierColor = "text-yellow-750 bg-yellow-100/60 border-yellow-250 text-amber-700 border-amber-200";
+        }
+
+        loyaltyContainer.innerHTML = `
+          <div class="grid grid-cols-2 gap-3 text-xs font-semibold">
+            <div class="bg-white p-2.5 rounded-lg border border-slate-100">
+              <span class="text-[10px] text-slate-400 uppercase">Meds Coins Balance</span>
+              <p class="text-emerald-700 font-extrabold text-sm font-sans mt-0.5">${coins} <span class="text-[8px] uppercase text-slate-400 font-bold">Coins</span></p>
+            </div>
+            <div class="bg-white p-2.5 rounded-lg border border-slate-100 select-all font-mono">
+              <span class="text-[10px] text-slate-400 uppercase font-sans">Referral Code</span>
+              <p class="text-indigo-600 font-bold text-xs mt-0.5">${refCode}</p>
+            </div>
+            <div class="col-span-2 flex items-center justify-between pt-1 border-t border-slate-100/50">
+              <span class="text-slate-400 text-[9.5px]">Loyalty Tier Status:</span>
+              <span class="px-2 py-0.5 rounded font-black uppercase text-[8px] tracking-wide border ${tierColor}">${tier}</span>
+            </div>
+            <div class="col-span-2 flex items-center justify-between text-[9px] text-slate-400">
+              <span>Roster Invitations: <strong>${refCount} users</strong></span>
+              <span>Referral Cashbacks: <strong class="text-emerald-600">₹${refEarnings}</strong></span>
+            </div>
+          </div>
+        `;
+      } else {
+        loyaltyContainer.innerHTML = `<p class="text-slate-400 text-xs italic py-1">Loyalty data error.</p>`;
+      }
+    }).catch(() => {
+      loyaltyContainer.innerHTML = `<p class="text-rose-500 text-xs py-1">Loyalty retrieval failed.</p>`;
+    });
+  }
+
   // Unhide modal
   const modal = document.getElementById("user-details-inspect-modal");
   if (modal) modal.classList.remove("hidden");
@@ -5200,4 +5376,790 @@ function initSupportCenterManagement() {
 
   document.getElementById("btn-save-support-top")?.addEventListener("click", saveSupportSettings);
 }
+
+// =================================== ADVANCED RIDER FINANCE & SETTLEMENT CENTER ===================================
+let settlementRequestsCache: any[] = [];
+let codDepositsCache: any[] = [];
+let rfRiderSearchQuery = "";
+let rfLedgerFilter = "all";
+
+let renderRidersPayrollTable: any;
+let renderSalaryLedgerRecords: any;
+let renderRiderSettlementClaims: any;
+let renderCodReconciliationTable: any;
+let renderPendingCODDeposits: any;
+
+function initRiderFinanceCenter() {
+  console.log("Initializing MedsHub Rider Finance & Settlement Center...");
+
+  // BIND SUBTABS
+  const rfSubtabButtons = document.querySelectorAll(".rf-subtab-btn");
+  rfSubtabButtons.forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      const targetButton = e.currentTarget as HTMLButtonElement;
+      const targetTab = targetButton.getAttribute("data-tab")!;
+
+      rfSubtabButtons.forEach((b) => b.classList.remove("bg-white", "text-slate-900", "shadow-xs", "border", "border-slate-200/50"));
+      rfSubtabButtons.forEach((b) => b.classList.add("text-slate-500", "hover:text-slate-800"));
+
+      targetButton.classList.remove("text-slate-500", "hover:text-slate-800");
+      targetButton.classList.add("bg-white", "text-slate-900", "shadow-xs", "border", "border-slate-200/50");
+
+      document.querySelectorAll(".rf-subtab-panel").forEach((p) => p.classList.add("hidden"));
+      const panelEl = document.getElementById(targetTab);
+      if (panelEl) {
+        panelEl.classList.remove("hidden");
+      }
+    });
+  });
+
+  // CONNECT BANNER BUTTONS FOR TAB SHORTCUTS
+  document.getElementById("alert-tab-settlements-btn")?.addEventListener("click", () => {
+    const el = document.getElementById("subtab-settlements-btn");
+    if (el) el.click();
+  });
+  document.getElementById("alert-tab-deposits-btn")?.addEventListener("click", () => {
+    const el = document.getElementById("subtab-cod-btn");
+    if (el) el.click();
+  });
+
+  // RIDER SEARCH query watcher
+  document.getElementById("inp-rf-rider-search")?.addEventListener("input", (e) => {
+    rfRiderSearchQuery = (e.target as HTMLInputElement).value.trim().toLowerCase();
+    
+    // Recalculate and update the UI directly
+    const calcEarnings = getRidersEarningsMap();
+    const calcApprovedDeposits = getRidersApprovedDepositsMap();
+    const calcPaidClaims = getRidersPaidClaimsMap();
+    const calcPendingClaims = getRidersPendingClaimsMap();
+    const codecMap = getRidersCodHandledMap();
+    
+    renderRidersPayrollTable(calcEarnings, calcApprovedDeposits, calcPaidClaims, calcPendingClaims, codecMap);
+  });
+
+  // LEDGER FILTER triggers
+  document.getElementById("rf-ledger-filter-all")?.addEventListener("click", () => {
+    (window as any).setRfLedgerFilter("all");
+  });
+  document.getElementById("rf-ledger-filter-upi")?.addEventListener("click", () => {
+    (window as any).setRfLedgerFilter("upi");
+  });
+  document.getElementById("rf-ledger-filter-bank")?.addEventListener("click", () => {
+    (window as any).setRfLedgerFilter("bank");
+  });
+
+  // EXPORT LEDGER trigger
+  document.getElementById("btn-rf-export-ledger")?.addEventListener("click", () => {
+    (window as any).triggerSalaryReportGenerate();
+  });
+
+  // WATCH FOR SETTLEMENT REQUESTS
+  onValue(ref(db, "settlementRequests"), (snapshot) => {
+    settlementRequestsCache = [];
+    if (snapshot.exists()) {
+      snapshot.forEach((child) => {
+        settlementRequestsCache.push({
+          key: child.key,
+          ...child.val()
+        });
+      });
+    }
+    settlementRequestsCache.sort((a,b) => b.createdAt - a.createdAt);
+    (window as any).recalculateAndRenderFinanceDashboard();
+  });
+
+  // WATCH FOR COD DEPOSITS
+  onValue(ref(db, "cod_deposits"), (snapshot) => {
+    codDepositsCache = [];
+    if (snapshot.exists()) {
+      snapshot.forEach((child) => {
+        codDepositsCache.push({
+          key: child.key,
+          ...child.val()
+        });
+      });
+    }
+    codDepositsCache.sort((a,b) => b.createdAt - a.createdAt);
+    (window as any).recalculateAndRenderFinanceDashboard();
+  });
+
+  // Process Payout Form Dialog
+  const payoutForm = document.getElementById("form-rf-process-payout");
+  payoutForm?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    processFastRiderPayout();
+  });
+
+  // Payout Modal Close
+  document.getElementById("btn-close-rf-payout-modal")?.addEventListener("click", () => {
+    document.getElementById("rf-payout-modal")?.classList.add("hidden");
+  });
+}
+
+function processFastRiderPayout() {
+  const riderId = (document.getElementById("rf-payout-rider-id") as HTMLInputElement).value;
+  const name = document.getElementById("rf-payout-rider-name")?.innerText || "Rider Partner";
+  const amount = Number((document.getElementById("rf-payout-amount") as HTMLInputElement).value.trim());
+  const method = (document.getElementById("rf-payout-method") as HTMLInputElement).value;
+  const target = (document.getElementById("rf-payout-target") as HTMLInputElement).value.trim();
+  const utr = (document.getElementById("rf-payout-utr") as HTMLInputElement).value.trim();
+
+  if (!riderId) return;
+
+  if (amount <= 0) {
+    showToast("Disbursement requires a positive amount transfer.", "error");
+    return;
+  }
+
+  if (!utr) {
+    showToast("UTR transaction reference number is required.", "error");
+    return;
+  }
+
+  showToast("Registering transaction record...", "info");
+  const claimId = "CLAIM_ADMIN_" + Date.now();
+
+  const payoutPayload = {
+    claimId,
+    riderId,
+    riderName: name,
+    amount,
+    upiId: target,
+    paymentMethod: method === 'upi' ? 'UPI' : 'Bank Transfer',
+    status: "approved",
+    createdAt: Date.now(),
+    approvedAt: Date.now(),
+    utrNumber: utr.toUpperCase()
+  };
+
+  set(ref(db, `settlementRequests/${claimId}`), payoutPayload).then(() => {
+    set(ref(db, `settlements/${riderId}/${claimId}`), payoutPayload).then(() => {
+      showToast("Rider salary disbursed and recorded in database ledger!", "success");
+      document.getElementById("rf-payout-modal")?.classList.add("hidden");
+    });
+  }).catch((err) => {
+    console.error(err);
+    showToast("Sync fail recording ledger entries.", "error");
+  });
+}
+
+Object.assign(window, {
+  recalculateAndRenderFinanceDashboard() {
+    let totalRiderEarnings = 0;
+    let totalCodCollected = 0;
+    let totalCodDeposited = 0;
+    let totalPendingSalary = 0;
+    let totalPaidSalary = 0;
+
+    const riderEarningsMap: { [riderId: string]: number } = {};
+    const riderCodHandledMap: { [riderId: string]: number } = {};
+    const riderApprovedDepositsMap: { [riderId: string]: number } = {};
+    const riderPaidClaimsMap: { [riderId: string]: number } = {};
+    const riderPendingClaimsMap: { [riderId: string]: number } = {};
+
+    ordersCache.forEach((order: any) => {
+      if (order.status === "delivered" && order.deliveryId) {
+        const rId = order.deliveryId;
+        const earningsValue = order.deliveryCharge || 40;
+        totalRiderEarnings += earningsValue;
+        riderEarningsMap[rId] = (riderEarningsMap[rId] || 0) + earningsValue;
+
+        if (order.paymentMethod === "cod") {
+          const codVal = Number(order.payableAmount || order.totalAmount || order.total || 0);
+          totalCodCollected += codVal;
+          riderCodHandledMap[rId] = (riderCodHandledMap[rId] || 0) + codVal;
+        }
+      }
+    });
+
+    codDepositsCache.forEach((dep) => {
+      if (dep.status === "approved" || dep.status === "completed" || dep.status === "success") {
+        const amt = Number(dep.amount || 0);
+        totalCodDeposited += amt;
+        riderApprovedDepositsMap[dep.riderId] = (riderApprovedDepositsMap[dep.riderId] || 0) + amt;
+      }
+    });
+
+    settlementRequestsCache.forEach((req) => {
+      const amt = Number(req.amount || 0);
+      if (req.status === "approved" || req.status === "completed" || req.status === "success") {
+        totalPaidSalary += amt;
+        riderPaidClaimsMap[req.riderId] = (riderPaidClaimsMap[req.riderId] || 0) + amt;
+      } else if (req.status === "pending") {
+        totalPendingSalary += amt;
+        riderPendingClaimsMap[req.riderId] = (riderPendingClaimsMap[req.riderId] || 0) + amt;
+      }
+    });
+
+    const elTotalEarnings = document.getElementById("rf-stat-total-earnings");
+    if (elTotalEarnings) elTotalEarnings.innerText = `₹${totalRiderEarnings}`;
+
+    const elCodCollected = document.getElementById("rf-stat-cod-collected");
+    const codOnHand = Math.max(0, totalCodCollected - totalCodDeposited);
+    if (elCodCollected) elCodCollected.innerText = `₹${codOnHand}`;
+
+    const elCodDeposited = document.getElementById("rf-stat-cod-deposited");
+    if (elCodDeposited) elCodDeposited.innerText = `₹${totalCodDeposited}`;
+
+    const elPendingSalary = document.getElementById("rf-stat-pending-salary");
+    if (elPendingSalary) elPendingSalary.innerText = `₹${totalPendingSalary}`;
+
+    const elPaidSalary = document.getElementById("rf-stat-paid-salary");
+    if (elPaidSalary) elPaidSalary.innerText = `₹${totalPaidSalary}`;
+
+    let activeClaimsCount = settlementRequestsCache.filter((r) => r.status === "pending").length;
+    const elAlertBadge = document.getElementById("rf-pending-alerts-badge");
+    if (elAlertBadge) {
+      elAlertBadge.innerText = `${activeClaimsCount} Active Claims`;
+      elAlertBadge.className = `text-[9px] px-1.5 py-0.5 rounded-md font-bold mt-2 w-max text-[8px] ${
+        activeClaimsCount > 0 ? "bg-rose-100 text-rose-700 animate-pulse" : "bg-rose-50 text-rose-600"
+      }`;
+    }
+
+    const bCountClaims = document.getElementById("badge-count-pending-claims");
+    if (bCountClaims) {
+      if (activeClaimsCount > 0) {
+        bCountClaims.innerText = activeClaimsCount.toString();
+        bCountClaims.classList.remove("hidden");
+      } else {
+        bCountClaims.classList.add("hidden");
+      }
+    }
+
+    let activeDepositsCount = codDepositsCache.filter((d) => d.status === "pending").length;
+    const bCountDeposits = document.getElementById("badge-count-pending-deposits");
+    if (bCountDeposits) {
+      if (activeDepositsCount > 0) {
+        bCountDeposits.innerText = activeDepositsCount.toString();
+        bCountDeposits.classList.remove("hidden");
+      } else {
+        bCountDeposits.classList.add("hidden");
+      }
+    }
+
+    const alertBanner = document.getElementById("rf-pending-alerts-banner");
+    let someRiderWithHighCod = ridersCache.some((r) => {
+      const collected = riderCodHandledMap[r.uid] || 0;
+      const deposited = riderApprovedDepositsMap[r.uid] || 0;
+      return (collected - deposited) >= 5000;
+    });
+
+    if (alertBanner) {
+      if (activeClaimsCount > 0 || activeDepositsCount > 0 || someRiderWithHighCod) {
+        alertBanner.classList.remove("hidden");
+      } else {
+        alertBanner.classList.add("hidden");
+      }
+    }
+
+    renderRidersPayrollTable(riderEarningsMap, riderApprovedDepositsMap, riderPaidClaimsMap, riderPendingClaimsMap, riderCodHandledMap);
+    renderSalaryLedgerRecords();
+    renderRiderSettlementClaims();
+    renderCodReconciliationTable(riderCodHandledMap, riderApprovedDepositsMap);
+    renderPendingCODDeposits();
+  },
+
+  setRfLedgerFilter(filter: string) {
+    rfLedgerFilter = filter;
+    
+    document.querySelectorAll(".rf-ledger-filter-btn").forEach((btn) => {
+      btn.classList.remove("bg-slate-900", "text-white", "border-transparent");
+      btn.classList.add("bg-white", "border", "border-slate-200", "text-slate-600", "hover:bg-slate-50");
+    });
+    
+    const term = `rf-ledger-filter-${filter}`;
+    const activeBtn = document.getElementById(term);
+    if (activeBtn) {
+      activeBtn.className = "rf-ledger-filter-btn bg-slate-900 text-white px-2 py-1 rounded-md text-[8.5px] font-black uppercase transition-all tracking-wide border border-transparent cursor-pointer";
+    }
+
+    renderSalaryLedgerRecords();
+  },
+
+  triggerOneClickPayout(riderId: string, riderName: string, maxWithdrawable: number, upiId: string) {
+    const inpRiderId = document.getElementById("rf-payout-rider-id") as HTMLInputElement;
+    if (inpRiderId) inpRiderId.value = riderId;
+
+    const lblRiderName = document.getElementById("rf-payout-rider-name");
+    if (lblRiderName) lblRiderName.innerText = riderName;
+
+    const lblRiderSub = document.getElementById("rf-payout-rider-sub");
+    if (lblRiderSub) lblRiderSub.innerText = `Pending balance available: ₹${maxWithdrawable}`;
+
+    const inpAmount = document.getElementById("rf-payout-amount") as HTMLInputElement;
+    if (inpAmount) {
+      inpAmount.value = maxWithdrawable > 0 ? maxWithdrawable.toString() : "0";
+      inpAmount.max = maxWithdrawable.toString();
+    }
+
+    const inpTarget = document.getElementById("rf-payout-target") as HTMLInputElement;
+    if (inpTarget) inpTarget.value = upiId || "";
+
+    const inpUtr = document.getElementById("rf-payout-utr") as HTMLInputElement;
+    if (inpUtr) inpUtr.value = "";
+
+    const modal = document.getElementById("rf-payout-modal");
+    if (modal) {
+      modal.classList.remove("hidden");
+    }
+  },
+
+  triggerSalaryReportGenerate() {
+    const successes = settlementRequestsCache.filter((r) => r.status === "approved" || r.status === "completed" || r.status === "success");
+    if (successes.length === 0) {
+      showToast("No cleared disbursed payout ledger history available to export.", "info");
+      return;
+    }
+
+    let csvContent = "MedsHub Rider Salary Report\nGenerated on: " + new Date().toISOString() + "\n\n";
+    csvContent += "Payout Date,Claim ID,Rider Name,Disbursed Amount (₹),Disbursal Pipeline,Target VPA/Details,UTR Transaction ID\n";
+    
+    successes.forEach((r) => {
+      const dateStr = r.createdAt ? new Date(r.createdAt).toLocaleDateString() : "N/A";
+      csvContent += `"${dateStr}","${r.claimId || r.key}","${r.riderName || 'Rider'}",${r.amount},"${r.paymentMethod || 'UPI'}","${r.upiId || ''}","${r.utrNumber || 'N/A'}"\n`;
+    });
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `medshub_salary_report_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("MedsHub Salary CSV Report exported and downloaded successfully!", "success");
+  },
+
+  approveRiderSettlementDialog(claimId: string, riderId: string, amount: number, upiId: string) {
+    const utrVal = prompt(`Processing Settlement Approval (#${claimId})\nPayout: ₹${amount} to ${upiId}\n\nREQUIRED: Input the formal bank/UPI transaction Reference UTR number:`);
+    if (utrVal === null) return;
+    const cleanedUtr = utrVal.trim().toUpperCase();
+    if (!cleanedUtr) {
+      showToast("A valid transaction UTR Reference is required to settle claims.", "error");
+      return;
+    }
+
+    showToast("Recording approval status...", "info");
+    const updatePayload = {
+      status: "approved",
+      utrNumber: cleanedUtr,
+      approvedAt: Date.now()
+    };
+
+    update(ref(db, `settlementRequests/${claimId}`), updatePayload).then(() => {
+      update(ref(db, `settlements/${riderId}/${claimId}`), updatePayload).then(() => {
+        showToast("Payout Settlement Claim approved and verified successfully!", "success");
+      });
+    }).catch((err) => {
+      console.error(err);
+      showToast("Failed to write to Firebase.", "error");
+    });
+  },
+
+  rejectRiderSettlementDialog(claimId: string, riderId: string) {
+    const reason = prompt("Enter specific grounds/reason for rejecting this settlement:");
+    if (reason === null) return;
+    const cleanedReason = reason.trim();
+    if (!cleanedReason) {
+      showToast("Rejection requires grounds/reason.", "error");
+      return;
+    }
+
+    const updatePayload = {
+      status: "rejected",
+      rejectionReason: cleanedReason,
+      rejectedAt: Date.now()
+    };
+
+    update(ref(db, `settlementRequests/${claimId}`), updatePayload).then(() => {
+      update(ref(db, `settlements/${riderId}/${claimId}`), updatePayload).then(() => {
+        showToast("Payout Settlement Claim successfully rejected.", "info");
+      });
+    }).catch((err) => {
+      console.error(err);
+      showToast("Firebase transaction failed.", "error");
+    });
+  },
+
+  approveCodDepositReceipt(depositId: string, riderId: string, amount: number) {
+    if (confirm(`Approve COD Cash deposit claim of ₹${amount} for this rider?`)) {
+      showToast("Recording approval status...", "info");
+      
+      const updatePayload = {
+        status: "approved",
+        approvedAt: Date.now()
+      };
+
+      update(ref(db, `cod_deposits/${depositId}`), updatePayload).then(() => {
+        update(ref(db, `deliveryboy1/${riderId}/cod_deposits/${depositId}`), updatePayload).then(() => {
+          showToast("Deposit receipt approved! Outstanding pocket balances decremented.", "success");
+        });
+      }).catch((err) => {
+        console.error(err);
+        showToast("Synchronization failure.", "error");
+      });
+    }
+  },
+
+  rejectCodDepositReceipt(depositId: string, riderId: string, amount: number) {
+    const reason = prompt(`Enter specific reason for rejecting this COD deposit receipt of ₹${amount}:`);
+    if (reason === null) return;
+    const cleanedReason = reason.trim();
+    if (!cleanedReason) {
+      showToast("Rejection grounds required.", "error");
+      return;
+    }
+
+    const updatePayload = {
+      status: "rejected",
+      rejectionReason: cleanedReason,
+      rejectedAt: Date.now()
+    };
+
+    update(ref(db, `cod_deposits/${depositId}`), updatePayload).then(() => {
+      update(ref(db, `deliveryboy1/${riderId}/cod_deposits/${depositId}`), updatePayload).then(() => {
+        showToast("Deposit receipt successfully marked as rejected.", "info");
+      });
+    }).catch((err) => {
+      console.error(err);
+      showToast("Synchronization failure.", "error");
+    });
+  }
+});
+
+function getRidersEarningsMap() {
+  const map: { [id: string]: number } = {};
+  ordersCache.forEach((order: any) => {
+    if (order.status === "delivered" && order.deliveryId) {
+      map[order.deliveryId] = (map[order.deliveryId] || 0) + (order.deliveryCharge || 40);
+    }
+  });
+  return map;
+}
+
+function getRidersApprovedDepositsMap() {
+  const map: { [id: string]: number } = {};
+  codDepositsCache.forEach((d) => {
+    if (d.status === "approved" || d.status === "completed" || d.status === "success") {
+      map[d.riderId] = (map[d.riderId] || 0) + Number(d.amount || 0);
+    }
+  });
+  return map;
+}
+
+function getRidersPendingClaimsMap() {
+  const map: { [id: string]: number } = {};
+  settlementRequestsCache.forEach((req) => {
+    if (req.status === "pending") {
+      map[req.riderId] = (map[req.riderId] || 0) + Number(req.amount || 0);
+    }
+  });
+  return map;
+}
+
+function getRidersPaidClaimsMap() {
+  const map: { [id: string]: number } = {};
+  settlementRequestsCache.forEach((req) => {
+    if (req.status === "approved" || req.status === "completed" || req.status === "success") {
+      map[req.riderId] = (map[req.riderId] || 0) + Number(req.amount || 0);
+    }
+  });
+  return map;
+}
+
+function getRidersCodHandledMap() {
+  const map: { [id: string]: number } = {};
+  ordersCache.forEach((order: any) => {
+    if (order.status === "delivered" && order.deliveryId && order.paymentMethod === "cod") {
+      const amt = Number(order.payableAmount || order.totalAmount || order.total || 0);
+      map[order.deliveryId] = (map[order.deliveryId] || 0) + amt;
+    }
+  });
+  return map;
+}
+
+// =================================== RENDER ROUTINES DEFINITIONS ===================================
+renderRidersPayrollTable = function(
+  earningsMap: { [uid: string]: number } = {},
+  approvedDeposits: { [uid: string]: number } = {},
+  paidClaims: { [uid: string]: number } = {},
+  pendingClaims: { [uid: string]: number } = {},
+  codHandledMap: { [uid: string]: number } = {}
+) {
+  const tbody = document.getElementById("tbody-rf-riders-payroll");
+  if (!tbody) return;
+
+  if (ridersCache.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400 font-bold uppercase text-[10px]">No registered riders found.</td></tr>`;
+    return;
+  }
+
+  const calcEarnings = Object.keys(earningsMap).length ? earningsMap : getRidersEarningsMap();
+  const calcApprovedDeposits = Object.keys(approvedDeposits).length ? approvedDeposits : getRidersApprovedDepositsMap();
+  const calcPaidClaims = Object.keys(paidClaims).length ? paidClaims : getRidersPaidClaimsMap();
+  const calcPendingClaims = Object.keys(pendingClaims).length ? pendingClaims : getRidersPendingClaimsMap();
+
+  let filteredRiders = ridersCache;
+  if (rfRiderSearchQuery) {
+    filteredRiders = ridersCache.filter((r) => (r.name || "").toLowerCase().includes(rfRiderSearchQuery));
+  }
+
+  tbody.innerHTML = filteredRiders.map((r) => {
+    const uid = r.uid || r.deliveryId;
+    const name = r.name || "Express Rider Partner";
+    const shortId = uid ? uid.substring(0, 6).toUpperCase() : "N/A";
+
+    const allTimeEarnings = calcEarnings[uid] || 0;
+    const paidSalary = calcPaidClaims[uid] || 0;
+    const pendingSalary = calcPendingClaims[uid] || 0;
+
+    const currentPendingWithmedshub = Math.max(0, allTimeEarnings - paidSalary - pendingSalary);
+    const email = r.email || "No Email Registered";
+
+    return `
+      <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-all font-semibold text-xs text-slate-700">
+        <td class="p-4 flex items-center gap-3">
+          <div class="w-8 h-8 rounded-full bg-slate-100 text-slate-70 shrink-0 border border-slate-100 flex items-center justify-center font-black">
+            <i class="fa-solid fa-motorcycle text-indigo-500"></i>
+          </div>
+          <div>
+            <h4 class="font-bold text-slate-900">${name}</h4>
+            <div class="text-[9px] text-slate-400 mt-0.5 font-mono">ID: ${shortId} | Email: ${email}</div>
+          </div>
+        </td>
+        <td class="p-4">
+          <span class="bg-indigo-50 text-indigo-705 text-indigo-700 px-2 py-0.5 rounded font-black text-[9px] uppercase">${r.totalDeliveries || 0} Delivered</span>
+        </td>
+        <td class="p-4 font-mono font-bold text-teal-700 font-sans">₹${allTimeEarnings}</td>
+        <td class="p-4 font-mono text-emerald-700 font-sans">₹${paidSalary}</td>
+        <td class="p-4 font-mono">
+          <div class="font-extrabold text-indigo-600 font-sans">₹${currentPendingWithmedshub}</div>
+          ${pendingSalary > 0 ? `<div class="text-[8px] text-amber-500 font-sans mt-0.5 font-bold uppercase"><i class="fa-solid fa-hourglass-half"></i> ₹${pendingSalary} claim pending</div>` : ""}
+        </td>
+        <td class="p-4 text-center">
+          <button onclick="triggerOneClickPayout('${uid}', '${name.replace(/'/g, "\\'")}', ${currentPendingWithmedshub}, '${r.upiId || ""}')" class="bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-[9px] px-2.5 py-1.5 rounded-lg border border-transparent transition-all uppercase cursor-pointer tracking-wider">
+            <i class="fa-solid fa-indian-rupee-sign mr-1"></i>Pay Rider
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join("");
+};
+
+renderSalaryLedgerRecords = function() {
+  const container = document.getElementById("rf-salary-ledger-list");
+  if (!container) return;
+
+  const disbursedPayouts = settlementRequestsCache.filter((req) => {
+    const isSuccess = req.status === "approved" || req.status === "completed" || req.status === "success";
+    if (!isSuccess) return false;
+    
+    if (rfLedgerFilter === "upi") {
+      return (req.paymentMethod || "UPI").toUpperCase() === "UPI";
+    } else if (rfLedgerFilter === "bank") {
+      return (req.paymentMethod || "").toUpperCase().includes("BANK");
+    }
+    return true;
+  });
+
+  if (disbursedPayouts.length === 0) {
+    container.innerHTML = `<p class="text-[9px] text-slate-400 font-bold text-center py-6 uppercase font-mono tracking-wide">No ledger records tracked</p>`;
+    return;
+  }
+
+  container.innerHTML = disbursedPayouts.map((req) => {
+    const dateFormatted = req.createdAt ? new Date(req.createdAt).toLocaleDateString() : "N/A";
+    
+    return `
+      <div class="bg-slate-50 border border-slate-100 rounded-xl p-3 text-xs space-y-1.5 flex flex-col font-semibold">
+        <div class="flex items-center justify-between">
+          <strong class="text-slate-800">${req.riderName || "Rider"}</strong>
+          <span class="text-[8px] font-bold text-indigo-700 bg-indigo-50/70 border border-indigo-100/50 px-1 py-0.2 rounded uppercase">${req.paymentMethod || "UPI"}</span>
+        </div>
+        <div class="flex items-center justify-between mt-0.5 text-[10px]">
+          <span class="text-slate-400 font-mono">${dateFormatted}</span>
+          <span class="font-extrabold text-emerald-700 font-mono">₹${req.amount}</span>
+        </div>
+        <div class="border-t border-slate-200/50 pt-1.5 flex items-center justify-between text-[9px] text-slate-500 font-mono flex-wrap gap-1">
+          <div>Ref: #${req.claimId ? req.claimId.substring(req.claimId.length-6).toUpperCase() : "AA"}</div>
+          <div class="font-black text-slate-700">UTR: <strong class="text-indigo-600 font-extrabold select-all">${req.utrNumber || "N/A"}</strong></div>
+        </div>
+      </div>
+    `;
+  }).join("");
+};
+
+renderRiderSettlementClaims = function() {
+  const tbody = document.getElementById("tbody-rf-settlement-requests");
+  if (!tbody) return;
+
+  if (settlementRequestsCache.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400 font-bold uppercase text-[10px]">No withdrawal claims registered.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = settlementRequestsCache.map((req) => {
+    let statBadge = `<span class="bg-amber-100 text-amber-800 text-[9px] px-2 py-0.5 rounded font-black uppercase tracking-wider">Awaiting Verification</span>`;
+    if (req.status === "approved" || req.status === "completed" || req.status === "success") {
+      statBadge = `<span class="bg-emerald-50 text-emerald-800 text-[9px] px-2 py-0.5 rounded font-black uppercase tracking-wider border border-emerald-100">Disbursed</span>`;
+    } else if (req.status === "rejected") {
+      statBadge = `<span class="bg-rose-50 text-rose-700 text-[9px] px-2 py-0.5 rounded font-black uppercase tracking-wider">Rejected</span>`;
+    }
+
+    const claimId = req.claimId || "CLAIM_N/A";
+    const shortRef = claimId.substring(claimId.length-8).toUpperCase();
+    const dateStr = req.createdAt ? new Date(req.createdAt).toLocaleString("en-US", { hour12: false }) : "N/A";
+
+    const isPending = req.status === "pending";
+
+    return `
+      <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-all font-semibold text-xs text-slate-700">
+        <td class="p-4 font-bold text-slate-900 font-mono">#${shortRef}</td>
+        <td class="p-4">
+          <div class="font-bold text-slate-900">${req.riderName || "Express Rider Partner"}</div>
+          <span class="text-[9px] text-slate-400 font-mono">${req.riderEmail || ""}</span>
+        </td>
+        <td class="p-4 text-rose-600 font-mono font-extrabold text-sm">₹${req.amount}</td>
+        <td class="p-4">
+          <div class="font-mono text-slate-800 select-all font-bold text-xs">${req.upiId || "N/A"}</div>
+          ${req.qrCodeUrl ? `<a href="${req.qrCodeUrl}" target="_blank" class="text-indigo-500 hover:underline mt-0.5 block text-[9px] font-bold"><i class="fa-solid fa-qrcode"></i> Display VPA QR Code</a>` : ""}
+        </td>
+        <td class="p-4 text-slate-400 font-mono text-[10px]">${dateStr}</td>
+        <td class="p-4">${statBadge}</td>
+        <td class="p-4 text-right">
+          ${isPending ? `
+            <div class="flex items-center justify-end gap-1.5">
+              <button onclick="approveRiderSettlementDialog('${claimId}', '${req.riderId}', ${req.amount}, '${req.upiId || ""}')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[9px] px-2.5 py-1.5 rounded-lg active:scale-95 transition-all shadow-xs cursor-pointer uppercase flex items-center gap-1">
+                <i class="fa-solid fa-money-bill-transfer"></i> Approve
+              </button>
+              <button onclick="rejectRiderSettlementDialog('${claimId}', '${req.riderId}')" class="bg-rose-550 bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold text-[9px] px-2.5 py-1.5 rounded-lg active:scale-95 transition-all border border-rose-100 cursor-pointer uppercase">
+                Reject
+              </button>
+            </div>
+          ` : `
+            ${req.utrNumber ? `<div class="text-[10px] text-slate-550 mr-1 font-mono font-bold">UTR: <strong class="text-indigo-600">${req.utrNumber}</strong></div>` : `<i class="fa-solid fa-check-double text-slate-400"></i>`}
+          `}
+        </td>
+      </tr>
+    `;
+  }).join("");
+};
+
+renderCodReconciliationTable = function(
+  riderCodHandledLocal: { [uid: string]: number } = {},
+  approvedDepositsLocal: { [uid: string]: number } = {}
+) {
+  const tbody = document.getElementById("tbody-rf-cod-reconciliation");
+  if (!tbody) return;
+
+  if (ridersCache.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400 font-bold uppercase text-[10px]">No riders.</td></tr>`;
+    return;
+  }
+
+  const calcCodHandled = Object.keys(riderCodHandledLocal).length ? riderCodHandledLocal : getRidersCodHandledMap();
+  const calcApprovedDeposits = Object.keys(approvedDepositsLocal).length ? approvedDepositsLocal : getRidersApprovedDepositsMap();
+
+  tbody.innerHTML = ridersCache.map((r) => {
+    const uid = r.uid || r.deliveryId;
+    const name = r.name || "Express Rider Partner";
+
+    const codCount = ordersCache.filter((o: any) => o.status === "delivered" && o.deliveryId === uid && o.paymentMethod === "cod").length;
+    const collected = calcCodHandled[uid] || 0;
+    const deposited = calcApprovedDeposits[uid] || 0;
+    
+    const cashOnHand = Math.max(0, collected - deposited);
+
+    let riskBadge = `<span class="bg-emerald-50 text-emerald-700 text-[8.5px] px-2 py-0.5 rounded-lg border border-emerald-100 font-black uppercase">SAFE LIMIT</span>`;
+    if (cashOnHand >= 5000) {
+      riskBadge = `<span class="bg-rose-50 text-rose-750 text-[8.5px] px-2 py-0.5 rounded-lg border border-rose-100 font-black uppercase animate-bounce text-rose-700">ALERT EXCEEDED</span>`;
+    } else if (cashOnHand > 0) {
+      riskBadge = `<span class="bg-amber-50 text-amber-700 text-[8.5px] px-2 py-0.5 rounded-lg border border-amber-100 font-black uppercase">HELD POCKET</span>`;
+    }
+
+    return `
+      <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-all text-slate-700 font-semibold text-xs">
+        <td class="p-4 flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs text-slate-500 font-black"><i class="fa-solid fa-money-bill"></i></div>
+          <div>
+            <h4 class="font-bold text-slate-900">${name}</h4>
+            <span class="text-[9px] text-slate-400 font-mono">Mobile: ${r.mobile || "N/A"}</span>
+          </div>
+        </td>
+        <td class="p-4 font-mono font-bold text-[11px]">${codCount} COD Delivered</td>
+        <td class="p-4 font-mono font-bold text-slate-800">₹${collected}</td>
+        <td class="p-4 font-mono font-bold text-emerald-700">₹${deposited}</td>
+        <td class="p-4 font-mono">
+          <strong class="${cashOnHand >= 5000 ? "text-rose-600 font-black text-xs" : cashOnHand > 0 ? "text-amber-600 font-bold" : "text-slate-400"}">₹${cashOnHand}</strong>
+        </td>
+        <td class="p-4">${riskBadge}</td>
+      </tr>
+    `;
+  }).join("");
+};
+
+renderPendingCODDeposits = function() {
+  const container = document.getElementById("rf-pending-deposits-list");
+  if (!container) return;
+
+  const pendingDeposits = codDepositsCache.filter((d) => d.status === "pending");
+
+  if (pendingDeposits.length === 0) {
+    container.innerHTML = `
+      <div class="bg-slate-50 border border-slate-100 rounded-2xl p-6 text-center text-slate-400 font-semibold text-xs py-10">
+        <i class="fa-solid fa-square-check text-2xl text-slate-300 mb-2"></i>
+        <p class="uppercase font-extrabold text-[9px] tracking-wide">All Rider Deposits Reconciled!</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = pendingDeposits.map((d) => {
+    const formattedDate = d.createdAt ? new Date(d.createdAt).toLocaleString("en-US", { hour12: false }) : "N/A";
+    const depositId = d.depositId || d.key;
+
+    const imgHtml = d.screenshotUrl ? `
+      <div class="relative group mt-2 max-w-full">
+        <a href="${d.screenshotUrl}" target="_blank" class="block rounded-xl overflow-hidden border border-slate-200 cursor-zoom-in group-hover:opacity-90 transition-opacity">
+          <img src="${d.screenshotUrl}" alt="Deposit Screenshot Proof" class="w-full max-h-36 object-cover" referrerPolicy="no-referrer">
+          <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-[9px] font-black uppercase"><i class="fa-solid fa-expand mr-1"></i> VIEW RECORD SCREENSHOT</div>
+        </a>
+      </div>
+    ` : `<p class="text-[8.5px] text-rose-500 font-bold mt-1 uppercase"><i class="fa-solid fa-circle-exclamation"></i> No image attached</p>`;
+
+    return `
+      <div class="bg-amber-50/45 border border-amber-100/70 rounded-2xl p-4 text-xs font-semibold space-y-3 shadow-xs">
+        <div class="flex items-center justify-between">
+          <div>
+            <strong class="text-slate-800 text-xs">${d.riderName || "Rider"}</strong>
+            <p class="text-[9px] text-slate-400 font-mono mt-0.5">${formattedDate}</p>
+          </div>
+          <span class="bg-amber-100 text-amber-700 font-bold text-[8px] px-1.5 py-0.5 rounded uppercase">Under Review</span>
+        </div>
+
+        <div class="bg-white border border-slate-100 rounded-xl p-2.5 flex items-center justify-between font-mono">
+          <span class="text-[9.5px] text-slate-500 uppercase font-sans">Deposit Sum</span>
+          <strong class="text-emerald-700 text-xs font-bold">₹${d.amount}</strong>
+        </div>
+
+        <div class="text-[9.5px] font-mono text-slate-800 bg-white border border-slate-100 rounded-xl p-2 flex items-center justify-between">
+          <span>UTR Submitted:</span>
+          <strong class="text-indigo-650 font-bold uppercase">${d.utrNumber || "N/A"}</strong>
+        </div>
+
+        ${imgHtml}
+
+        <div class="grid grid-cols-2 gap-2 pt-1 border-t border-dashed border-slate-200">
+          <button onclick="approveCodDepositReceipt('${depositId}', '${d.riderId}', ${d.amount})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[8.5px] py-2 rounded-lg active:scale-95 transition-all shadow-xs cursor-pointer uppercase flex items-center justify-center gap-1">
+            <i class="fa-solid fa-check"></i> Approve
+          </button>
+          <button onclick="rejectCodDepositReceipt('${depositId}', '${d.riderId}', ${d.amount})" class="bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold text-[8.5px] py-2 rounded-lg active:scale-95 transition-all border border-rose-100 cursor-pointer uppercase">
+            Reject
+          </button>
+        </div>
+      </div>
+    `;
+  }).join("");
+};
+
 

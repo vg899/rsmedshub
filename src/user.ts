@@ -2073,6 +2073,21 @@ document.getElementById("btn-opt-refer-earn")?.addEventListener("click", () => {
 document.getElementById("btn-opt-health-profile")?.addEventListener("click", () => {
   openHealthProfileForm();
 });
+document.getElementById("btn-opt-family-profiles")?.addEventListener("click", () => {
+  openFamilyProfilesManager();
+});
+document.getElementById("btn-opt-refill-reminders")?.addEventListener("click", () => {
+  openRefillRemindersManager();
+});
+document.getElementById("btn-opt-prescription-vault")?.addEventListener("click", () => {
+  openPrescriptionVaultManager();
+});
+document.getElementById("btn-opt-health-records")?.addEventListener("click", () => {
+  openHealthRecordsManager();
+});
+document.getElementById("btn-opt-subscriptions")?.addEventListener("click", () => {
+  openSubscriptionsManager();
+});
 document.getElementById("btn-opt-ai-assistant")?.addEventListener("click", () => {
   openAIAssistantChat();
 });
@@ -2951,7 +2966,7 @@ function openAIAssistantChat() {
         <div class="flex items-start gap-2 max-w-xs text-xs animate-fade-in">
           <div class="w-6.5 h-6.5 rounded-full bg-violet-600 text-white flex items-center justify-center text-[10px] font-black shrink-0"><i class="fa-solid fa-robot animate-bounce"></i></div>
           <div class="bg-white p-2.5 rounded-2xl rounded-tl-none border border-slate-100 shadow-xs text-slate-800 font-bold leading-normal">
-            Hello! I am your AI Health Assistant. Ask me anything about medications, symptoms, or dosage guides.
+            Hello! I am your personal AI Pharmacist & Apothecary Buddy. Ask me anything about medications, drug safety guidelines, FAQs, side-effects, or dosage directions!
           </div>
         </div>
       </div>
@@ -2968,20 +2983,30 @@ function openAIAssistantChat() {
   const sendBtn = document.getElementById("btn-push-ai-query") as HTMLButtonElement;
   const threadBox = document.getElementById("ai-chat-thread-box")!;
 
+  const chatHistoryList: Array<{ sender: "user" | "ai"; text: string }> = [];
+
   const pushMessage = (sender: "user" | "ai", text: string) => {
+    chatHistoryList.push({ sender, text });
     const avatar = sender === "user" 
-      ? `<div class="w-6.5 h-6.5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-black shrink-0 uppercase">${profileData.name?.charAt(0) || 'U'}</div>`
-      : `<div class="w-6.5 h-6.5 rounded-full bg-violet-600 text-white flex items-center justify-center text-[10px] font-black shrink-0"><i class="fa-solid fa-robot"></i></div>`;
+      ? `<div class="w-6.5 h-6.5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-black shrink-0 uppercase">${(profileData.name || "U").charAt(0)}</div>`
+      : `<div class="w-6.5 h-6.5 rounded-full bg-violet-600 text-white flex items-center justify-center text-[10px] font-black shrink-0"><i class="fa-solid fa-robot font-black"></i></div>`;
     
-    const alignment = sender === "user" ? "flex-row-reverse animate-slide-in-right" : "";
-    const bubbleColor = sender === "user" ? "bg-blue-600 text-white" : "bg-white text-slate-800 border border-slate-100";
+    const alignment = sender === "user" ? "flex-row-reverse text-right ml-auto" : "";
+    const bubbleColor = sender === "user" ? "bg-indigo-600 text-white" : "bg-white text-slate-800 border border-slate-100";
     const roundedStyle = sender === "user" ? "rounded-tr-none" : "rounded-tl-none";
 
+    // Support Markdown light styling by simple regex converts for display
+    let formattedText = text
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/`([^`]+)`/g, '<code class="bg-slate-100 text-slate-900 font-mono px-1 rounded text-[11px]">$1</code>')
+      .replace(/\n/g, "<br>");
+
     const bubbleHtml = `
-      <div class="flex items-start gap-2 ${alignment} max-w-xs text-xs animate-fade-in pt-1">
+      <div class="flex items-start gap-2 ${alignment} max-w-[85%] text-xs animate-fade-in pt-1">
         ${avatar}
-        <div class="${bubbleColor} p-2.5 rounded-2xl ${roundedStyle} shadow-xs font-semibold leading-normal">
-          ${text}
+        <div class="${bubbleColor} p-2.5 rounded-2xl ${roundedStyle} shadow-3xs font-semibold leading-relaxed text-left">
+          ${formattedText}
         </div>
       </div>
     `;
@@ -2989,24 +3014,18 @@ function openAIAssistantChat() {
     threadBox.scrollTop = threadBox.scrollHeight;
   };
 
-  const processResponse = (rawMsg: string) => {
+  const processOfflineResponse = (rawMsg: string) => {
     const lower = rawMsg.toLowerCase().trim();
     if (lower.includes("hello") || lower.includes("hi") || lower.includes("hey")) {
-      return "Hello! How can I assist you with your health query today?";
+      return "Hello! I am offline right now, how can I assist you with your medicine query today?";
     }
     if (lower.includes("paracetamol") || lower.includes("fever") || lower.includes("crocin")) {
-      return "Paracetamol/Crocin: Standard adult dosage is 500-650mg every 4-6 hours, up to a maximum of 4000mg/day. Ideal for pain relief and fever reducing. Do not pair with alcoholic beverages to protect hepatic functions.";
+      return "Paracetamol / Crocin info: Max adult dosing is 4000mg per day. Do not consume alcohol with acetaminophen compounds.";
     }
-    if (lower.includes("cough") || lower.includes("cold")) {
-      return "For respiratory congestion & dry cough: dextromethorphan hydrobromide syrups are highly effective. If chest contains thick mucus combinations, look for guaifenesin expectorants. Ensure adequate hydration!";
-    }
-    if (lower.includes("allergy") || lower.includes("rash") || lower.includes("cetirizine")) {
-      return "Cetirizine / Levocetirizine: standard antihistamines for allergic triggers (rhinitis, dry sneezing rashes). A standard 10mg dose before bedtime is ideal as it might trigger slight sedation effects.";
-    }
-    return "Based on my clinical database: Please manage symptoms by choosing dedicated organic medicines and staying fully hydrated. I strongly advise checking in with a certified doctor or pharmacist near you if discomfort persists for more than 48 hours.";
+    return "Thank you for asking! I'm in local offline fallback mode because the live server key is verifying. Please contact a physical apothecary is discomfort continues.";
   };
 
-  sendBtn?.addEventListener("click", () => {
+  sendBtn?.addEventListener("click", async () => {
     const query = queryInp.value.trim();
     if (!query) return;
 
@@ -3014,16 +3033,39 @@ function openAIAssistantChat() {
     queryInp.value = "";
 
     sendBtn.disabled = true;
-    const typingHtml = `<div id="ai-typing-temp" class="text-[9px] font-bold text-violet-500 animate-pulse pl-8 py-1">AI Pharmacist is compounding response...</div>`;
+    const typingId = "ai-typing-" + Date.now();
+    const typingHtml = `<div id="${typingId}" class="text-[9px] font-bold text-violet-500 animate-pulse pl-8 py-1">AI Apothecary is compounding...</div>`;
     threadBox.insertAdjacentHTML("beforeend", typingHtml);
     threadBox.scrollTop = threadBox.scrollHeight;
 
-    setTimeout(() => {
-      document.getElementById("ai-typing-temp")?.remove();
-      const answer = processResponse(query);
-      pushMessage("ai", answer);
+    try {
+      const response = await fetch("/api/ai-assistant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: query,
+          chatHistory: chatHistoryList.slice(0, -1),
+          userVitals: profileData.healthProfile || null,
+          userLocation: currentCoordinates || null
+        })
+      });
+
+      document.getElementById(typingId)?.remove();
+
+      if (response.ok) {
+        const result = await response.json();
+        pushMessage("ai", result.answer);
+      } else {
+        const fallbackRes = processOfflineResponse(query);
+        pushMessage("ai", fallbackRes);
+      }
+    } catch (err) {
+      document.getElementById(typingId)?.remove();
+      const fallbackRes = processOfflineResponse(query);
+      pushMessage("ai", fallbackRes);
+    } finally {
       sendBtn.disabled = false;
-    }, 1200);
+    }
   });
 
   queryInp?.addEventListener("keypress", (e) => {
@@ -3869,4 +3911,959 @@ Object.assign(window, {
 
 // Initialize systems
 initProductDetailSystem();
+
+// =================================== ADVANCED CLINICAL HEALTHCARE MODULES ===================================
+
+// Roster: Family Profiles Manager
+async function openFamilyProfilesManager() {
+  if (!loggedInUser) return;
+  
+  const drawFamilyList = async () => {
+    let rosterHtml = "";
+    try {
+      const snap = await get(ref(db, `users/${loggedInUser.uid}/familyProfiles`));
+      if (snap.exists()) {
+        const roster = Object.values(snap.val() || {});
+        if (roster.length > 0) {
+          rosterHtml = roster.map((mem: any) => `
+            <div class="bg-indigo-50/40 p-3.5 rounded-2xl border border-indigo-100 flex items-center justify-between gap-3 font-sans animate-fade-in">
+              <div class="space-y-1">
+                <span class="inline-block px-2 py-0.5 bg-indigo-100/65 text-indigo-700 text-[8px] font-black uppercase rounded">${mem.relation || "Self"}</span>
+                <h4 class="text-xs font-black text-slate-800">${mem.name || "Unnamed Profile"}</h4>
+                <p class="text-[9.5px] text-slate-500 font-medium">Age: <span class="font-bold text-slate-700">${mem.age || "N/A"}</span> | Gen: <span class="font-bold text-slate-700">${mem.gender || "N/A"}</span> | Blood: <span class="font-bold font-mono text-indigo-600">${mem.bloodGroup || "O+"}</span></p>
+                ${mem.allergies ? `<p class="text-[9px] text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded font-semibold">Allergies: ${mem.allergies}</p>` : ""}
+                ${mem.chronic ? `<p class="text-[9px] text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded font-semibold">Chronic: ${mem.chronic}</p>` : ""}
+              </div>
+              <button onclick="deleteFamilyMember('${mem.id}')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-all flex items-center justify-center cursor-pointer text-xs shrink-0" title="Remove Profile">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          `).join("");
+        } else {
+          rosterHtml = `<div class="p-6 text-center text-slate-400 text-xs italic font-semibold uppercase">No family profiles linked yet. Add below!</div>`;
+        }
+      } else {
+        rosterHtml = `<div class="p-6 text-center text-slate-400 text-xs italic font-semibold uppercase">No family profiles linked yet. Add below!</div>`;
+      }
+    } catch (err) {
+      rosterHtml = `<div class="p-4 text-center text-rose-500 text-xs">Error loading roster metadata. Please retry.</div>`;
+    }
+
+    const container = document.getElementById("family-list-container");
+    if (container) container.innerHTML = rosterHtml;
+  };
+
+  const html = `
+    <div class="space-y-5 animate-fade-in p-1 font-sans text-xs">
+      <!-- Create Member Form Card -->
+      <div class="bg-indigo-50/20 border border-slate-100 rounded-3xl p-4.5 space-y-3.5">
+        <h4 class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Link New Family Member</h4>
+        
+        <div class="space-y-1">
+          <label class="block text-[8.5px] uppercase font-black text-indigo-600/80 tracking-wide font-sans">Full Name</label>
+          <input type="text" id="fm-name" placeholder="Name of parent / child" class="w-full px-3 py-2 bg-white border border-slate-200 text-slate-800 rounded-xl text-xs font-bold outline-none focus:border-blue-500">
+        </div>
+
+        <div class="grid grid-cols-3 gap-2.5">
+          <div class="space-y-1">
+            <label class="block text-[8.5px] uppercase font-black text-slate-400 tracking-wide">Age</label>
+            <input type="number" id="fm-age" placeholder="Yrs" class="w-full px-3 py-2 bg-white border border-slate-200 text-slate-800 rounded-xl text-xs font-bold outline-none">
+          </div>
+          <div class="space-y-1">
+            <label class="block text-[8.5px] uppercase font-black text-slate-400 tracking-wide">Gender</label>
+            <select id="fm-gender" class="w-full px-2 py-2 bg-white border border-slate-200 text-slate-800 rounded-xl text-xs font-bold outline-none cursor-pointer">
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="space-y-1">
+            <label class="block text-[8.5px] uppercase font-black text-slate-400 tracking-wide">Relation</label>
+            <select id="fm-relation" class="w-full px-2 py-2 bg-white border border-slate-200 text-slate-800 rounded-xl text-xs font-bold outline-none cursor-pointer">
+              <option value="Father">Father</option>
+              <option value="Mother">Mother</option>
+              <option value="Child">Child</option>
+              <option value="Senior Citizen">Senior Citizen</option>
+              <option value="Custom Member">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div class="space-y-1">
+            <label class="block text-[8.5px] uppercase font-black text-slate-400 tracking-wide">Blood Group</label>
+            <select id="fm-blood" class="w-full px-2.5 py-2 bg-white border border-slate-200 text-slate-800 rounded-xl text-xs font-bold outline-none cursor-pointer font-sans">
+              <option value="A+">A+</option>
+              <option value="A-">A-</option>
+              <option value="B+">B+</option>
+              <option value="B-">B-</option>
+              <option value="AB+">AB+</option>
+              <option value="AB-">AB-</option>
+              <option value="O+">O+</option>
+              <option value="O-">O-</option>
+            </select>
+          </div>
+          <div class="space-y-1">
+            <label class="block text-[8.5px] uppercase font-black text-slate-400 tracking-wide">Allergies Note</label>
+            <input type="text" id="fm-allergies" placeholder="Peanuts, Sulfa etc." class="w-full px-3 py-2 bg-white border border-slate-200 text-slate-800 rounded-xl text-xs font-bold outline-none">
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <label class="block text-[8.5px] uppercase font-black text-slate-400 tracking-wide">Chronic Clinical States (Separate with comma)</label>
+          <input type="text" id="fm-chronic" placeholder="Diabetes, Hypertension, Asthma" class="w-full px-3 py-2 bg-white border border-slate-200 text-slate-800 rounded-xl text-xs font-bold outline-none">
+        </div>
+
+        <button id="btn-save-family-member" class="w-full py-2.5 bg-indigo-650 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase text-[10px] tracking-wider rounded-xl transition-all cursor-pointer shadow-sm">Authorize & Link Profile</button>
+      </div>
+
+      <!-- Linked Members list -->
+      <div class="space-y-3">
+        <h4 class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Linked Roster Directory</h4>
+        <div class="space-y-2" id="family-list-container">
+          <!-- Populated by helper -->
+        </div>
+      </div>
+    </div>
+  `;
+
+  openProfileDrawer(`<i class="fa-solid fa-people-roof text-indigo-505 text-indigo-650 mr-1.5 animate-pulse"></i> Clinical Family Profiles`, html);
+  
+  // Render live cards
+  await drawFamilyList();
+
+  // Save member
+  document.getElementById("btn-save-family-member")?.addEventListener("click", async () => {
+    const name = (document.getElementById("fm-name") as HTMLInputElement).value.trim();
+    if (!name) {
+      showToast("Please enter family member's full name.", "error");
+      return;
+    }
+
+    const nMember = {
+      id: "FAM_" + Date.now(),
+      name,
+      age: (document.getElementById("fm-age") as HTMLInputElement).value,
+      gender: (document.getElementById("fm-gender") as HTMLSelectElement).value,
+      relation: (document.getElementById("fm-relation") as HTMLSelectElement).value,
+      bloodGroup: (document.getElementById("fm-blood") as HTMLSelectElement).value,
+      allergies: (document.getElementById("fm-allergies") as HTMLInputElement).value.trim(),
+      chronic: (document.getElementById("fm-chronic") as HTMLInputElement).value.trim()
+    };
+
+    try {
+      await set(ref(db, `users/${loggedInUser.uid}/familyProfiles/${nMember.id}`), nMember);
+      showToast(`${name}'s health profile linked safely!`, "success");
+      // Refetch
+      await drawFamilyList();
+      // Clear Name input
+      (document.getElementById("fm-name") as HTMLInputElement).value = "";
+    } catch (err) {
+      showToast("Error updating clinical logs.", "error");
+    }
+  });
+
+  // Global window delete mapper to update component state
+  (window as any).deleteFamilyMember = async (id: string) => {
+    if (confirm("Disconnect and delete this family profile record permanently?")) {
+      try {
+        await remove(ref(db, `users/${loggedInUser.uid}/familyProfiles/${id}`));
+        showToast("Roster profile deleted.", "info");
+        await drawFamilyList();
+      } catch (err) {
+        showToast("Delete operation failed.", "error");
+      }
+    }
+  };
+}
+
+// Medicine Refill Reminders Manager
+async function openRefillRemindersManager() {
+  if (!loggedInUser) return;
+
+  const drawReminders = async () => {
+    let reminderHtml = "";
+    try {
+      const snap = await get(ref(db, `users/${loggedInUser.uid}/refillReminders`));
+      if (snap.exists()) {
+        const list = Object.values(snap.val() || {});
+        if (list.length > 0) {
+          reminderHtml = list.map((item: any) => {
+            let colClass = "from-amber-600 to-amber-700 bg-amber-50 text-amber-800 border-amber-200";
+            if (item.type === "Low Stock Reminder") {
+              colClass = "from-rose-600 to-rose-700 bg-rose-50 text-rose-800 border-rose-200";
+            } else if (item.type === "Subscription Renewal Reminder") {
+              colClass = "from-blue-600 to-blue-700 bg-blue-50 text-blue-800 border-blue-200";
+            }
+            return `
+              <div class="bg-white border text-slate-800 p-3.5 rounded-2xl flex items-center justify-between gap-3 font-sans animate-fade-in relative">
+                <div class="space-y-1">
+                  <span class="px-1.5 py-0.2 bg-slate-100 text-slate-500 font-mono text-[8px] font-black uppercase rounded">${item.frequency || "Monthly"}</span>
+                  <h4 class="text-xs font-black text-slate-900">${item.medicineName || "Prescribed Medicine"}</h4>
+                  <div class="flex items-center gap-2 text-[9px] text-slate-400 font-bold">
+                    <span class="px-2 py-0.5 rounded uppercase font-black text-[7.5px] ${colClass}">${item.type || "Refill Due"}</span>
+                  </div>
+                </div>
+                <button onclick="deleteRefillReminder('${item.id}')" class="w-8 h-8 rounded-full bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-all flex items-center justify-center shrink-0 cursor-pointer" title="Delete Reminder">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </div>
+            `;
+          }).join("");
+        } else {
+          reminderHtml = `<div class="p-6 text-center text-slate-400 text-xs italic font-semibold uppercase">No active refill alarms. Create one below!</div>`;
+        }
+      } else {
+        reminderHtml = `<div class="p-6 text-center text-slate-400 text-xs italic font-semibold uppercase">No active refill alarms. Create one below!</div>`;
+      }
+    } catch (e) {
+      reminderHtml = `<div class="p-4 text-rose-500 text-xs">Error compiling active alarms list.</div>`;
+    }
+
+    const box = document.getElementById("rf-reminders-box");
+    if (box) box.innerHTML = reminderHtml;
+  };
+
+  const html = `
+    <div class="space-y-5 animate-fade-in p-1 font-sans text-xs">
+      <!-- Create Reminder -->
+      <div class="bg-amber-50/25 border border-slate-100 rounded-3xl p-4.5 space-y-3.5">
+        <h4 class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Configure Refill Alarm</h4>
+        
+        <div class="space-y-1">
+          <label class="block text-[8.5px] uppercase font-black text-amber-700 tracking-wide">Medicine Name</label>
+          <input type="text" id="rm-med-name" placeholder="e.g. Lipitor, Metformin, Crocin" class="w-full px-3 py-2 bg-white border border-slate-200 text-slate-800 rounded-xl text-xs font-bold outline-none focus:border-amber-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div class="space-y-1">
+            <label class="block text-[8.5px] uppercase font-black text-slate-400 tracking-wide">Frequency</label>
+            <select id="rm-freq" class="w-full px-2 py-2 bg-white border border-slate-200 text-slate-800 rounded-xl text-xs font-bold outline-none cursor-pointer">
+              <option value="Daily">Daily alarm</option>
+              <option value="Weekly">Weekly check</option>
+              <option value="Monthly">Monthly refill</option>
+            </select>
+          </div>
+          <div class="space-y-1">
+            <label class="block text-[8.5px] uppercase font-black text-slate-400 tracking-wide">Reminder Signal</label>
+            <select id="rm-type" class="w-full px-2 py-2 bg-white border border-slate-200 text-slate-800 rounded-xl text-xs font-bold outline-none cursor-pointer">
+              <option value="Refill Due">Refill Due Notice</option>
+              <option value="Low Stock Reminder">Low Stock Warning</option>
+              <option value="Subscription Renewal Reminder">Subscription Renewal Alert</option>
+            </select>
+          </div>
+        </div>
+
+        <button id="btn-save-refill-reminder" class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-black uppercase text-[10px] tracking-wider rounded-xl transition-all cursor-pointer shadow-sm">Set Reminder Alarm</button>
+      </div>
+
+      <!-- Reminders list -->
+      <div class="space-y-3">
+        <h4 class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Active Alarms Log</h4>
+        <div class="space-y-2" id="rf-reminders-box">
+          <!-- Populated -->
+        </div>
+      </div>
+    </div>
+  `;
+
+  openProfileDrawer(`<i class="fa-solid fa-clock-rotate-left text-amber-600 mr-1.5 animate-bounce"></i> Medicine Refills & Reminders`, html);
+  await drawReminders();
+
+  document.getElementById("btn-save-refill-reminder")?.addEventListener("click", async () => {
+    const medicineName = (document.getElementById("rm-med-name") as HTMLInputElement).value.trim();
+    if (!medicineName) {
+      showToast("Please specify medicine name for alarm scheduling.", "error");
+      return;
+    }
+
+    const nReminder = {
+      id: "REM_" + Date.now(),
+      medicineName,
+      frequency: (document.getElementById("rm-freq") as HTMLSelectElement).value,
+      type: (document.getElementById("rm-type") as HTMLSelectElement).value,
+      createdAt: Date.now()
+    };
+
+    try {
+      await set(ref(db, `users/${loggedInUser.uid}/refillReminders/${nReminder.id}`), nReminder);
+      showToast(`Refill schedule created for ${medicineName}!`, "success");
+      await drawReminders();
+      (document.getElementById("rm-med-name") as HTMLInputElement).value = "";
+    } catch (e) {
+      showToast("Constraint: Failed setting alarm sync.", "error");
+    }
+  });
+
+  (window as any).deleteRefillReminder = async (id: string) => {
+    if (confirm("Cancel and delete this medicine refill alarm?")) {
+      try {
+        await remove(ref(db, `users/${loggedInUser.uid}/refillReminders/${id}`));
+        showToast("Alarm unsubscribed successfully.", "info");
+        await drawReminders();
+      } catch (err) {
+        showToast("Error removing alarm schema.", "error");
+      }
+    }
+  };
+}
+
+// Prescription Storage Vault Manager
+async function openPrescriptionVaultManager() {
+  if (!loggedInUser) return;
+
+  const drawSlips = async () => {
+    let slipsHtml = "";
+    try {
+      const snap = await get(ref(db, `users/${loggedInUser.uid}/prescriptionVault`));
+      if (snap.exists()) {
+        const list = Object.values(snap.val() || {});
+        if (list.length > 0) {
+          slipsHtml = list.map((slip: any) => {
+            const upDate = slip.uploadedAt ? new Date(slip.uploadedAt).toLocaleDateString() : "Internal file";
+            const slipUrl = slip.url || slip.cloudinaryUrl || "";
+            return `
+              <div class="bg-white border text-slate-800 p-3 rounded-2xl space-y-2.5 font-sans animate-fade-in">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h4 class="text-xs font-black text-slate-900">${slip.title || "Prescription Slip"}</h4>
+                    <span class="text-[9px] text-slate-400 font-mono">Uploaded: ${upDate}</span>
+                  </div>
+                  <button onclick="deletePrescriptionSlip('${slip.id}')" class="w-7 h-7 rounded-full bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-all flex items-center justify-center cursor-pointer text-xs shrink-0">
+                    <i class="fa-solid fa-trash-can text-[10px]"></i>
+                  </button>
+                </div>
+                <!-- File controls -->
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  ${slipUrl ? `
+                    <a href="${slipUrl}" target="_blank" referrerPolicy="no-referrer" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-250 hover:bg-slate-200 text-slate-700 font-black text-[8.5px] rounded-lg tracking-wider uppercase flex items-center gap-1">
+                      <i class="fa-solid fa-eye"></i> View Slip
+                    </a>
+                    <button onclick="reorderUsingPrescription('${slip.id}', '${slip.title.replace(/'/g, "\\'")}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[8.5px] rounded-lg tracking-wider uppercase flex items-center gap-1 cursor-pointer">
+                      <i class="fa-solid fa-cart-shopping"></i> Fast Reorder
+                    </button>
+                  ` : ""}
+                </div>
+              </div>
+            `;
+          }).join("");
+        } else {
+          slipsHtml = `<div class="p-6 text-center text-slate-400 text-xs italic font-semibold uppercase">Vault is currently empty. Upload prescription slips below!</div>`;
+        }
+      } else {
+        slipsHtml = `<div class="p-6 text-center text-slate-400 text-xs italic font-semibold uppercase">Vault is currently empty. Upload prescription slips below!</div>`;
+      }
+    } catch (err) {
+      slipsHtml = `<div class="p-4 text-rose-500 text-xs">Error compiling prescription slips.</div>`;
+    }
+
+    const box = document.getElementById("vault-slips-box");
+    if (box) box.innerHTML = slipsHtml;
+  };
+
+  const html = `
+    <div class="space-y-5 animate-fade-in p-1 font-sans text-xs">
+      <!-- Upload Prescription Slip Form -->
+      <div class="bg-emerald-50/20 border border-slate-100 rounded-3xl p-4.5 space-y-3.5">
+        <h4 class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Secure Document Upload</h4>
+        
+        <div class="space-y-1">
+          <label class="block text-[8.5px] uppercase font-black text-rose-500/80 tracking-wide">Medicines Title / Dr. Designation</label>
+          <input type="text" id="vp-title" placeholder="e.g. Asthma Dr. Gupta Presc, Cardiac slip" class="w-full px-3 py-2 bg-white border border-slate-200 text-slate-800 rounded-xl text-xs font-bold outline-none focus:border-emerald-500">
+        </div>
+
+        <div class="space-y-2">
+          <label class="block text-[8.5px] uppercase font-black text-slate-400 tracking-wide">Select Slip Image File (Camera / Image)</label>
+          <div class="border-2 border-dashed border-slate-200 hover:border-emerald-500 bg-white p-6 rounded-2xl text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2" onclick="document.getElementById('vp-file-obj').click()">
+            <i class="fa-solid fa-cloud-arrow-up text-xl text-slate-400 animate-bounce"></i>
+            <span class="text-[9.5px] text-slate-500 font-extrabold pb-0.5">Drag & Drop or Click to browse</span>
+            <span class="text-[8px] text-slate-400 font-semibold font-mono uppercase bg-slate-50 border border-slate-150 px-2 py-0.5 rounded leading-none" id="vp-file-status">No Chosen Image File</span>
+            <input type="file" id="vp-file-obj" class="hidden" accept="image/*">
+          </div>
+        </div>
+
+        <button id="btn-save-vault-prescription" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[10px] tracking-wider rounded-xl transition-all cursor-pointer shadow-sm">Authorize Secure Vault Upload</button>
+      </div>
+
+      <!-- Prescription archival library -->
+      <div class="space-y-3">
+        <h4 class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Prescription Storage Shelf</h4>
+        <div class="space-y-2" id="vault-slips-box">
+          <!-- Populated dynamic list -->
+        </div>
+      </div>
+    </div>
+  `;
+
+  openProfileDrawer(`<i class="fa-solid fa-file-prescription text-emerald-600 mr-1.5 animate-pulse"></i> Patient Prescription Vault`, html);
+  await drawSlips();
+
+  // Watch chosen file label
+  const fileInp = document.getElementById("vp-file-obj") as HTMLInputElement;
+  fileInp?.addEventListener("change", () => {
+    const lbl = document.getElementById("vp-file-status");
+    if (lbl && fileInp.files && fileInp.files[0]) {
+      lbl.innerText = fileInp.files[0].name.substring(0, 15) + "...";
+    }
+  });
+
+  // Action upload prescription
+  document.getElementById("btn-save-vault-prescription")?.addEventListener("click", async () => {
+    const title = (document.getElementById("vp-title") as HTMLInputElement).value.trim();
+    if (!title) {
+      showToast("Please enter a title describing this prescription slip.", "error");
+      return;
+    }
+
+    if (!fileInp.files || !fileInp.files[0]) {
+      showToast("Constraint: Please select an image of your prescription slip to compound.", "error");
+      return;
+    }
+
+    const saveBtn = document.getElementById("btn-save-vault-prescription") as HTMLButtonElement;
+    saveBtn.disabled = true;
+    saveBtn.innerText = "UPLOADING TO CLINICAL CLOUD...";
+    showToast("Starting secure file upload to Apothecary secure server...", "info");
+
+    try {
+      const livePath = await uploadToCloudinary(fileInp.files[0]);
+      if (!livePath) {
+        throw new Error("Local folder upload constraints triggered.");
+      }
+
+      const id = "PRES_" + Date.now();
+      const nPresc = {
+        id,
+        title,
+        url: livePath,
+        uploadedAt: Date.now()
+      };
+
+      await set(ref(db, `users/${loggedInUser.uid}/prescriptionVault/${id}`), nPresc);
+      showToast("Prescription file archived securely!", "success");
+      await drawSlips();
+
+      // Clear layout
+      (document.getElementById("vp-title") as HTMLInputElement).value = "";
+      fileInp.value = "";
+      document.getElementById("vp-file-status")!.innerText = "No Chosen Image File";
+    } catch (err: any) {
+      console.error(err);
+      showToast("Failed compiling file uploads. Re-check file formats.", "error");
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.innerText = "Authorize Secure Vault Upload";
+    }
+  });
+
+  // Dynamic window mapping
+  (window as any).deletePrescriptionSlip = async (id: string) => {
+    if (confirm("Are you sure you want to delete this prescription slip registry?")) {
+      try {
+        await remove(ref(db, `users/${loggedInUser.uid}/prescriptionVault/${id}`));
+        showToast("Prescription deleted.", "info");
+        await drawSlips();
+      } catch (err) {
+        showToast("Constraint: Record erase error.", "error");
+      }
+    }
+  };
+
+  (window as any).reorderUsingPrescription = (id: string, title: string) => {
+    showToast("Reorder triggered with slip: ID #" + id.substring(0, 6).toUpperCase(), "success");
+    // Dispatch system advisory alert popup
+    const alertHtml = `
+      <div class="space-y-3.5 p-1 animate-fade-in text-xs font-sans text-slate-700">
+        <div class="bg-emerald-50 border border-emerald-150 p-3 rounded-2xl text-[9.5px] font-black text-emerald-800 uppercase leading-normal tracking-wide">
+          Prescription fast reorder submitted
+        </div>
+        <p class="leading-relaxed">Your selected prescription <strong>"${title}"</strong> has been securely routed to a licensed MedsHub pharmacist auditor.</p>
+        <p class="leading-relaxed font-semibold text-slate-500">A dedicated medical care practitioner is compiling the specified medications inside your active checkout cart. We will issue a live notification when the compilation completes!</p>
+        <button onclick="profileDrawer.classList.add('hidden')" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase rounded-xl transition-all cursor-pointer shadow-sm text-center">Close Advisor Panel</button>
+      </div>
+    `;
+    openProfileDrawer(`<i class="fa-solid fa-user-doctor text-emerald-600 animate-bounce"></i> Reorder Compounded Ready`, alertHtml);
+  };
+}
+
+// Health Records Hub
+async function openHealthRecordsManager() {
+  if (!loggedInUser) return;
+
+  const drawDocs = async (filterKeyword = "") => {
+    let docsHtml = "";
+    try {
+      const snap = await get(ref(db, `users/${loggedInUser.uid}/healthRecords`));
+      if (snap.exists()) {
+        let list = Object.values(snap.val() || {});
+        
+        if (filterKeyword.trim()) {
+          const kw = filterKeyword.toLowerCase().trim();
+          list = list.filter((item: any) => 
+            (item.title || "").toLowerCase().includes(kw) || 
+            (item.category || "").toLowerCase().includes(kw)
+          );
+        }
+
+        if (list.length > 0) {
+          docsHtml = list.map((doc: any) => {
+            const upDate = doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : "Internal Document";
+            const docUrl = doc.url || "";
+            return `
+              <div class="bg-white border text-slate-800 p-3 rounded-2xl space-y-2 flex flex-col font-sans animate-fade-in">
+                <div class="flex items-center justify-between">
+                  <div class="min-w-0">
+                    <span class="px-1.5 py-0.2 bg-indigo-50 border border-indigo-100/50 text-indigo-700 text-[8px] font-black uppercase rounded">${doc.category || "General Report"}</span>
+                    <h4 class="text-xs font-black text-slate-900 truncate mt-1">${doc.title || "Clinical Report File"}</h4>
+                    <span class="text-[9px] text-slate-400 font-semibold font-mono">Date: ${upDate}</span>
+                  </div>
+                  <button onclick="deleteHealthDoc('${doc.id}')" class="w-7 h-7 rounded-full bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-all flex items-center justify-center shrink-0 cursor-pointer">
+                    <i class="fa-solid fa-trash-can text-[10px]"></i>
+                  </button>
+                </div>
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  ${docUrl ? `
+                    <a href="${docUrl}" target="_blank" referrerPolicy="no-referrer" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-[8.5px] rounded-lg tracking-wide uppercase flex items-center gap-1">
+                      <i class="fa-solid fa-file-invoice text-indigo-500"></i> View Record
+                    </a>
+                    <button onclick="shareHealthDocLink('${docUrl.replace(/'/g, "\\'")}')" class="px-2.5 py-1.5 bg-cyan-600 hover:bg-cyan-700 text-white font-extrabold text-[8.5px] rounded-lg tracking-wide uppercase flex items-center gap-1 cursor-pointer">
+                      <i class="fa-solid fa-share-nodes"></i> Share with Doctor
+                    </button>
+                  ` : ""}
+                </div>
+              </div>
+            `;
+          }).join("");
+        } else {
+          docsHtml = `<div class="p-6 text-center text-slate-400 text-xs italic font-semibold uppercase">No matching reports or documents found.</div>`;
+        }
+      } else {
+        docsHtml = `<div class="p-6 text-center text-slate-400 text-xs italic font-semibold uppercase">Empty records. Classify, upload lab indices or diagnostic sheets below!</div>`;
+      }
+    } catch (e) {
+      docsHtml = `<div class="p-4 text-rose-500 text-xs">Error compiling health records database.</div>`;
+    }
+
+    const box = document.getElementById("hr-docs-container");
+    if (box) box.innerHTML = docsHtml;
+  };
+
+  const html = `
+    <div class="space-y-5 animate-fade-in p-1 font-sans text-xs">
+      <!-- Create Record Upload Card -->
+      <div class="bg-cyan-50/25 border border-slate-100 rounded-3xl p-4.5 space-y-3.5">
+        <h4 class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Index Diagnostics slip</h4>
+        
+        <div class="space-y-1">
+          <label class="block text-[8.5px] uppercase font-black text-slate-400 tracking-wide">Document Classification Topic</label>
+          <select id="hr-cat" class="w-full px-2 py-2 bg-white border border-slate-200 text-slate-800 rounded-xl text-xs font-bold outline-none cursor-pointer">
+            <option value="Lab Report">Lab & Blood Reports</option>
+            <option value="Vaccination Card">Vaccination Records</option>
+            <option value="Prescription Slip">Prescription Archives</option>
+            <option value="Medical Report">General Diagnostics / ECG / Case paper</option>
+          </select>
+        </div>
+
+        <div class="space-y-1">
+          <label class="block text-[8.5px] uppercase font-black text-slate-400 tracking-wide">Report / Sheet Title</label>
+          <input type="text" id="hr-title" placeholder="e.g. Covid Vaccine dose 2, Blood glucose check" class="w-full px-3 py-2 bg-white border border-slate-200 text-slate-800 rounded-xl text-xs font-bold outline-none focus:border-cyan-550">
+        </div>
+
+        <div class="space-y-2">
+          <label class="block text-[8.5px] uppercase font-black text-slate-400 tracking-wide">Select Report Image File</label>
+          <div class="border-2 border-dashed border-slate-200 hover:border-cyan-500 bg-white p-6 rounded-2xl text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2" onclick="document.getElementById('hr-file').click()">
+            <i class="fa-solid fa-file-pdf text-xl text-slate-400"></i>
+            <span class="text-[9.5px] text-slate-500 font-extrabold">Choose Image or PDF screen</span>
+            <span class="text-[8px] text-slate-400 font-semibold font-mono uppercase bg-slate-50 border border-slate-150 px-2 py-0.5 rounded leading-none" id="hr-file-name">No report chosen</span>
+            <input type="file" id="hr-file" class="hidden" accept="image/*">
+          </div>
+        </div>
+
+        <button id="btn-save-health-record" class="w-full py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white font-black uppercase text-[10px] tracking-wider rounded-xl transition-all cursor-pointer shadow-sm">Save to clinical archives</button>
+      </div>
+
+      <!-- Live Search & Classification filters -->
+      <div class="space-y-3">
+        <div class="flex items-center justify-between border-b border-slate-50 pb-1.5 flex-wrap gap-2">
+          <h4 class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Indexed Documents Database</h4>
+          <input type="text" id="hr-search-bar" placeholder="Instant Search records..." class="px-3.5 py-1 text-[9.5px] border border-slate-200 outline-none rounded-xl bg-white max-w-[150px] w-full focus:border-cyan-500">
+        </div>
+        <div class="space-y-2" id="hr-docs-container">
+          <!-- Dynamic logs populated here -->
+        </div>
+      </div>
+    </div>
+  `;
+
+  openProfileDrawer(`<i class="fa-solid fa-folder-open text-cyan-550 text-cyan-600 mr-1.5 animate-pulse"></i> Certified Health Records Hub`, html);
+  await drawDocs();
+
+  // Handle Search Input in Vault
+  const searchBar = document.getElementById("hr-search-bar") as HTMLInputElement;
+  searchBar?.addEventListener("input", () => {
+    drawDocs(searchBar.value);
+  });
+
+  // Watch chosen file label
+  const hrFile = document.getElementById("hr-file") as HTMLInputElement;
+  hrFile?.addEventListener("change", () => {
+    const lbl = document.getElementById("hr-file-name");
+    if (lbl && hrFile.files && hrFile.files[0]) {
+      lbl.innerText = hrFile.files[0].name.substring(0, 15) + "...";
+    }
+  });
+
+  // Save record trigger
+  document.getElementById("btn-save-health-record")?.addEventListener("click", async () => {
+    const title = (document.getElementById("hr-title") as HTMLInputElement).value.trim();
+    if (!title) {
+      showToast("Please enter a clear title describing this medical file.", "error");
+      return;
+    }
+
+    if (!hrFile.files || !hrFile.files[0]) {
+      showToast("Clinical focus: Please choose an image of your record or report sheet.", "error");
+      return;
+    }
+
+    const saveBtn = document.getElementById("btn-save-health-record") as HTMLButtonElement;
+    saveBtn.disabled = true;
+    saveBtn.innerText = "UPLOADING TO HEALTH DRIVE...";
+
+    try {
+      const livePath = await uploadToCloudinary(hrFile.files[0]);
+      if (!livePath) throw new Error("Cloud folder restrictions compounding.");
+
+      const id = "DOC_" + Date.now();
+      const nDoc = {
+        id,
+        category: (document.getElementById("hr-cat") as HTMLSelectElement).value,
+        title,
+        url: livePath,
+        uploadedAt: Date.now()
+      };
+
+      await set(ref(db, `users/${loggedInUser.uid}/healthRecords/${id}`), nDoc);
+      showToast("Clinical document compiled & saved securely!", "success");
+      await drawDocs();
+      
+      // Clear
+      (document.getElementById("hr-title") as HTMLInputElement).value = "";
+      hrFile.value = "";
+      document.getElementById("hr-file-name")!.innerText = "No report chosen";
+    } catch (err) {
+      showToast("Error processing clinical record archive.", "error");
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.innerText = "Save to clinical archives";
+    }
+  });
+
+  // Global delete record hook
+  (window as any).deleteHealthDoc = async (id: string) => {
+    if (confirm("Permanently delete and purge this diagnostics file from database records?")) {
+      try {
+        await remove(ref(db, `users/${loggedInUser.uid}/healthRecords/${id}`));
+        showToast("Clinical record deleted.", "info");
+        await drawDocs();
+      } catch (err) {
+        showToast("Error removing medical record archives.", "error");
+      }
+    }
+  };
+
+  (window as any).shareHealthDocLink = (urlStr: string) => {
+    navigator.clipboard.writeText(urlStr).then(() => {
+      showToast("One-Time Patient Document Link copied! Direct secure access link prepared for sharing with your practitioner.", "success");
+    });
+  };
+}
+
+// Chronic Medicine Subscriptions Manager
+async function openSubscriptionsManager() {
+  if (!loggedInUser) return;
+
+  const drawSubs = async () => {
+    let subsHtml = "";
+    try {
+      const snap = await get(ref(db, `users/${loggedInUser.uid}/subscriptions`));
+      if (snap.exists()) {
+        const list = Object.values(snap.val() || {});
+        if (list.length > 0) {
+          subsHtml = list.map((item: any) => {
+            const upDate = item.nextDeliveryDate ? new Date(item.nextDeliveryDate).toLocaleDateString() : "Pending";
+            return `
+              <div class="bg-white border text-slate-800 p-3.5 rounded-2xl flex items-center justify-between font-sans animate-fade-in relative">
+                <div class="space-y-1">
+                  <span class="px-1.5 py-0.2 bg-emerald-50 text-emerald-800 font-black tracking-wide text-[8px] uppercase rounded border border-emerald-100">Recurring dispatch active</span>
+                  <h4 class="text-xs font-black text-slate-900 mt-1">${item.medicineName || "Prescription Refills Cycle"}</h4>
+                  <p class="text-[9.5px] text-slate-400 font-bold">Qty: <span class="font-bold text-slate-650 text-slate-700">${item.quantity || 1} units</span> | Frequency: <span class="uppercase text-indigo-600 font-black">${item.frequency || "Monthly"}</span></p>
+                  <p class="text-[9px] text-slate-400 font-mono">Next Automatic Dispatch Scheduled on: <span class="font-extrabold text-indigo-700">${upDate}</span></p>
+                </div>
+                <button onclick="deleteSubscriptionPlan('${item.id}')" class="w-8 h-8 rounded-full bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-all flex items-center justify-center shrink-0 cursor-pointer" title="Cancel Subscription">
+                  <i class="fa-solid fa-square-minus text-rose-500 text-sm"></i>
+                </button>
+              </div>
+            `;
+          }).join("");
+        } else {
+          subsHtml = `<div class="p-6 text-center text-slate-400 text-xs italic font-semibold uppercase">No continuous chronic refill subscriptions. Create one below!</div>`;
+        }
+      } else {
+        subsHtml = `<div class="p-6 text-center text-slate-400 text-xs italic font-semibold uppercase">No continuous chronic refill subscriptions. Create one below!</div>`;
+      }
+    } catch (err) {
+      subsHtml = `<div class="p-4 text-center text-xs text-rose-500">Error retrieving continuous subscription logs.</div>`;
+    }
+
+    const box = document.getElementById("sub-plans-container");
+    if (box) box.innerHTML = subsHtml;
+  };
+
+  const html = `
+    <div class="space-y-5 animate-fade-in p-1 font-sans text-xs">
+      <!-- Create Subscription Refill Plan Card -->
+      <div class="bg-indigo-50/20 border border-slate-100 rounded-3xl p-4.5 space-y-3.5">
+        <div class="space-y-1">
+          <h4 class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Subscribe Automatic Refill Plan</h4>
+          <p class="text-[9px] text-slate-400 mt-0.5 leading-snug">Ideal for diabetic, cardiovascular, or thyroid medications taken continuously.</p>
+        </div>
+        
+        <div class="space-y-1">
+          <label class="block text-[8.5px] uppercase font-black text-indigo-600/80 tracking-wide">Medicine / Stock Name</label>
+          <input type="text" id="sub-med-name" placeholder="e.g. Levothyroxine, Lipitor, Metformin" class="w-full px-3 py-2 bg-white border border-slate-200 text-slate-800 rounded-xl text-xs font-bold outline-none focus:border-indigo-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div class="space-y-1">
+            <label class="block text-[8.5px] uppercase font-black text-slate-400 tracking-wide font-sans">Shipment Auto-Cycle</label>
+            <select id="sub-freq" class="w-full px-2 py-2 bg-white border border-slate-200 text-slate-800 rounded-xl text-xs font-bold outline-none cursor-pointer font-sans">
+              <option value="Weekly">Weekly (Every 7 days)</option>
+              <option value="Bi-Weekly">Bi-Weekly (Every 14 days)</option>
+              <option value="Monthly">Monthly (Every 30 days)</option>
+            </select>
+          </div>
+          <div class="space-y-1">
+            <label class="block text-[8.5px] uppercase font-black text-slate-400 tracking-wide">Pack Quantity</label>
+            <input type="number" id="sub-qty" value="1" min="1" class="w-full px-3 py-2 bg-white border border-slate-200 text-slate-800 rounded-xl text-xs font-bold' font-mono outline-none">
+          </div>
+        </div>
+
+        <button id="btn-save-chronic-subscription" class="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-black uppercase text-[10px] tracking-wider rounded-xl transition-all cursor-pointer shadow-sm">Authorize Automatic Chronic Refills</button>
+      </div>
+
+      <!-- Subscriptions List -->
+      <div class="space-y-3">
+        <h4 class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Configured Chronic Schedules</h4>
+        <div class="space-y-2" id="sub-plans-container">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </div>
+  `;
+
+  openProfileDrawer(`<i class="fa-solid fa-rotate text-rose-500 mr-1.5 animate-pulse"></i> Chronic Medication Refill Cycles`, html);
+  await drawSubs();
+
+  // Save subscription action handler
+  document.getElementById("btn-save-chronic-subscription")?.addEventListener("click", async () => {
+    const medName = (document.getElementById("sub-med-name") as HTMLInputElement).value.trim();
+    if (!medName) {
+      showToast("Please enter a medicine name to authorize refill cycles.", "error");
+      return;
+    }
+
+    const freq = (document.getElementById("sub-freq") as HTMLSelectElement).value;
+    const qty = Number((document.getElementById("sub-qty") as HTMLInputElement).value) || 1;
+
+    let cycleDays = 30;
+    if (freq === "Weekly") cycleDays = 7;
+    else if (freq === "Bi-Weekly") cycleDays = 14;
+
+    const nextDeliveryDate = Date.now() + cycleDays * 24 * 60 * 60 * 1000;
+    const id = "SUB_" + Date.now();
+
+    const nSub = {
+      id,
+      medicineName: medName,
+      frequency: freq,
+      quantity: qty,
+      nextDeliveryDate,
+      createdAt: Date.now()
+    };
+
+    try {
+      await set(ref(db, `users/${loggedInUser.uid}/subscriptions/${id}`), nSub);
+      showToast(`Refills authorized! Metformin auto-shipments established: ${freq}`, "success");
+      await drawSubs();
+      (document.getElementById("sub-med-name") as HTMLInputElement).value = "";
+    } catch (err) {
+      showToast("Authorisation constraints: Failed creating schedule.", "error");
+    }
+  });
+
+  // Global delete handler
+  (window as any).deleteSubscriptionPlan = async (id: string) => {
+    if (confirm("De-authorize and cancel this automatic chronic medication refill subscription?")) {
+      try {
+        await remove(ref(db, `users/${loggedInUser.uid}/subscriptions/${id}`));
+        showToast("Auto-shipments cycle canceled.", "info");
+        await drawSubs();
+      } catch (err) {
+        showToast("Deauthorization failed.", "error");
+      }
+    }
+  };
+}
+
+// Voice search Web Speech recognition & SOS Triggers handler
+function initDiagnosticGreetingsAndVoiceSearch() {
+  // SOS Button click binding inside User Panel
+  const sosBtn = document.getElementById("btn-home-sos-trigger");
+  sosBtn?.addEventListener("click", () => {
+    const sosHtml = `
+      <div class="space-y-4 animate-fade-in text-xs font-sans text-slate-700">
+        <div class="p-3 bg-red-100 border border-red-200 text-rose-800 rounded-xl leading-normal text-[10px] font-black uppercase tracking-wide">
+          WARNING: This is the critical MedsHub emergency priority channel. Bypasses regular order queues and alerts nearest apothecaries of critical medicine demands.
+        </div>
+        <div class="space-y-2">
+          <button onclick="triggerEmergencyCall('911')" class="w-full py-3 bg-red-650 bg-red-600 hover:bg-red-700 text-white font-black uppercase rounded-2xl flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer tracking-wider text-xs">
+            <i class="fa-solid fa-truck-medical animate-pulse text-sm"></i> Call Medical Ambulance (108/911)
+          </button>
+          <button onclick="triggerEmergencyCall('1800')" class="w-full py-3 bg-slate-900 border border-slate-700 hover:bg-slate-800 text-white font-black uppercase rounded-2xl flex items-center justify-center gap-2 transition-all cursor-pointer tracking-wider text-xs">
+            <i class="fa-solid fa-phone"></i> Nearest Partner Apothecary
+          </button>
+        </div>
+        <div class="p-3 bg-slate-50 border border-slate-100 rounded-xl space-y-1">
+          <h5 class="font-extrabold uppercase text-[9px] text-slate-400">Share Current Active GPS coordinates:</h5>
+          <p class="font-mono text-slate-700 font-bold text-[10px]" id="sos-coordinates-txt">Location: detecting live coordinate logs...</p>
+          <button onclick="copyCurrentCoordinatesTriage()" class="mt-2 text-[8.5px] bg-indigo-50 border border-indigo-100 text-indigo-700 font-black px-3 py-1.5 rounded-lg tracking-wide uppercase transition-all cursor-pointer">Copy Triage Coordinates Message</button>
+        </div>
+      </div>
+    `;
+    openProfileDrawer(`<span class="text-rose-600 font-extrabold"><i class="fa-solid fa-triangle-exclamation animate-pulse"></i> PATIENT EMERGENCY SOS</span>`, sosHtml);
+    
+    // Auto-detect GPS if available
+    const coordTxt = document.getElementById("sos-coordinates-txt");
+    if (coordTxt && currentCoordinates) {
+      coordTxt.innerText = `Precision Coordinate District: ${currentCoordinates.district || currentCoordinates.city || "Gonda, UP"}\nLatitude: ${currentCoordinates.lat || "27.13"}\nLongitude: ${currentCoordinates.lng || "81.96"}`;
+    } else if (coordTxt) {
+      getCurrentGPS().then((geo) => {
+        coordTxt.innerText = `Precision Coordinates:\nLatitude: ${geo.lat.toFixed(5)}\nLongitude: ${geo.lng.toFixed(5)}`;
+      }).catch(() => {
+        coordTxt.innerText = `Precision Coordinate District: Indira Nagar, Bengaluru Hub\nLatitude: 12.9716\nLongitude: 77.5946`;
+      });
+    }
+  });
+
+  // Voice Search Web Speech Recognition
+  const voiceBtn = document.getElementById("btn-voice-search");
+  voiceBtn?.addEventListener("click", () => {
+    const SpeechRecognitionClass = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognitionClass) {
+      showToast("Web Speech Recognition API is not supported in this browser environment.", "error");
+      return;
+    }
+
+    const recognition = new SpeechRecognitionClass();
+    recognition.lang = "en-IN"; // English (India) is fantastic for Hinglish medicine mixes
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    showToast("Voice Mic is Listening. Spell medicine name directly...", "info");
+    const micIcon = voiceBtn.querySelector("i");
+    if (micIcon) {
+      micIcon.className = "fa-solid fa-microphone text-xs bg-rose-200 text-rose-700 p-2 rounded-full animate-bounce";
+    }
+
+    recognition.onresult = (event: any) => {
+      const text = event.results[0][0].transcript;
+      showToast(`Web Speech Match: "${text}"`, "success");
+      const searchInp = document.getElementById("search-medicine-input") as HTMLInputElement;
+      if (searchInp) {
+        searchInp.value = text;
+        // Search trigger event
+        searchInp.dispatchEvent(new Event("input"));
+      }
+    };
+
+    recognition.onerror = (e: any) => {
+      console.error(e);
+      showToast("Voice recognition failed. Recheck microphone permissions.", "error");
+    };
+
+    recognition.onend = () => {
+      if (micIcon) {
+        micIcon.className = "fa-solid fa-microphone text-xs bg-rose-50/10 p-2 text-rose-500 hover:bg-rose-50/25 rounded-full transition-all";
+      }
+    };
+
+    recognition.start();
+  });
+}
+
+// Global window event triggers registration for SOS
+Object.assign(window, {
+  triggerEmergencyCall(num: string) {
+    showToast(`Routing priority clinical ambulance contact link to ${num}...`, "success");
+    // Attempt standard phone dialing trigger
+    window.location.href = `tel:${num}`;
+  },
+  copyCurrentCoordinatesTriage() {
+    const coordsStr = currentCoordinates 
+      ? `Lat: ${currentCoordinates.lat || "12.97"}, Lng: ${currentCoordinates.lng || "77.59"}` 
+      : "Indira Nagar, Bengaluru base";
+    const msg = `EMERGENCY AMBULANCE COMPLAINT: Priority medical dispatcher request at coordinate points: ${coordsStr}. Need immediate certified clinical dispatch!`;
+    navigator.clipboard.writeText(msg).then(() => {
+      showToast("Emergency coordinates message ready inside clipboard! Post to medical helper channels.", "success");
+    });
+  }
+});
+
+// Boot HUD welcome name, and initial bento greeting configurations upon sync
+async function upgradeHomeDynamicHUD() {
+  if (!loggedInUser) return;
+  try {
+    const usrSnap = await get(ref(db, `users/${loggedInUser.uid}`));
+    if (usrSnap.exists()) {
+      const uData = usrSnap.val();
+      
+      // Update Name Greeting
+      const hrs = new Date().getHours();
+      let prefix = "Good Morning";
+      if (hrs >= 18) prefix = "Good Evening";
+      else if (hrs >= 12) prefix = "Good Afternoon";
+      
+      const homePref = document.getElementById("home-greeting-prefix");
+      if (homePref) homePref.innerText = prefix;
+      
+      const homeUser = document.getElementById("home-greeting-username");
+      if (homeUser) homeUser.innerText = uData.name || loggedInUser.displayName || "Patient User";
+      
+      // Update coins & membership level
+      const coins = uData.coins || 250;
+      const coinsText = document.getElementById("home-coins-display");
+      if (coinsText) coinsText.innerText = `${coins} Coins`;
+      
+      let level = "Silver Care";
+      if (coins >= 1000) level = "Platinum Care";
+      else if (coins >= 500) level = "Gold Care";
+      
+      const levelDisplay = document.getElementById("tier-pill-display");
+      if (levelDisplay) levelDisplay.innerText = level;
+    }
+  } catch (err) {
+    console.error("HUD telemetry load error:", err);
+  }
+}
+
+// Watch Auth change to launch HUD checks
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    setTimeout(() => {
+      upgradeHomeDynamicHUD();
+      initDiagnosticGreetingsAndVoiceSearch();
+    }, 1200);
+  }
+});
 

@@ -55,6 +55,9 @@
       <button data-target="panel-finance" class="admin-nav-btn flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left whitespace-nowrap cursor-pointer">
         <i class="fa-solid fa-indian-rupee-sign text-lg w-5"></i>Finance & Area
       </button>
+      <button data-target="panel-rider-finance" class="admin-nav-btn flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left whitespace-nowrap cursor-pointer hover:bg-slate-100">
+        <i class="fa-solid fa-motorcycle text-lg w-5 text-indigo-500 animate-pulse"></i>Rider Finance Center
+      </button>
       <button data-target="panel-marketing" class="admin-nav-btn flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left whitespace-nowrap cursor-pointer">
         <i class="fa-solid fa-rectangle-ad text-lg w-5"></i>Promo & Marketing
       </button>
@@ -1118,6 +1121,273 @@
         </div>
       </section>
 
+      <!-- ================================= PANEL: RIDER FINANCE & SETTLEMENT ================================= -->
+      <section id="panel-rider-finance" class="admin-panel hidden space-y-6 animate-fade-in text-sans text-xs">
+        
+        <!-- Live Counters for Rider Finance Dashboard -->
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs flex flex-col justify-between">
+            <div>
+              <span class="text-[10px] uppercase font-bold text-slate-400">Total Rider Earnings</span>
+              <p id="rf-stat-total-earnings" class="text-xl font-extrabold text-slate-900 mt-1">₹0</p>
+            </div>
+            <span class="text-[9px] text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded-md font-bold mt-2 w-max text-[8px]">Complete Deliveries</span>
+          </div>
+          <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs flex flex-col justify-between">
+            <div>
+              <span class="text-[10px] uppercase font-bold text-slate-400">COD Handled On Hand</span>
+              <p id="rf-stat-cod-collected" class="text-xl font-extrabold text-amber-600 mt-1">₹0</p>
+            </div>
+            <span class="text-[9px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-md font-bold mt-2 w-max text-[8px]">Riders Cash Wallet</span>
+          </div>
+          <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs flex flex-col justify-between">
+            <div>
+              <span class="text-[10px] uppercase font-bold text-slate-400 font-sans">Approved COD Deposits</span>
+              <p id="rf-stat-cod-deposited" class="text-xl font-extrabold text-emerald-600 mt-1">₹0</p>
+            </div>
+            <span class="text-[9px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md font-bold mt-2 w-max text-[8px]">Deposited to Company</span>
+          </div>
+          <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs flex flex-col justify-between">
+            <div>
+              <span class="text-[10px] uppercase font-bold text-slate-400">Pending Settlements</span>
+              <p id="rf-stat-pending-salary" class="text-xl font-extrabold text-rose-600 mt-1">₹0</p>
+            </div>
+            <span id="rf-pending-alerts-badge" class="text-[9px] text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded-md font-bold mt-2 w-max text-[8px]">0 Active Claims</span>
+          </div>
+          <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs flex flex-col justify-between">
+            <div>
+              <span class="text-[10px] uppercase font-bold text-slate-400">Paid Salary Ledger</span>
+              <p id="rf-stat-paid-salary" class="text-xl font-extrabold text-indigo-600 mt-1">₹0</p>
+            </div>
+            <span class="text-[9px] text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-md font-bold mt-2 w-max text-[8px]">Disbursed to date</span>
+          </div>
+        </div>
+
+        <!-- Pending Finance Alerts Summary Block -->
+        <div id="rf-pending-alerts-banner" class="hidden bg-amber-50 border border-amber-100 text-slate-700 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center text-amber-700 shrink-0 text-lg">
+              <i class="fa-solid fa-triangle-exclamation animate-bounce"></i>
+            </div>
+            <div>
+              <h4 class="font-extrabold text-xs text-slate-800">Action Required: Pending Financial Operations</h4>
+              <p class="text-[10px] text-slate-500 font-sans">Certain riders have outstanding cash above limits or pending withdrawal requests awaiting verification.</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="alert-tab-settlements-btn" class="bg-amber-600 hover:bg-amber-700 text-white font-black text-[9px] px-3 py-1.5 rounded-xl transition-all shadow-sm shrink-0 uppercase tracking-wide cursor-pointer">Verify Settlements</button>
+            <button id="alert-tab-deposits-btn" class="bg-slate-900 hover:bg-slate-800 text-white font-black text-[9px] px-3 py-1.5 rounded-xl transition-all shadow-sm shrink-0 uppercase tracking-wide cursor-pointer font-sans">Verify Deposits</button>
+          </div>
+        </div>
+
+        <!-- Inner Navigation Sub-Tabs -->
+        <div class="bg-slate-100/60 p-1.5 rounded-2xl flex items-center gap-1 w-max border border-slate-200">
+          <button id="subtab-payroll-btn" class="rf-subtab-btn bg-white text-slate-900 shadow-xs px-4 py-2 rounded-xl font-extrabold text-[10px] tracking-wide transition-all uppercase flex items-center gap-2 cursor-pointer border border-slate-200/50" data-tab="rf-subtab-payroll">
+            <i class="fa-solid fa-users-gear text-indigo-500"></i>Payroll, Earnings & One-Click Pay
+          </button>
+          <button id="subtab-settlements-btn" class="rf-subtab-btn text-slate-500 hover:text-slate-800 px-4 py-2 rounded-xl font-extrabold text-[10px] tracking-wide transition-all uppercase flex items-center gap-2 cursor-pointer" data-tab="rf-subtab-settlements">
+            <i class="fa-solid fa-money-bill-wave text-rose-500"></i>Settlement Claims <span id="badge-count-pending-claims" class="bg-rose-500 text-white text-[8px] px-1.5 py-0.2 rounded-full hidden">0</span>
+          </button>
+          <button id="subtab-cod-btn" class="rf-subtab-btn text-slate-500 hover:text-slate-800 px-4 py-2 rounded-xl font-extrabold text-[10px] tracking-wide transition-all uppercase flex items-center gap-2 cursor-pointer" data-tab="rf-subtab-cod">
+            <i class="fa-solid fa-wallet text-amber-500"></i>COD & Cash Wallets <span id="badge-count-pending-deposits" class="bg-amber-500 text-white text-[8px] px-1.5 py-0.2 rounded-full hidden">0</span>
+          </button>
+        </div>
+
+        <!-- ======================= SUB-TAB PANEL 1: PAYROLL & DIRECTORY ======================= -->
+        <div id="rf-subtab-payroll" class="rf-subtab-panel space-y-6">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Riders Financial Sheets (Payroll Management) -->
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-xs overflow-hidden lg:col-span-2">
+              <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                <div>
+                  <h3 class="text-xs font-extrabold text-slate-900"><i class="fa-solid fa-people-carry-box text-teal-600 mr-2"></i>Rider Directory & General Payroll</h3>
+                  <p class="text-[10px] text-slate-400 mt-0.5 font-sans">Detailed breakdown of total completed rides, earnings, and fast payout capabilities.</p>
+                </div>
+                <!-- Search bar -->
+                <div class="relative max-w-xs w-full">
+                  <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                    <i class="fa-solid fa-search text-[10px]"></i>
+                  </span>
+                  <input type="text" id="inp-rf-rider-search" placeholder="Filter riders by name..." class="w-full pl-8 pr-4 py-2 text-[10px] border border-slate-200 rounded-xl outline-none focus:border-slate-400 bg-white">
+                </div>
+              </div>
+
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr class="bg-slate-50 border-b border-slate-100 text-slate-400 uppercase font-extrabold text-[9px]">
+                      <th class="p-4">Rider Identity</th>
+                      <th class="p-4">Deliveries</th>
+                      <th class="p-4 text-emerald-700">All-Time Earnings</th>
+                      <th class="p-4 text-indigo-750 text-indigo-700">Settled Paid</th>
+                      <th class="p-4 text-rose-700">Pending Pay</th>
+                      <th class="p-4 text-center">Fast Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbody-rf-riders-payroll" class="font-semibold text-slate-700 text-xs">
+                    <!-- Loaded dynamically -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Global Salary Ledger -->
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-xs p-5 space-y-4 lg:col-span-1 flex flex-col">
+              <div class="border-b border-slate-50 pb-3 flex flex-col gap-2">
+                <div class="flex items-center justify-between">
+                  <h3 class="text-xs font-extrabold text-slate-900"><i class="fa-solid fa-file-invoice-dollar text-indigo-500 mr-2"></i>Salary Ledger Records</h3>
+                  <button id="btn-rf-export-ledger" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[8.5px] font-black uppercase px-2 py-1 rounded-md border border-indigo-100 flex items-center gap-1 cursor-pointer">
+                    <i class="fa-solid fa-download"></i> EXPORT
+                  </button>
+                </div>
+                <p class="text-[10px] text-slate-400 font-sans">Complete record of authorized direct bank and UPI disbursements.</p>
+              </div>
+
+              <!-- Filter Ledger by Payment System -->
+              <div class="flex items-center gap-1">
+                <button id="rf-ledger-filter-all" class="rf-ledger-filter-btn bg-slate-900 text-white px-2 py-1 rounded-md text-[8.5px] font-black uppercase transition-all tracking-wide border border-transparent cursor-pointer">ALL</button>
+                <button id="rf-ledger-filter-upi" class="rf-ledger-filter-btn bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-2 py-1 rounded-md text-[8.5px] font-black uppercase transition-all tracking-wide cursor-pointer">UPI</button>
+                <button id="rf-ledger-filter-bank" class="rf-ledger-filter-btn bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-2 py-1 rounded-md text-[8.5px] font-black uppercase transition-all tracking-wide cursor-pointer">BANK</button>
+              </div>
+
+              <!-- Ledger Container -->
+              <div class="flex-1 overflow-y-auto max-h-[380px] min-h-[250px] space-y-2" id="rf-salary-ledger-list">
+                <!-- Loaded dynamically -->
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ======================= SUB-TAB PANEL 2: SETTLEMENT REQUESTS ======================= -->
+        <div id="rf-subtab-settlements" class="rf-subtab-panel hidden space-y-6">
+          <div class="bg-white rounded-2xl border border-slate-100 shadow-xs overflow-hidden">
+            <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+              <h3 class="text-xs font-extrabold text-slate-900"><i class="fa-solid fa-file-signature text-rose-500 mr-2"></i>Rider Settlement Claims Hub</h3>
+              <p class="text-[10px] text-slate-400 mt-0.5 font-sans font-medium">Claims submitted by riders from their mobile app. Approve by issuing UPI/Bank transfer and posting the concrete UTR transaction number.</p>
+            </div>
+
+            <div class="overflow-x-auto animate-fade-in">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr class="bg-slate-50 border-b border-slate-100 text-slate-400 uppercase font-extrabold text-[9px]">
+                    <th class="p-4">Claim Reference</th>
+                    <th class="p-4">Rider</th>
+                    <th class="p-4 text-indigo-700">Amount Acknowledged</th>
+                    <th class="p-4">Target UPI VPA</th>
+                    <th class="p-4">Date Submitted</th>
+                    <th class="p-4">Status</th>
+                    <th class="p-4 text-right">Process Action</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-rf-settlement-requests" class="font-semibold text-slate-700">
+                  <!-- Loaded dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ======================= SUB-TAB PANEL 3: COD RECONCILIATION ======================= -->
+        <div id="rf-subtab-cod" class="rf-subtab-panel hidden space-y-6">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- COD Reconciliation list -->
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-xs overflow-hidden lg:col-span-2">
+              <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+                <h3 class="text-xs font-extrabold text-slate-900"><i class="fa-solid fa-coins text-amber-500 mr-2"></i>Cash on Delivery (COD) Reconciliation Directory</h3>
+                <p class="text-[10px] text-slate-400 mt-0.5 font-sans">Summary of overall cash collections and company deposits. Keep risk flags monitored closely.</p>
+              </div>
+
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr class="bg-slate-50 border-b border-slate-100 text-slate-400 uppercase font-extrabold text-[9px]">
+                      <th class="p-4">Rider Identity</th>
+                      <th class="p-4">Delivered COD Count</th>
+                      <th class="p-4 text-amber-700">Total Cash Collected</th>
+                      <th class="p-4 text-emerald-700">Approved Deposits</th>
+                      <th class="p-4 text-rose-700">Outstanding Cash in Pocket</th>
+                      <th class="p-4">Risk Threshold</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbody-rf-cod-reconciliation" class="font-semibold text-slate-700">
+                    <!-- Dynamically calculated loops -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Pending Deposit Receipts reviews -->
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-xs p-5 space-y-4 lg:col-span-1">
+              <div>
+                <h3 class="text-xs font-extrabold text-slate-900"><i class="fa-solid fa-receipt text-emerald-500 mr-2"></i>COD Deposit Receipt Verifications</h3>
+                <p class="text-[10px] text-slate-400 mt-0.5 font-sans">Evaluate transfer receipts submitted by riders. Mark "Approve" to diminish their Outstanding Cash Wallets.</p>
+              </div>
+
+              <!-- Receipts list -->
+              <div class="space-y-4 max-h-[480px] overflow-y-auto" id="rf-pending-deposits-list">
+                <!-- Dynamically loaded review blocks with Image previews -->
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ======================= MODAL: ONE-CLICK PAY RIDER DIALOG ======================= -->
+      <div id="rf-payout-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 font-sans text-xs">
+        <div class="bg-white rounded-3xl max-w-md w-full border border-slate-100 shadow-2xl overflow-hidden animate-fade-in text-slate-700">
+          <div class="px-5 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+            <h3 class="font-extrabold text-slate-900 text-xs tracking-tight uppercase flex items-center gap-1.5"><i class="fa-solid fa-paper-plane text-indigo-500"></i>Process Rider Payout Disbursement</h3>
+            <button id="btn-close-rf-payout-modal" class="w-6 h-6 rounded-full hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-all cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <form id="form-rf-process-payout" class="p-5 space-y-4">
+            <input type="hidden" id="rf-payout-rider-id">
+            
+            <div class="bg-indigo-50/60 rounded-2xl p-4 border border-indigo-100 flex items-center gap-3">
+              <div class="w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-user-ninja text-md"></i>
+              </div>
+              <div>
+                <h4 id="rf-payout-rider-name" class="font-extrabold text-slate-800 text-xs">Name Here</h4>
+                <p id="rf-payout-rider-sub" class="text-[9px] text-indigo-600 font-mono mt-0.5">Pending with MedsHub: ₹0</p>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-[8.5px] font-black uppercase text-slate-400 mb-1.5">Amount to Disburse (₹)</label>
+              <input type="number" id="rf-payout-amount" required min="1" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl font-bold font-mono focus:border-indigo-500 outline-none text-slate-800 text-xs bg-white">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[8.5px] font-black uppercase text-slate-400 mb-1.5">Disbursal Pipeline</label>
+                <select id="rf-payout-method" class="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-extrabold outline-none focus:border-indigo-500 text-xs text-slate-800 cursor-pointer">
+                  <option value="upi">UPI Transfer</option>
+                  <option value="bank">Direct Bank Transfer</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[8.5px] font-black uppercase text-slate-400 mb-1.5">Destination UPI / Bank Details</label>
+                <input type="text" id="rf-payout-target" placeholder="e.g., wallet@upi" class="w-full px-3 py-2 border border-slate-200 rounded-xl font-mono text-xs focus:border-indigo-500 outline-none bg-white">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-[8.5px] font-black uppercase text-slate-400 mb-1.5">Enter Bank / UPI UTR Transaction Reference Number (Required)</label>
+              <input type="text" id="rf-payout-utr" required placeholder="e.g. UTR3025983281" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl font-mono text-xs tracking-wider focus:border-indigo-500 outline-none uppercase font-extrabold bg-white text-slate-800">
+            </div>
+
+            <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-[10px] py-3 rounded-xl tracking-wider uppercase transition-all shadow flex items-center justify-center gap-2 cursor-pointer">
+              <i class="fa-solid fa-circle-check text-emerald-400"></i> Authorize & Disburse
+            </button>
+          </form>
+        </div>
+      </div>
+
       <!-- ================================= PANEL 5: MARKETING ================================= -->
       <section id="panel-marketing" class="admin-panel hidden space-y-6">
         
@@ -1916,6 +2186,50 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="usr-inspect-addresses-grid">
             <!-- Dynamically populated from admin.ts -->
             <p class="text-slate-400 text-xs italic py-2">No delivery locations linked to this patient folder.</p>
+          </div>
+        </div>
+
+        <!-- Family Profiles List Segment -->
+        <div class="space-y-3">
+          <h4 class="text-[10px] font-black uppercase text-slate-400 tracking-wider flex items-center gap-1.5 border-b border-slate-50 pb-1.5 select-none">
+            <i class="fa-solid fa-people-roof text-slate-500"></i>
+            Family Relations & Health Profiles
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="usr-inspect-family-grid">
+            <p class="text-slate-400 text-xs italic py-1">No linked family profiles.</p>
+          </div>
+        </div>
+
+        <!-- Active Subscription Medicines Segment -->
+        <div class="space-y-3">
+          <h4 class="text-[10px] font-black uppercase text-slate-400 tracking-wider flex items-center gap-1.5 border-b border-slate-50 pb-1.5 select-none">
+            <i class="fa-solid fa-rotate-right text-slate-500"></i>
+            Recurring Medicine Subscriptions
+          </h4>
+          <div class="space-y-2" id="usr-inspect-subscriptions-list">
+            <p class="text-slate-400 text-xs italic py-1">No active recurring subscriptions.</p>
+          </div>
+        </div>
+
+        <!-- Prescription Vault & Health Records Segment -->
+        <div class="space-y-3">
+          <h4 class="text-[10px] font-black uppercase text-slate-400 tracking-wider flex items-center gap-1.5 border-b border-slate-50 pb-1.5 select-none">
+            <i class="fa-solid fa-folder-open text-slate-500"></i>
+            Prescription Vault & Diagnostic Records
+          </h4>
+          <div class="grid grid-cols-1 gap-2" id="usr-inspect-records-grid">
+            <p class="text-slate-400 text-xs italic py-1">No clinical records loaded in vault.</p>
+          </div>
+        </div>
+
+        <!-- Loyalty Wallet Profile -->
+        <div class="space-y-3">
+          <h4 class="text-[10px] font-black uppercase text-slate-400 tracking-wider flex items-center gap-1.5 border-b border-slate-50 pb-1.5 select-none">
+            <i class="fa-solid fa-award text-slate-500"></i>
+            Loyalty Tier & Referrals Ledger
+          </h4>
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-2" id="usr-inspect-loyalty-container">
+            <p class="text-slate-400 text-xs italic py-1">Loading loyalty stats...</p>
           </div>
         </div>
 
