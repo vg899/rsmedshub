@@ -64,7 +64,7 @@
     <!-- REAL-TIME NEW COHESIVE HEADER -->
     <header class="bg-white border-b border-slate-100 px-4 py-3 shrink-0 relative z-30 shadow-2xs">
       <div class="w-full max-w-3xl mx-auto flex items-center justify-between">
-        <div class="flex items-center gap-2.5 cursor-pointer hover:opacity-80 transition-all select-none" onclick="switchTabPanel('profile')">
+        <div id="hdr-profile-clickable" class="flex items-center gap-2.5 cursor-pointer hover:opacity-80 transition-all select-none">
           <!-- Circle Profile pic with dynamic fallback -->
           <div class="relative">
             <img id="hdr-profile-pic" class="w-10 h-10 rounded-full object-cover border-2 border-indigo-600/10 shadow-xs" src="https://img.icons8.com/color/96/delivery-man.png" alt="Rider Profile" referrerPolicy="no-referrer">
@@ -945,9 +945,13 @@
         
         <!-- Bio header -->
         <div class="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm flex items-center gap-4">
-          <div class="relative w-14 h-14 rounded-full overflow-hidden shadow border border-indigo-100 bg-indigo-600 flex items-center justify-center shrink-0">
+          <div id="wrapper-profile-selfie" class="relative w-14 h-14 rounded-full overflow-hidden shadow border border-indigo-100 bg-indigo-600 flex items-center justify-center shrink-0 group cursor-pointer">
             <img id="img-profile-selfie" class="w-full h-full object-cover hidden" src="" alt="Rider Profile Photo" referrerPolicy="no-referrer">
             <i id="img-profile-selfie-placeholder" class="fa-solid fa-id-badge text-2xl text-white"></i>
+            <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <i class="fa-solid fa-camera text-white text-xs"></i>
+            </div>
+            <input type="file" id="profile-upload-selfie-input" accept="image/*" class="hidden">
           </div>
           <div>
             <h4 id="lbl-profile-name" class="font-extrabold text-slate-800 text-sm">Rider Name</h4>

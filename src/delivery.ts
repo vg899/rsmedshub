@@ -237,6 +237,40 @@ if (navigationBar) {
   });
 }
 
+// Bind header profile click to open the profile tab
+const hdrProfileClickable = document.getElementById("hdr-profile-clickable");
+if (hdrProfileClickable) {
+  hdrProfileClickable.addEventListener("click", () => {
+    switchTabPanel("profile");
+  });
+}
+
+// Bind profile image upload on My Profile tab
+const profileUploadInput = document.getElementById("profile-upload-selfie-input") as HTMLInputElement;
+if (profileUploadInput) {
+  profileUploadInput.addEventListener("change", async (e) => {
+    const target = e.target as HTMLInputElement;
+    if (target.files && target.files.length > 0) {
+      const file = target.files[0];
+      showLoader(true);
+      try {
+        const secureUrl = await uploadToCloudinary(file);
+        // Write url directly back into Firebase for this delivery boy!
+        await update(ref(db, `deliveryboy1/${currentRiderId}`), {
+          profilePhoto: secureUrl,
+          profilePhotoUrl: secureUrl // both for compatibility
+        });
+        showToast("Profile image updated successfully!", "success");
+      } catch (err: any) {
+        console.error(err);
+        showToast("Failed to upload updated profile photo.", "error");
+      } finally {
+        showLoader(false);
+      }
+    }
+  });
+}
+
 function switchTabPanel(tabName: string) {
   activeTab = tabName;
   
@@ -1425,7 +1459,7 @@ function renderRiderProfileView(data: any) {
   if (lblAadhaarVal) lblAadhaarVal.innerText = data.aadhaarNumber || "N/A";
 
   const lblDlVal = document.getElementById("lbl-profile-dl");
-  if (lblDlVal) lblDlVal.innerText = data.licenseNumber || "N/A";
+  if (lblDlVal) lblDlVal.innerText = data.drivingLicenseNumber || data.licenseNumber || "N/A";
 
   const lblLocationVal = document.getElementById("lbl-profile-location");
   if (lblLocationVal) lblLocationVal.innerText = `${data.state || "Karnataka"}, ${data.district || "Bengaluru"}`;
