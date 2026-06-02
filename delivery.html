@@ -405,66 +405,18 @@
       <!-- ==================== TAB A: RIDER DASHBOARD ==================== -->
       <section id="tab-dashboard" class="px-4 py-4 space-y-4.5 flex-1 select-none overflow-y-auto no-scrollbar slide-fade">
         
-        <!-- Live Duty Status Collapsible Shift Widget -->
-        <div class="bg-white rounded-2xl border border-slate-100 p-3.5 shadow-2xs space-y-3">
-          <div class="flex items-center justify-between border-b border-slate-50 pb-2 cursor-pointer" onclick="document.getElementById('shift-settings-collapse').classList.toggle('hidden')">
-            <h4 class="text-xs font-black text-slate-800 uppercase font-display tracking-wider flex items-center gap-1.5 leading-none">
-              <i class="fa-solid fa-clock-rotate-left text-indigo-600 animate-pulse"></i> Duty Shift & Attendance
-            </h4>
-            <div class="flex items-center gap-1.5 leading-none">
-              <span id="lbl-attendance-badge" class="px-2 py-0.5 rounded-lg text-[8px] font-black uppercase bg-rose-50 text-rose-600 border border-rose-100">Checked-Out</span>
-              <i class="fa-solid fa-chevron-down text-[10px] text-slate-400"></i>
+        <!-- Live Duty Status indicator (quick access) -->
+        <div class="bg-indigo-600 text-white rounded-2xl p-3.5 shadow-sm flex items-center justify-between select-none">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" id="lbl-dashboard-duty-ping"></span>
+            <div>
+              <h4 class="text-xs font-black uppercase font-display tracking-wider">Duty Tracker</h4>
+              <p class="text-[8.5px] text-indigo-200 uppercase font-mono tracking-tight" id="lbl-dashboard-duty-text">Active & Online Ready</p>
             </div>
           </div>
-
-          <div id="shift-settings-collapse" class="hidden space-y-3 pt-1">
-            <div class="grid grid-cols-2 gap-3 text-left">
-              <div>
-                <label class="block text-[8.5px] font-black text-slate-400 uppercase mb-1">Shift Timeframe</label>
-                <select id="sel-shift-timeline" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 text-[10px] font-extrabold text-slate-700">
-                  <option value="Morning">Morning (07:00 AM - 03:00 PM)</option>
-                  <option value="Afternoon" selected class="font-bold">Afternoon (03:00 PM - 11:00 PM)</option>
-                  <option value="Evening">Evening (05:00 PM - 09:00 PM)</option>
-                  <option value="Night">Night (11:00 PM - 07:00 AM)</option>
-                </select>
-              </div>
-              <div class="flex items-end text-left">
-                <button id="btn-toggle-attendance" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-2 rounded-xl text-[9px] uppercase tracking-wider font-display shrink-0 active:scale-95 transition-all cursor-pointer">
-                  Check-In Shift
-                </button>
-              </div>
-            </div>
-
-            <!-- Intermediary Break Controls system -->
-            <div class="grid grid-cols-2 gap-2 mt-1">
-              <button id="btn-start-break" class="py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 font-extrabold text-[8.5px] rounded-xl uppercase transition-all shadow-2xs cursor-pointer flex items-center justify-center gap-1 active:scale-95">
-                <i class="fa-solid fa-mug-hot text-amber-500 animate-pulse"></i>Break Start
-              </button>
-              <button id="btn-end-break" class="py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-extrabold text-[8.5px] rounded-xl uppercase transition-all shadow-2xs cursor-pointer flex items-center justify-center gap-1 active:scale-95">
-                <i class="fa-solid fa-play text-emerald-500"></i>Break End
-              </button>
-            </div>
-
-            <!-- Live Attendance Details Logs Grid -->
-            <div class="grid grid-cols-2 gap-2 bg-slate-50 rounded-xl p-2.5 border border-slate-100 text-[9px] font-mono font-bold text-slate-600 leading-tight select-none">
-              <div class="space-y-1">
-                <p>Check-In: <span id="lbl-duty-checkin-time" class="text-indigo-600">--:--</span></p>
-                <p>Work Hours: <span id="lbl-duty-working-hours" class="text-slate-800">0.0 hrs</span></p>
-              </div>
-              <div class="space-y-1">
-                <p>Break Duration: <span id="lbl-duty-break-time" class="text-amber-600">0m</span></p>
-                <p>Attendance Score: <span id="lbl-attendance-percentage" class="text-emerald-600 font-black">100%</span></p>
-              </div>
-            </div>
-
-            <!-- Expanded Attendance history details -->
-            <details class="bg-white border border-slate-150/40 rounded-xl p-2 text-[9px] font-sans font-bold text-slate-500">
-              <summary class="cursor-pointer select-none outline-none uppercase text-indigo-700 font-sans tracking-wide">View Shift History Log</summary>
-              <div id="cnt-attendance-history-list" class="space-y-1.5 mt-2 max-h-24 overflow-y-auto no-scrollbar font-sans font-semibold">
-                <p class="text-[8px] text-slate-400 font-bold text-center py-1 uppercase">No shift history logged today.</p>
-              </div>
-            </details>
-          </div>
+          <button onclick="switchTabPanel('profile')" class="bg-indigo-700/80 hover:bg-slate-900 border border-indigo-400/20 text-white font-extrabold text-[8px] py-1.5 px-3 rounded-lg uppercase tracking-wider font-display active:scale-95 transition-all">
+            Manage Shift App
+          </button>
         </div>
 
         <!-- System Notification & Alert Banner Drawer inside dashboard -->
@@ -805,36 +757,12 @@
           </div>
         </div>
 
-        <!-- Comprehensive Earnings Breakdown Accordion Card -->
-        <div class="bg-white rounded-2xl p-3.5 border border-slate-100 shadow-2xs space-y-3">
-          <h4 class="text-xs font-extrabold text-slate-800 uppercase font-display tracking-wider flex items-center gap-1.5 leading-none">
-            <i class="fa-solid fa-piggy-bank text-indigo-600"></i> Earnings Overview
-          </h4>
-          
-          <div class="space-y-2.5 text-xs">
-            <div class="flex items-center justify-between border-b border-slate-50 pb-2.5">
-              <span class="text-slate-500 font-bold select-none text-[10px]">Total Earnings (All-Time)</span>
-              <strong id="lbl-earnings-total" class="font-black text-slate-800 font-mono text-[11px]">₹0</strong>
-            </div>
-            <div class="flex items-center justify-between border-b border-slate-50 pb-2.5">
-              <span class="text-slate-500 font-bold select-none text-[10px]">Weekly Earnings (Past 7d)</span>
-              <strong id="lbl-earnings-weekly" class="font-black text-slate-800 font-mono text-[11px]">₹0</strong>
-            </div>
-            <div class="flex items-center justify-between border-b border-slate-50 pb-2.5">
-              <span class="text-slate-500 font-bold select-none text-[10px]">Monthly Earnings (Past 30d)</span>
-              <strong id="lbl-earnings-monthly" class="font-black text-slate-800 font-mono text-[11px]">₹0</strong>
-            </div>
-            <div class="flex items-center justify-between text-indigo-700 bg-indigo-50/40 p-2.5 rounded-xl">
-              <span class="font-bold flex items-center gap-1 select-none text-[10px]"><i class="fa-solid fa-hand-holding-dollar"></i> Pending Settlement</span>
-              <strong id="lbl-earnings-pending" class="font-black font-display text-xs font-mono text-indigo-750">₹0</strong>
-            </div>
-          </div>
-        </div>
+        <!-- Relocated to Payouts and Earnings tab -->
 
       </section>
 
-      <!-- ==================== TAB B: ACTIVE JOB TERMINAL ==================== -->
-      <section id="tab-active-order" class="px-4 py-4 space-y-4 flex-1 hidden">
+      <!-- ==================== TAB B: NAVIGATION SYSTEM ==================== -->
+      <section id="tab-navigation" class="px-4 py-4 space-y-4 flex-1 hidden">
         <div id="cnt-active-order-running" class="space-y-4">
           <!-- Live status timeline banner -->
         <div class="bg-amber-100/30 border border-amber-250/30 rounded-2xl p-3 flex items-center justify-between">
@@ -966,14 +894,19 @@
         </div>
       </section>
 
-      <!-- ==================== TAB C: POOLS DISPATCH ==================== -->
-      <section id="tab-pools" class="px-4 py-4 space-y-4 flex-1 hidden">
-        <div class="flex items-center justify-between shrink-0 mb-1">
+      <!-- ==================== TAB C: ORDERS DISPATCH BOARD ==================== -->
+      <section id="tab-orders" class="px-4 py-4 space-y-4 flex-1 hidden">
+        <div class="flex items-center justify-between shrink-0 mb-1 border-b border-slate-100 pb-2 pb-2">
           <div class="space-y-0.5">
-            <h4 class="text-xs font-black text-slate-900 uppercase font-display tracking-widest">Job Dispatch Pools</h4>
-            <p class="text-[9px] text-slate-400 font-bold uppercase leading-none">Available Packaged Orders</p>
+            <h4 class="text-xs font-black text-slate-900 uppercase font-display tracking-widest">Express Orders Board</h4>
+            <p class="text-[9px] text-slate-400 font-bold uppercase leading-none">Manage dispatch milestones</p>
           </div>
-          <span class="text-[10px] text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded font-black font-mono" id="lbl-pools-indicator">0 PACKED</span>
+          <span class="text-[10px] text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded font-black font-mono animate-pulse" id="lbl-orders-indicator">0 NEW</span>
+        </div>
+
+        <!-- Dynamic horizontal sub-navigation pills (New Pools, Assigned, Accepted, Delivered, Cancelled) -->
+        <div id="subnav-orders-pills" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 select-none">
+          <!-- Populated in JS dynamically to manage filter highlights and click bindings -->
         </div>
 
         <!-- Available dispatches container -->
@@ -986,8 +919,8 @@
         </div>
       </section>
 
-      <!-- ==================== TAB D: SETTLEMENTS TERMINAL ==================== -->
-      <section id="tab-settlements" class="px-4 py-4 space-y-5 flex-1 hidden">
+      <!-- ==================== TAB D: RIDER EARNINGS TERMINAL ==================== -->
+      <section id="tab-earnings" class="px-4 py-4 space-y-5 flex-1 hidden">
         
         <!-- RIDER WALLET CENTER -->
         <div class="space-y-3 select-none">
@@ -1016,6 +949,36 @@
               </div>
             </div>
             <p class="text-[8px] text-indigo-100 mt-2.5 leading-normal font-sans">Set UPI / Bank account parameters below and request instant payout claim settlement requests.</p>
+          </div>
+
+          <!-- Comprehensive Earnings Breakdown Accordion Card -->
+          <div class="bg-white rounded-3xl p-4.5 border border-slate-100 shadow-sm space-y-3">
+            <h4 class="text-xs font-black text-slate-805 uppercase font-display tracking-wider flex items-center gap-1.5 leading-none">
+              <i class="fa-solid fa-piggy-bank text-indigo-600"></i> Earnings Overview
+            </h4>
+            
+            <div class="space-y-2.5 text-xs font-semibold">
+              <div class="flex items-center justify-between border-b border-slate-50 pb-2">
+                <span class="text-slate-500 font-sans text-[10px]/none leading-none select-none">Today's Earnings (Live)</span>
+                <strong id="lbl-earnings-today-tab" class="font-black text-indigo-650 font-mono text-[11px]">₹0</strong>
+              </div>
+              <div class="flex items-center justify-between border-b border-slate-50 pb-2">
+                <span class="text-slate-500 font-sans text-[10px]/none leading-none select-none">Weekly Earnings (Past 7d)</span>
+                <strong id="lbl-earnings-weekly" class="font-black text-slate-800 font-mono text-[11px]">₹0</strong>
+              </div>
+              <div class="flex items-center justify-between border-b border-slate-50 pb-2">
+                <span class="text-slate-500 font-sans text-[10px]/none leading-none select-none">Monthly Earnings (Past 30d)</span>
+                <strong id="lbl-earnings-monthly" class="font-black text-slate-800 font-mono text-[11px]">₹0</strong>
+              </div>
+              <div class="flex items-center justify-between border-b border-slate-50 pb-2">
+                <span class="text-slate-500 font-sans text-[10px]/none leading-none select-none">Total Earnings (All-Time)</span>
+                <strong id="lbl-earnings-total" class="font-black text-slate-850 font-mono text-[11.5px]">₹0</strong>
+              </div>
+              <div class="flex items-center justify-between text-indigo-700 bg-indigo-50/40 p-2 rounded-xl">
+                <span class="font-bold flex items-center gap-1 select-none text-[9px]"><i class="fa-solid fa-hand-holding-dollar"></i> Pending Settlement</span>
+                <strong id="lbl-earnings-pending" class="font-black font-display text-xs font-mono text-indigo-750">₹0</strong>
+              </div>
+            </div>
           </div>
 
           <!-- Grid of Wallet Types -->
@@ -1244,15 +1207,77 @@
         
         <!-- Bio header -->
         <div class="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm flex items-center gap-4">
-          <div class="w-14 h-14 bg-amber-500 text-white font-black text-lg font-display rounded-full flex items-center justify-center shadow">
+          <div class="w-14 h-14 bg-indigo-650 text-white font-black text-lg font-display rounded-full flex items-center justify-center shadow">
             <i class="fa-solid fa-id-badge text-xl"></i>
           </div>
           <div>
-            <h4 id="lbl-profile-name" class="font-extrabold text-slate-800 text-sm">Rider Name</h4>
+            <h4 id="lbl-profile-name" class="font-extrabold text-slate-805 text-sm">Rider Name</h4>
             <p id="lbl-profile-email" class="text-[10px] text-slate-400 font-mono">rider@example.com</p>
             <span class="inline-block bg-teal-50 text-teal-700 px-2 py-0.5 rounded-lg font-black text-[8px] uppercase mt-1 tracking-wider border border-teal-100">
               <i class="fa-solid fa-certificate"></i> Verified Fleet Partner
             </span>
+          </div>
+        </div>
+
+        <!-- Live Shift Duty Attendance Accordion Widget (Relocated Here!) -->
+        <div class="bg-white rounded-3xl border border-slate-150/80 p-4 shadow-sm space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2 cursor-pointer" onclick="document.getElementById('shift-settings-collapse').classList.toggle('hidden')">
+            <h4 class="text-xs font-black text-slate-900 uppercase font-display tracking-widest flex items-center gap-1.5 leading-none">
+              <i class="fa-solid fa-clock-rotate-left text-indigo-600 animate-pulse"></i> Duty Shift & Attendance
+            </h4>
+            <div class="flex items-center gap-1.5 leading-none">
+              <span id="lbl-attendance-badge" class="px-2 py-0.5 rounded-lg text-[8px] font-black uppercase bg-rose-50 text-rose-600 border border-rose-100">Checked-Out</span>
+              <i class="fa-solid fa-chevron-down text-[10px] text-slate-400"></i>
+            </div>
+          </div>
+
+          <div id="shift-settings-collapse" class="space-y-3.5 pt-1">
+            <div class="grid grid-cols-2 gap-3 text-left">
+              <div>
+                <label class="block text-[8.5px] font-black text-slate-400 uppercase mb-1">Shift Timeframe</label>
+                <select id="sel-shift-timeline" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 text-[10px] font-extrabold text-slate-700">
+                  <option value="Morning">Morning (07:00 AM - 03:00 PM)</option>
+                  <option value="Afternoon" selected class="font-bold">Afternoon (03:00 PM - 11:00 PM)</option>
+                  <option value="Evening">Evening (05:00 PM - 09:00 PM)</option>
+                  <option value="Night">Night (11:00 PM - 07:00 AM)</option>
+                </select>
+              </div>
+              <div class="flex items-end text-left">
+                <button id="btn-toggle-attendance" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-2 rounded-xl text-[9px] uppercase tracking-wider font-display shrink-0 active:scale-95 transition-all cursor-pointer">
+                  Check-In Shift
+                </button>
+              </div>
+            </div>
+
+            <!-- Intermediary Break Controls system -->
+            <div class="grid grid-cols-2 gap-2 mt-1">
+              <button id="btn-start-break" class="py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 font-extrabold text-[8.5px] rounded-xl uppercase transition-all shadow-2xs cursor-pointer flex items-center justify-center gap-1 active:scale-95">
+                <i class="fa-solid fa-mug-hot text-amber-500"></i>Break Start
+              </button>
+              <button id="btn-end-break" class="py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-extrabold text-[8.5px] rounded-xl uppercase transition-all shadow-2xs cursor-pointer flex items-center justify-center gap-1 active:scale-95">
+                <i class="fa-solid fa-play text-emerald-500"></i>Break End
+              </button>
+            </div>
+
+            <!-- Live Attendance Details Logs Grid -->
+            <div class="grid grid-cols-2 gap-2 bg-slate-55 bg-indigo-50/20 rounded-xl p-2.5 border border-indigo-100/30 text-[9px] font-mono font-bold text-slate-600 leading-tight select-none">
+              <div class="space-y-1">
+                <p>Check-In: <span id="lbl-duty-checkin-time" class="text-indigo-600 font-black">--:--</span></p>
+                <p>Work Hours: <span id="lbl-duty-working-hours" class="text-slate-850 font-black">0.0 hrs</span></p>
+              </div>
+              <div class="space-y-1">
+                <p>Break Duration: <span id="lbl-duty-break-time" class="text-amber-600 font-black">0m</span></p>
+                <p>Attendance Score: <span id="lbl-attendance-percentage" class="text-emerald-600 font-black">100%</span></p>
+              </div>
+            </div>
+
+            <!-- Expanded Attendance history details -->
+            <details class="bg-white border border-slate-150/40 rounded-xl p-2 text-[9px] font-sans font-bold text-slate-500">
+              <summary class="cursor-pointer select-none outline-none uppercase text-indigo-700 font-sans tracking-wide">View Shift History Log</summary>
+              <div id="cnt-attendance-history-list" class="space-y-1.5 mt-2 max-h-24 overflow-y-auto no-scrollbar font-sans font-semibold">
+                <p class="text-[8px] text-slate-400 font-bold text-center py-1 uppercase">No shift history logged today.</p>
+              </div>
+            </details>
           </div>
         </div>
 
@@ -1410,34 +1435,34 @@
     <!-- ============================================== -->
     <!-- 5. BOTTOM NAVIGATION BAR / TACTICAL BOARD      -->
     <!-- ============================================== -->
-    <nav id="bottom-navigation-nav" class="hidden absolute bottom-0 inset-x-0 bg-white border-t border-slate-150 py-2.5 px-4 z-40 shadow-[0_-4px_16px_rgba(0,0,0,0.04)] select-none">
-      <div class="w-full max-w-3xl mx-auto flex items-center justify-between">
-        <button data-tab="dashboard" class="flex flex-col items-center justify-center gap-1 text-amber-500 transition-all font-display group cursor-pointer w-12 text-center">
+    <nav id="bottom-navigation-nav" class="hidden absolute bottom-0 inset-x-0 bg-white border-t border-slate-150 py-2 px-4 z-40 shadow-[0_-4px_16px_rgba(0,0,0,0.04)] select-none">
+      <div class="w-full max-w-3xl mx-auto flex items-center justify-between select-none">
+        <button data-tab="dashboard" class="flex flex-col items-center justify-center gap-1 text-indigo-600 transition-all font-display group cursor-pointer w-12 text-center">
           <i class="fa-solid fa-chart-pie text-lg group-hover:scale-110 transition-all"></i>
-          <span class="text-[8.5px] font-black uppercase tracking-wider">Home</span>
+          <span class="text-[8px] font-black uppercase tracking-wider">Dashboard</span>
         </button>
 
-        <button data-tab="pools" class="flex flex-col items-center justify-center gap-1 text-slate-400 transition-all font-display group cursor-pointer w-12 text-center relative">
+        <button data-tab="orders" class="flex flex-col items-center justify-center gap-1 text-slate-400 transition-all font-display group cursor-pointer w-12 text-center relative">
           <span class="absolute -top-1 -right-1.5 w-4 h-4 bg-indigo-600 text-[8px] text-white rounded-full font-black animate-bounce flex items-center justify-center hidden" id="badge-nav-pools">0</span>
-          <i class="fa-solid fa-box-open text-lg group-hover:scale-110 transition-all"></i>
-          <span class="text-[8.5px] font-black uppercase tracking-wider">Pools</span>
+          <i class="fa-solid fa-boxes-packing text-lg group-hover:scale-110 transition-all"></i>
+          <span class="text-[8px] font-black uppercase tracking-wider">Orders</span>
         </button>
 
-        <button data-tab="active-order" class="flex flex-col items-center justify-center gap-1 text-slate-400 transition-all font-display group cursor-pointer w-12 text-center relative">
-          <span class="absolute -top-1 -right-1 bg-amber-500 w-2.5 h-2.5 rounded-full animate-ping hidden" id="badge-nav-active-order-ping"></span>
-          <span class="absolute -top-1 -right-1 bg-amber-500 w-2.5 h-2.5 rounded-full border border-white hidden" id="badge-nav-active-order"></span>
-          <i class="fa-solid fa-location-arrow text-lg group-hover:scale-110 transition-all"></i>
-          <span class="text-[8.5px] font-black uppercase tracking-wider">Transit</span>
+        <button data-tab="navigation" class="flex flex-col items-center justify-center gap-1 text-slate-400 transition-all font-display group cursor-pointer w-12 text-center relative">
+          <span class="absolute -top-1 -right-1 bg-amber-500 w-2 h-2 rounded-full animate-ping hidden" id="badge-nav-active-order-ping"></span>
+          <span class="absolute -top-1 -right-1 bg-amber-500 w-2 h-2 rounded-full border border-white hidden" id="badge-nav-active-order"></span>
+          <i class="fa-solid fa-map-location-dot text-lg group-hover:scale-110 transition-all"></i>
+          <span class="text-[8px] font-black uppercase tracking-wider">Navigation</span>
         </button>
 
-        <button data-tab="settlements" class="flex flex-col items-center justify-center gap-1 text-slate-400 transition-all font-display group cursor-pointer w-12 text-center">
+        <button data-tab="earnings" class="flex flex-col items-center justify-center gap-1 text-slate-400 transition-all font-display group cursor-pointer w-12 text-center">
           <i class="fa-solid fa-indian-rupee-sign text-lg group-hover:scale-110 transition-all"></i>
-          <span class="text-[8.5px] font-black uppercase tracking-wider">Payout</span>
+          <span class="text-[8px] font-black uppercase tracking-wider">Earnings</span>
         </button>
 
         <button data-tab="profile" class="flex flex-col items-center justify-center gap-1 text-slate-400 transition-all font-display group cursor-pointer w-12 text-center">
-          <i class="fa-solid fa-user-circle text-lg group-hover:scale-110 transition-all"></i>
-          <span class="text-[8.5px] font-black uppercase tracking-wider">Profile</span>
+          <i class="fa-solid fa-circle-user text-lg group-hover:scale-110 transition-all"></i>
+          <span class="text-[8px] font-black uppercase tracking-wider">Profile</span>
         </button>
       </div>
     </nav>

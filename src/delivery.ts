@@ -45,9 +45,9 @@ const navigationBar = document.getElementById("bottom-navigation-nav") as HTMLEl
 // --- TAB SUB PANEL FRAMES ---
 const tabFrames: { [key: string]: HTMLElement | null } = {
   dashboard: document.getElementById("tab-dashboard"),
-  "active-order": document.getElementById("tab-active-order"),
-  pools: document.getElementById("tab-pools"),
-  settlements: document.getElementById("tab-settlements"),
+  orders: document.getElementById("tab-orders") || document.getElementById("tab-pools"),
+  navigation: document.getElementById("tab-navigation") || document.getElementById("tab-active-order"),
+  earnings: document.getElementById("tab-earnings") || document.getElementById("tab-settlements"),
   profile: document.getElementById("tab-profile")
 };
 
@@ -235,22 +235,39 @@ if (navigationBar) {
 }
 
 function switchTabPanel(tabName: string) {
+  // Alias old identifiers to new production standard
+  if (tabName === "active-order") {
+    tabName = "navigation";
+  } else if (tabName === "pools") {
+    tabName = "orders";
+  } else if (tabName === "settlements") {
+    tabName = "earnings";
+  }
+
   activeTab = tabName;
   
-  // Highlight navigation bar items
+  // Highlight navigation bar items with high contrast active indicators
   if (navigationBar) {
     const tabButtons = navigationBar.querySelectorAll("button[data-tab]");
     tabButtons.forEach((btn) => {
-      const bTab = btn.getAttribute("data-tab");
+      let bTab = btn.getAttribute("data-tab");
+      if (bTab === "active-order") {
+        bTab = "navigation";
+      } else if (bTab === "pools") {
+        bTab = "orders";
+      } else if (bTab === "settlements") {
+        bTab = "earnings";
+      }
+
       if (bTab === tabName) {
-        btn.className = "flex flex-col items-center justify-center gap-1 text-indigo-600 transition-all font-display group cursor-pointer w-12 text-center";
+        btn.className = "flex flex-col items-center justify-center gap-1 text-indigo-700 font-black transition-all font-display group cursor-pointer w-12 text-center scale-102";
       } else {
-        btn.className = "flex flex-col items-center justify-center gap-1 text-slate-400 transition-all font-display group cursor-pointer w-12 text-center";
+        btn.className = "flex flex-col items-center justify-center gap-1 text-slate-400 font-medium transition-all font-display group cursor-pointer w-12 text-center opacity-70 hover:opacity-100 hover:scale-102";
       }
     });
   }
 
-  // Draw panels visual state
+  // Draw panels visual state (Show active layout, hide inactive modules)
   Object.keys(tabFrames).forEach((key) => {
     const frame = tabFrames[key];
     if (frame) {
@@ -275,8 +292,8 @@ function switchTabPanel(tabName: string) {
     }
   }
 
-  // Re-adjust leaflet bounds representation if accessing active order map
-  if (tabName === "active-order" && activeOrderPayload) {
+  // Trigger leaflet redraw if navigating to GPS live maps screen
+  if (tabName === "navigation") {
     setTimeout(() => {
       triggerActiveOrderMapDraw();
     }, 400);
@@ -670,14 +687,14 @@ function subscribeToDispatchPoolAndOrders() {
     }
 
     // Sound alert when current rider has an active order allocated
-    if (activeOrderPayload && lastDiscoveredPoolsCount >= 0 && !document.getElementById("tab-active-order")?.classList.contains("active")) {
+    if (activeOrderPayload && lastDiscoveredPoolsCount >= 0 && !document.getElementById("tab-navigation")?.classList.contains("hidden")) {
       const isAssignedNotified = (window as any)["notified_job_" + activeOrderPayload.orderId];
       if (!isAssignedNotified) {
         soundAssigned.play().catch(() => {});
         showToast("📦 Dispatch Assignment: You have been assigned to order transit!", "success");
         (window as any)["notified_job_" + activeOrderPayload.orderId] = true;
-        // Auto redirect to Active Order run tab
-        switchTabPanel("active-order");
+        // Auto redirect to Active Order navigation tab
+        switchTabPanel("navigation");
       }
     }
 
@@ -687,6 +704,9 @@ function subscribeToDispatchPoolAndOrders() {
     // Save calculation aggregates to layout targets
     const elEarningsToday = document.getElementById("lbl-earnings-today");
     if (elEarningsToday) elEarningsToday.innerText = `₹${todayPayoutEarnings}`;
+    const elEarningsTodayTab = document.getElementById("lbl-earnings-today-tab");
+    if (elEarningsTodayTab) elEarningsTodayTab.innerText = `₹${todayPayoutEarnings}`;
+
     const elDelivToday = document.getElementById("lbl-deliveries-today");
     if (elDelivToday) elDelivToday.innerText = todayDeliveriesCount.toString();
 
@@ -746,61 +766,180 @@ function calculateAndRenderPayoutSheets(totalAllTimeEarnings: number) {
   }
 }
 
+// --- ACTIVE SUB-TAB FILTER FOR EXPRESS ORDERS BOARD ---
+let activeOrdersSubFilter: 'new' | 'assigned' | 'accepted' | 'delivered' | 'cancelled' = "new";
+
 // --- RENDER CURRENT LISTS OF PACKED ORDER POOLS ---
 function renderRiderPoolsLayout(pools: any[]) {
   const container = document.getElementById("cnt-pools-list");
   const badge = document.getElementById("badge-nav-pools");
-  const labelInd = document.getElementById("lbl-pools-indicator");
+  const subnavPills = document.getElementById("subnav-orders-pills");
 
+  // Multi-state queries from global cache
+  const listAssigned = globalOrdersCache.filter((o) => o.deliveryId === currentRiderId && o.status === "assigned");
+  const listAccepted = globalOrdersCache.filter((o) => o.deliveryId === currentRiderId && (o.status === "accepted" || o.status === "packed" || o.status === "out" || o.status === "reached"));
+  const listDelivered = globalOrdersCache.filter((o) => o.deliveryId === currentRiderId && o.status === "delivered");
+  const listCancelled = globalOrdersCache.filter((o) => o.deliveryId === currentRiderId && o.status === "cancelled");
+
+  // 1. Maintain Badge Counts in Navigation bar (pools gets mapped to orders tab badge)
   if (badge) {
-    if (pools.length > 0) {
-      badge.innerText = pools.length.toString();
+    const totalOrdersAlert = pools.length + listAssigned.length;
+    if (totalOrdersAlert > 0) {
+      badge.innerText = totalOrdersAlert.toString();
       badge.classList.remove("hidden");
     } else {
       badge.classList.add("hidden");
     }
   }
 
-  if (labelInd) labelInd.innerText = `${pools.length} PACKED`;
+  // 2. Render Categories Pills inside sub-navigation
+  if (subnavPills) {
+    const categories = [
+      { id: "new", label: "New Pools", count: pools.length, icon: "fa-box-open text-indigo-505" },
+      { id: "assigned", label: "Assigned", count: listAssigned.length, icon: "fa-bell text-amber-500" },
+      { id: "accepted", label: "Accepted", count: listAccepted.length, icon: "fa-location-arrow text-indigo-600" },
+      { id: "delivered", label: "Delivered", count: listDelivered.length, icon: "fa-square-check text-emerald-500" },
+      { id: "cancelled", label: "Cancelled", count: listCancelled.length, icon: "fa-ban text-rose-500" }
+    ];
+
+    subnavPills.innerHTML = categories.map((cat) => {
+      const isActive = activeOrdersSubFilter === cat.id;
+      const activeStateClass = isActive 
+        ? "bg-indigo-600 text-white font-extrabold shadow-sm scale-102"
+        : "bg-slate-50 text-slate-500 border border-slate-150/45 hover:bg-slate-100";
+      return `
+        <button onclick="setOrdersSubFilter('${cat.id}')" class="px-3 py-1.5 rounded-xl text-[9px] uppercase tracking-wider font-display shrink-0 transition-all duration-150 flex items-center gap-1.5 cursor-pointer ${activeStateClass}">
+          <i class="fa-solid ${cat.icon}"></i>
+          <span>${cat.label}</span>
+          ${cat.count > 0 ? `<span class="${isActive ? 'bg-white text-indigo-750' : 'bg-slate-200 text-slate-700'} text-[8px] font-black px-1.5 py-0.25 rounded-md">${cat.count}</span>` : ''}
+        </button>
+      `;
+    }).join("");
+  }
 
   if (!container) return;
 
-  if (pools.length === 0) {
+  // 3. Render filter list matching current active filter view
+  let displayOrdersList: any[] = [];
+  if (activeOrdersSubFilter === "new") {
+    displayOrdersList = pools;
+  } else if (activeOrdersSubFilter === "assigned") {
+    displayOrdersList = listAssigned;
+  } else if (activeOrdersSubFilter === "accepted") {
+    displayOrdersList = listAccepted;
+  } else if (activeOrdersSubFilter === "delivered") {
+    displayOrdersList = listDelivered;
+  } else if (activeOrdersSubFilter === "cancelled") {
+    displayOrdersList = listCancelled;
+  }
+
+  // Set the indicator badge at top
+  const labelInd = document.getElementById("lbl-orders-indicator");
+  if (labelInd) {
+    labelInd.innerText = `${displayOrdersList.length} ${activeOrdersSubFilter.toUpperCase()}`;
+  }
+
+  // Show Empty state instead of Blank screens
+  if (displayOrdersList.length === 0) {
+    let emptyIcon = "fa-box-open";
+    let emptyTitle = "No Orders Available";
+    let emptySub = "Orders in this state will render once state transitions occur!";
+    
+    if (activeOrdersSubFilter === "new") {
+      emptyIcon = "fa-truck-ramp-box";
+      emptyTitle = "No Nearby Dispatch Pools";
+      emptySub = "Check back soon, nearby pharmacies will release medication packages in real time.";
+    } else if (activeOrdersSubFilter === "assigned") {
+      emptyIcon = "fa-bell-slash";
+      emptyTitle = "No Assigned Tasks";
+      emptySub = "Direct system assignments and special proximity dispatches appear here.";
+    } else if (activeOrdersSubFilter === "accepted") {
+      emptyIcon = "fa-route";
+      emptyTitle = "No Accepted Transits";
+      emptySub = "Pick up packages and start active transits using high precision GPS optimized routing.";
+    } else if (activeOrdersSubFilter === "delivered") {
+      emptyIcon = "fa-clipboard-check";
+      emptyTitle = "No Delivered History";
+      emptySub = "Complete drop-offs, collect payments and gather performance streak benefits.";
+    } else if (activeOrdersSubFilter === "cancelled") {
+      emptyIcon = "fa-circle-xmark";
+      emptyTitle = "No Cancelled History";
+      emptySub = "Nice! No dispatch delivery requests in cancellation list.";
+    }
+
     container.innerHTML = `
-      <div class="text-center py-16 text-slate-400 bg-white border border-slate-100 rounded-3xl p-6 shadow-2xs">
-        <i class="fa-solid fa-box-open text-4xl mb-2 text-slate-100"></i>
-        <p class="text-xs font-bold font-display text-slate-650">No Order Pools Available</p>
-        <p class="text-[9.5px] mt-1 text-slate-400 font-medium">Auto-ping sounds trigger once pharmacies finish medicine packs!</p>
+      <div class="text-center py-14 text-slate-400 bg-white border border-slate-100 rounded-3xl p-6 shadow-2xs select-none">
+        <i class="fa-solid ${emptyIcon} text-4xl mb-2 text-slate-100"></i>
+        <p class="text-xs font-bold font-display text-slate-650">${emptyTitle}</p>
+        <p class="text-[9.5px] mt-1 text-slate-400 font-medium max-w-[280px] mx-auto leading-normal">${emptySub}</p>
       </div>
     `;
     return;
   }
 
-  container.innerHTML = pools.map((o) => {
+  container.innerHTML = displayOrdersList.map((o) => {
     const shortId = o.orderId ? o.orderId.substring(0, 8).toUpperCase() : "N/A";
     const chargePay = o.deliveryCharge || 40;
     const isCOD = o.paymentMethod === "cod";
     const paymentPrompt = isCOD ? `<span class="bg-red-50 text-red-600 px-2 py-0.5 rounded font-black text-[9px]">COD COLLECT: ₹${Math.ceil(o.total)}</span>` : `<span class="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded font-black text-[9px]">ONLINE PAID</span>`;
 
+    let actionButtonHtml = "";
+    if (activeOrdersSubFilter === "new") {
+      actionButtonHtml = `
+        <button onclick="acceptPoolJob('${o.orderId}')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-2 px-4 rounded-xl shadow cursor-pointer text-[10px] transition-all active:scale-95 font-display uppercase tracking-wider">
+          Accept Dispatch
+        </button>
+      `;
+    } else if (activeOrdersSubFilter === "assigned") {
+      actionButtonHtml = `
+        <div class="flex items-center gap-2 w-full">
+          <button onclick="declineAssignedJob('${o.orderId}')" class="flex-1 bg-slate-50 border border-slate-200 text-slate-500 font-extrabold py-2 rounded-xl text-[10px] uppercase font-display cursor-pointer hover:bg-slate-100">
+            Decline
+          </button>
+          <button onclick="acceptAssignedJob('${o.orderId}')" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-extrabold py-2 rounded-xl text-[10px] uppercase font-display cursor-pointer shadow active:scale-95">
+            Accept Job
+          </button>
+        </div>
+      `;
+    } else if (activeOrdersSubFilter === "accepted") {
+      actionButtonHtml = `
+        <button onclick="switchTabPanel('navigation')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-2 rounded-xl text-[10px] uppercase tracking-wider font-display cursor-pointer shadow-xs text-center">
+          Open Navigation & Handover <i class="fa-solid fa-chevron-right ml-1"></i>
+        </button>
+      `;
+    } else if (activeOrdersSubFilter === "delivered") {
+      actionButtonHtml = `
+        <span class="text-[9.5px] font-extrabold text-emerald-600 flex items-center gap-1 select-none">
+          <i class="fa-solid fa-circle-check"></i> Handed Over Successfully
+        </span>
+      `;
+    } else if (activeOrdersSubFilter === "cancelled") {
+      actionButtonHtml = `
+        <span class="text-[9.5px] font-extrabold text-rose-600 flex items-center gap-1 select-none">
+          <i class="fa-solid fa-circle-xmark"></i> Transit Aborted
+        </span>
+      `;
+    }
+
     return `
-      <div class="bg-white rounded-3xl border border-slate-100 p-4 shadow-sm space-y-3 font-medium text-xs">
+      <div class="bg-white rounded-3xl border border-slate-100 p-4 shadow-sm space-y-3 font-medium text-xs text-left">
         <div class="flex items-center justify-between border-b border-slate-50 pb-2">
           <div>
             <strong class="font-extrabold text-slate-900 text-sm font-display">Medications Order: #${shortId}</strong>
             <p class="text-[9.5px] text-slate-400 font-mono mt-0.5">${new Date(o.createdAt).toLocaleTimeString()}</p>
           </div>
-          <span class="text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded font-display">Rider Payout: ₹${chargePay}</span>
+          <span class="text-[10px] font-black text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded font-display">Rider Payout: ₹${chargePay}</span>
         </div>
 
         <div class="space-y-2.5">
           <div class="flex items-start gap-2 leading-tight">
-            <i class="fa-solid fa-house-medical text-indigo-500 mt-0.5"></i>
+            <i class="fa-solid fa-house-medical text-indigo-550 mt-0.5 text-xs text-indigo-500"></i>
             <div>
               <span class="text-[8.5px] text-slate-400 block font-black leading-none uppercase">Pickup Distributor</span>
               <strong class="text-slate-800 text-[11px]">${o.storeName || "Pharmacy Hub"}</strong>
             </div>
           </div>
-          <div class="flex items-start gap-2 leading-tight">
+          <div class="flex items-start gap-2 leading-tight font-sans">
             <i class="fa-solid fa-map-pin text-rose-500 mt-0.5"></i>
             <div>
               <span class="text-[8.5px] text-slate-400 block font-black leading-none uppercase">Patient Drop-off Destination</span>
@@ -809,11 +948,9 @@ function renderRiderPoolsLayout(pools: any[]) {
           </div>
         </div>
 
-        <div class="pt-2 border-t border-slate-50 text-[10px] flex justify-between items-center">
+        <div class="pt-2 border-t border-slate-50 text-[10px] flex justify-between items-center bg-slate-50/50 p-2 rounded-xl">
           <div>${paymentPrompt}</div>
-          <button onclick="acceptPoolJob('${o.orderId}')" class="bg-amber-500 hover:bg-amber-600 text-white font-extrabold py-2 px-4 rounded-xl shadow cursor-pointer text-[10px] transition-all hover:-translate-y-0.5 font-display uppercase tracking-wider">
-            Accept Dispatch
-          </button>
+          <div class="font-display">${actionButtonHtml}</div>
         </div>
       </div>
     `;
@@ -822,6 +959,69 @@ function renderRiderPoolsLayout(pools: any[]) {
 
 // --- ACCEPT JOB ACTION DISPATCH CORE TRIGGER ---
 Object.assign(window, {
+  setOrdersSubFilter(filter: string) {
+    activeOrdersSubFilter = filter as any;
+    
+    // Recalculate and render pool state from existing global cache
+    const pools = globalOrdersCache.filter((o) => {
+      if (o.status !== "packed" || o.deliveryId) return false;
+      if (o.userLocation && o.storeLocation) {
+        const dist = calculateDistance(o.userLocation.lat, o.userLocation.lng, o.storeLocation.lat, o.storeLocation.lng);
+        if (dist > currentRiderDeliveryRadius) {
+          return false;
+        }
+      }
+      return true;
+    });
+    renderRiderPoolsLayout(pools);
+  },
+
+  acceptAssignedJob(orderId: string) {
+    if (!isDutyActive) {
+      showToast("Toggled Offline! Turn on Duty Readiness to pull dispatches.", "error");
+      return;
+    }
+    if (activeOrderPayload) {
+      showToast("Blocked: You have a busy transit in progress. Deliver first!", "error");
+      return;
+    }
+    showLoader(true);
+    
+    const updates: any = {};
+    updates[`orders/${orderId}/status`] = "packed"; // heading to store
+    updates[`orders/${orderId}/timeline/transitTime`] = Date.now();
+    updates[`deliveryboy1/${currentRiderId}/status`] = "busy";
+
+    update(ref(db), updates).then(() => {
+      showToast("Assigned Job Accepted successfully! Navigate opened.", "success");
+      showLoader(false);
+      switchTabPanel("navigation");
+    }).catch((err) => {
+      showLoader(false);
+      showToast("Failed to accept assigned dispatch.", "error");
+    });
+  },
+
+  declineAssignedJob(orderId: string) {
+    showLoader(true);
+    
+    const updates: any = {};
+    // Release deliveryId mapping
+    updates[`orders/${orderId}/status`] = "packed";
+    updates[`orders/${orderId}/deliveryId`] = null;
+    updates[`orders/${orderId}/deliveryName`] = null;
+    updates[`orders/${orderId}/deliveryPhone`] = null;
+    updates[`deliveryboy1/${currentRiderId}/status`] = "ready";
+
+    update(ref(db), updates).then(() => {
+      showToast("Assigned dispatch declined.", "info");
+      showLoader(false);
+    }).catch((err) => {
+      showLoader(false);
+      showToast("Failed to release assigned dispatch.", "error");
+    });
+  },
+
   acceptPoolJob(orderId: string) {
     if (!isDutyActive) {
       showToast("Toggled Offline! Turn on Duty Readiness to pull dispatches.", "error");
