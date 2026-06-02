@@ -35,29 +35,82 @@
     }
   </style>
 </head>
-<body class="bg-slate-900/40 text-slate-800 flex items-center justify-center min-h-screen">
+<body class="bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-slate-800 flex items-center justify-center min-h-screen px-4 font-sans antialiased">
+
+  <!-- Desktop Branding Left Panel -->
+  <div class="hidden lg:flex flex-col max-w-sm text-left pr-12 select-none space-y-4">
+    <div class="flex items-center gap-2.5">
+      <div class="w-11 h-11 rounded-2xl bg-indigo-600 flex items-center justify-center text-white text-xl shadow-lg shadow-indigo-500/10 border border-indigo-400/20">
+        <i class="fa-solid fa-plus-minus fa-rotate-45 text-lg"></i>
+      </div>
+      <h1 class="text-3xl font-black text-white tracking-tight uppercase font-display leading-none">RS Meds Hub</h1>
+    </div>
+    <div class="space-y-2">
+      <p class="text-xs text-indigo-300 font-extrabold uppercase tracking-widest font-display">Logistics Rider Node</p>
+      <p class="text-sm text-slate-300 font-medium leading-relaxed">
+        Enterprise-grade medicine logistics portal for delivery partners. Monitor live active orders, check payouts, upload verification documents, and process client handovers with optimized real-time navigation routes.
+      </p>
+    </div>
+    <div class="flex items-center gap-4 text-xs font-bold text-slate-400 font-display">
+      <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span> Live Status Connected</span>
+      <span>•</span>
+      <span>Secure Gateway</span>
+    </div>
+  </div>
 
   <!-- Mobile Screen Container -->
-  <div class="w-full max-w-md h-screen md:h-[840px] bg-slate-50 relative flex flex-col md:rounded-[36px] md:shadow-2xl md:border md:border-slate-200/80 overflow-hidden">
+  <div class="w-full max-w-[410px] h-screen md:h-[840px] bg-[#f8fbff] relative flex flex-col md:rounded-[38px] md:shadow-2xl md:border md:border-slate-800/25 overflow-hidden ring-8 ring-slate-900/15">
     
-    <!-- TOP STATUS BAR / APP HEADER -->
-    <header class="bg-gradient-to-r from-amber-500 to-amber-600 text-white px-5 py-4 shrink-0 flex items-center justify-between shadow-md relative z-30">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-2xl bg-white/10 backdrop-blur-md text-white flex items-center justify-center text-lg shadow-inner">
-          <i class="fa-solid fa-truck-fast"></i>
+    <!-- REAL-TIME NEW COHESIVE HEADER -->
+    <header class="bg-white border-b border-slate-100 px-4 py-3 shrink-0 flex items-center justify-between relative z-30 shadow-2xs">
+      <div class="flex items-center gap-2.5">
+        <!-- Circle Profile pic with dynamic fallback -->
+        <div class="relative">
+          <img id="hdr-profile-pic" class="w-10 h-10 rounded-full object-cover border-2 border-indigo-600/10 shadow-xs" src="https://img.icons8.com/color/96/delivery-man.png" alt="Rider Profile" referrerPolicy="no-referrer">
+          <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" id="hdr-profile-status-dot"></span>
         </div>
-        <div>
-          <h3 id="delivery-profile-rider-name" class="text-xs text-amber-50 font-black uppercase tracking-widest font-display">RIDER EXPRESS</h3>
-          <p class="text-[10px] font-bold tracking-tight flex items-center gap-1.5 mt-0.5">
-            <span id="tracker-duty-txt">Standby Ready</span>
-            <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-          </p>
+        <div class="text-left">
+          <h3 id="delivery-profile-rider-name" class="text-xs font-black text-slate-850 tracking-tight leading-none uppercase font-display">Aman Sharma</h3>
+          <p id="lbl-profile-driver-id-sub" class="text-[9px] text-slate-400 font-extrabold tracking-tight mt-1">Rider ID: RSMD30485</p>
         </div>
       </div>
-      <div class="flex items-center gap-2">
-        <button id="btn-delivery-signout" class="w-9 h-9 rounded-xl hover:bg-white/10 flex items-center justify-center text-rose-200 cursor-pointer active:scale-90 transition-all" title="Sign Out">
-          <i class="fa-solid fa-right-from-bracket text-lg"></i>
-        </button>
+      
+      <!-- Right Side Widgets Section: Shifts between Toggle-switch and Earnings container depending on Active Tab -->
+      <div class="flex items-center gap-3">
+        <!-- Dashboard Toggle State Widget -->
+        <div id="hdr-widget-switch" class="flex flex-col items-end gap-0.5">
+          <div class="flex items-center gap-1.5 cursor-pointer select-none" id="hdr-btn-toggle-switch">
+            <span class="text-[8.5px] font-black text-slate-400 uppercase tracking-wider">Online</span>
+            <!-- Custom switch representation -->
+            <div id="hdr-switch-bg" class="w-8 h-4 rounded-full bg-emerald-500 transition-colors duration-300 relative">
+              <div id="hdr-switch-knob" class="w-3.5 h-3.5 rounded-full bg-white absolute top-0.25 left-0.25 transition-transform duration-300 shadow-xs translate-x-[16px]"></div>
+            </div>
+          </div>
+          <!-- Label status badge -->
+          <span id="tracker-duty-txt" class="text-[8px] font-black text-emerald-600 tracking-wider uppercase">ONLINE</span>
+        </div>
+
+        <!-- Payout/Earning Widget -->
+        <div id="hdr-widget-earnings" class="hidden bg-slate-50 border border-slate-100 rounded-xl px-2 py-0.5 text-right flex flex-col justify-center">
+          <span class="text-[8px] text-slate-400 font-extrabold uppercase tracking-tight leading-none">Earnings</span>
+          <div class="flex items-center gap-1 mt-0.5 leading-none">
+            <span id="hdr-payout-amount" class="text-xs font-black text-slate-800 font-mono tracking-tight leading-none">₹950.50</span>
+            <i class="fa-solid fa-arrow-trend-up text-[9px] text-[#00c853]"></i>
+          </div>
+        </div>
+
+        <!-- Notification Bell & Logout combo -->
+        <div class="flex items-center gap-1.5 border-l border-slate-100 pl-2">
+          <!-- Notification Bell -->
+          <div class="relative cursor-pointer active:scale-95 transition-transform pr-1">
+            <i class="fa-regular fa-bell text-slate-500 text-base"></i>
+            <span class="absolute -top-1 -right-0.5 w-3.5 h-3.5 bg-rose-500 text-[8px] text-white rounded-full font-black flex items-center justify-center border border-white">12</span>
+          </div>
+          <!-- Tiny Logout Icon -->
+          <button id="btn-delivery-signout" class="w-8 h-8 rounded-xl hover:bg-slate-50 flex items-center justify-center text-slate-400 hover:text-rose-650 cursor-pointer active:scale-90 transition-all" title="Sign Out">
+            <i class="fa-solid fa-right-from-bracket text-xs"></i>
+          </button>
+        </div>
       </div>
     </header>
 
@@ -348,234 +401,229 @@
     <div id="panel-main-terminal" class="hidden flex-1 overflow-y-auto no-scrollbar pb-24 flex flex-col">
       
       <!-- ==================== TAB A: RIDER DASHBOARD ==================== -->
-      <section id="tab-dashboard" class="px-4 py-4 space-y-5 flex-1">
+      <section id="tab-dashboard" class="px-4 py-4 space-y-4.5 flex-1 select-none overflow-y-auto no-scrollbar slide-fade">
         
-        <!-- Live Duty Status Header Bar -->
-        <div class="bg-gradient-to-r from-slate-900 to-slate-800 rounded-3xl p-4 text-white flex items-center justify-between shadow-lg relative overflow-hidden">
-          <div class="absolute -right-4 -bottom-4 opacity-15 text-7xl text-white/5 pr-2">
-            <i class="fa-solid fa-radar"></i>
-          </div>
-          <div class="space-y-1 relative z-10">
-            <p class="text-[9px] font-black text-amber-400 uppercase tracking-widest font-display">Active Working State</p>
-            <h4 id="lbl-duty-subtext" class="text-xs font-black">Standby Ready Duty (Active)</h4>
-            <p class="text-[9px] text-slate-300 font-medium">Auto-dispatching packages in your local range</p>
-          </div>
-          <div class="relative z-10">
-            <button id="btn-toggle-duty-state" class="text-[10px] font-black py-2 px-3.5 rounded-xl transition-all cursor-pointer bg-emerald-500 text-white shadow active:scale-95">
-              DUTY: ON
-            </button>
-          </div>
-        </div>
-
-        <!-- real-time attendance, shifts, alerts, and system notification drawer -->
-        <div class="bg-white rounded-3xl p-4 border border-slate-150/80 shadow-sm space-y-3.5 text-left text-xs">
-          <div class="flex items-center justify-between border-b border-slate-50 pb-2">
-            <h4 class="text-xs font-black text-slate-900 uppercase font-display tracking-wider flex items-center gap-1.5 select-none">
-              <i class="fa-solid fa-clock-rotate-left text-indigo-500 animate-pulse"></i> Attendance & Shifts
+        <!-- Live Duty Status Collapsible Shift Widget -->
+        <div class="bg-white rounded-2xl border border-slate-100 p-3.5 shadow-2xs space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-50 pb-2 cursor-pointer" onclick="document.getElementById('shift-settings-collapse').classList.toggle('hidden')">
+            <h4 class="text-xs font-black text-slate-800 uppercase font-display tracking-wider flex items-center gap-1.5 leading-none">
+              <i class="fa-solid fa-clock-rotate-left text-indigo-600 animate-pulse"></i> Duty Shift & Attendance
             </h4>
-            <span id="lbl-attendance-badge" class="px-2 py-0.5 rounded-lg text-[8.5px] font-black uppercase bg-rose-50 text-rose-600 border border-rose-100">Checked-Out</span>
-          </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-[9.5px] font-black text-slate-400 uppercase mb-1">Select Shift Timeframe</label>
-              <select id="sel-shift-timeline" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 text-xs font-extrabold text-slate-700">
-                <option value="Morning">Morning (07:00 AM - 03:00 PM)</option>
-                <option value="Afternoon" selected>Afternoon (03:00 PM - 11:00 PM)</option>
-                <option value="Evening">Evening (05:00 PM - 09:00 PM)</option>
-                <option value="Night">Night (11:00 PM - 07:00 AM)</option>
-              </select>
-            </div>
-            <div class="flex items-end">
-              <button id="btn-toggle-attendance" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-xl text-[10.5px] uppercase tracking-wider font-display shrink-0 active:scale-95 transition-all cursor-pointer">
-                Check-In Shift
-              </button>
+            <div class="flex items-center gap-1.5 leading-none">
+              <span id="lbl-attendance-badge" class="px-2 py-0.5 rounded-lg text-[8px] font-black uppercase bg-rose-50 text-rose-600 border border-rose-100">Checked-Out</span>
+              <i class="fa-solid fa-chevron-down text-[10px] text-slate-400"></i>
             </div>
           </div>
 
-          <!-- Live Timings Log -->
-          <div class="bg-slate-50 rounded-2xl p-2.5 text-[10px] text-slate-550 text-slate-500 flex items-center justify-between font-mono font-bold leading-none border border-slate-100">
-            <span>Shift Timings: <strong id="lbl-shift-display" class="text-slate-800">03:00 PM - 11:00 PM</strong></span>
-            <span>Check-In: <span id="lbl-duty-checkin-time" class="text-indigo-600">--:--</span></span>
+          <div id="shift-settings-collapse" class="hidden space-y-3 pt-1">
+            <div class="grid grid-cols-2 gap-3 text-left">
+              <div>
+                <label class="block text-[8.5px] font-black text-slate-400 uppercase mb-1">Shift Timeframe</label>
+                <select id="sel-shift-timeline" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 text-[10px] font-extrabold text-slate-700">
+                  <option value="Morning">Morning (07:00 AM - 03:00 PM)</option>
+                  <option value="Afternoon" selected class="font-bold">Afternoon (03:00 PM - 11:00 PM)</option>
+                  <option value="Evening">Evening (05:00 PM - 09:00 PM)</option>
+                  <option value="Night">Night (11:00 PM - 07:00 AM)</option>
+                </select>
+              </div>
+              <div class="flex items-end">
+                <button id="btn-toggle-attendance" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-2 rounded-xl text-[9px] uppercase tracking-wider font-display shrink-0 active:scale-95 transition-all cursor-pointer">
+                  Check-In Shift
+                </button>
+              </div>
+            </div>
+
+            <!-- Live Timings Log -->
+            <div class="bg-slate-50 rounded-xl p-2 text-[9px] text-slate-500 flex items-center justify-between font-mono font-bold leading-none border border-slate-100">
+              <span>Shift: <strong id="lbl-shift-display" class="text-slate-700">03:00 PM - 11:00 PM</strong></span>
+              <span>Check-In: <span id="lbl-duty-checkin-time" class="text-indigo-600">--:--</span></span>
+            </div>
           </div>
         </div>
 
         <!-- System Notification & Alert Banner Drawer inside dashboard -->
-        <div id="wrapper-system-notifications" class="bg-indigo-50/50 border border-indigo-100/60 rounded-3xl p-3.5 space-y-2 text-left">
+        <div id="wrapper-system-notifications" class="bg-indigo-50/50 border border-indigo-100/40 rounded-2xl p-3 space-y-1 text-left hidden">
           <div class="flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-indigo-500 animate-ping"></span>
-            <span class="text-[9.5px] font-black text-indigo-900 uppercase">Rider Logistics Broadcasts</span>
+            <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-ping"></span>
+            <span class="text-[8.5px] font-black text-indigo-900 uppercase tracking-wider font-display">Logistics Broadcast</span>
           </div>
-          <p id="lbl-notification-text" class="text-[10px] text-indigo-750 font-semibold leading-normal text-slate-600">Standby ready. All pharmacy orders dispatching via real-time GPS proximity matrices.</p>
+          <p id="lbl-notification-text" class="text-[9.5px] text-indigo-750 font-semibold leading-relaxed text-slate-600">Standby ready. All pharmacy orders dispatching via real-time GPS proximity matrices.</p>
         </div>
 
-        <!-- Today's Stats Bento Elements -->
-        <div class="grid grid-cols-2 gap-3 select-none">
-          
-          <div class="bg-gradient-to-br from-indigo-500/10 to-indigo-600/5 hover:from-indigo-500/15 duration-200 rounded-3xl p-4 border border-indigo-100/50 shadow-2xs flex flex-col justify-between h-28 relative overflow-hidden">
-            <div class="absolute right-3 top-3 text-indigo-500/30 text-xl font-bold"><i class="fa-solid fa-wallet"></i></div>
-            <p class="text-[9px] font-black text-indigo-900/60 uppercase font-display">TODAY'S EARNINGS</p>
-            <div>
-              <h4 id="lbl-earnings-today" class="text-2xl font-black text-indigo-900 font-display">₹0</h4>
-              <span class="text-[8px] text-slate-400 block font-bold mt-1 uppercase">Today pay quota</span>
+        <!-- 3-Column Today's Stats Row (Screen 1 Style) -->
+        <div class="grid grid-cols-3 gap-2.5">
+          <!-- Card 1: Today's Earnings -->
+          <div class="bg-white rounded-2xl p-3 border border-slate-100 shadow-2xs text-left relative flex flex-col justify-between h-20 overflow-hidden">
+            <p class="text-[8px] font-black text-slate-400 uppercase tracking-wider leading-none">TODAY'S PAY</p>
+            <div class="mt-1 leading-none">
+              <h4 id="lbl-earnings-today" class="text-sm font-black text-slate-800 font-mono tracking-tight leading-none">₹0</h4>
+              <span class="text-[8px] text-[#00c853] font-bold block mt-1 leading-none font-display flex items-center gap-0.5 animate-pulse">
+                <i class="fa-solid fa-arrow-up text-[7px]"></i> +12%
+              </span>
             </div>
           </div>
 
-          <div class="bg-gradient-to-br from-indigo-500/5 to-indigo-600/5 rounded-3xl p-4 border border-indigo-100/30 shadow-2xs flex flex-col justify-between h-28 relative overflow-hidden">
-            <div class="absolute right-3 top-3 text-indigo-500/20 text-xl font-bold"><i class="fa-solid fa-calendar-day"></i></div>
-            <p class="text-[9px] font-black text-slate-400 uppercase font-display">TODAY DELIVERED</p>
-            <div>
-              <h4 id="lbl-deliveries-today" class="text-2xl font-black text-slate-800 font-display">0</h4>
-              <span class="text-[8px] text-slate-400 block font-bold mt-1 uppercase">Success completions</span>
+          <!-- Card 2: COD Collected -->
+          <div class="bg-white rounded-2xl p-3 border border-slate-100 shadow-2xs text-left relative flex flex-col justify-between h-20 overflow-hidden">
+            <p class="text-[8px] font-black text-slate-400 uppercase tracking-wider leading-none">COD WALLET</p>
+            <div class="mt-1 leading-none">
+              <h4 id="lbl-dashboard-cod-outstanding" class="text-sm font-black text-slate-800 font-mono tracking-tight leading-none">₹0</h4>
+              <span class="text-[8px] bg-emerald-50 text-emerald-700 font-black px-1.5 py-0.25 rounded block mt-1 leading-none text-center border border-emerald-100 font-sans uppercase">Safe</span>
             </div>
           </div>
 
-        </div>
-
-        <!-- Performance Dashboard Section -->
-        <div class="bg-white rounded-3xl p-4 border border-slate-100 shadow-sm space-y-3.5">
-          <h4 class="text-xs font-extrabold text-slate-900 uppercase font-display tracking-widest flex items-center gap-1.5 border-b border-slate-50 pb-2">
-            <i class="fa-solid fa-medal text-amber-500"></i> Operations Score Card
-          </h4>
-          <div class="grid grid-cols-3 gap-2.5 text-center text-xs font-semibold">
-            
-            <div class="p-2.5 bg-slate-50 rounded-2xl relative space-y-1">
-              <span class="text-[8px] text-slate-400 uppercase font-black tracking-wider block">Total Trips</span>
-              <h5 id="lbl-perf-trips" class="text-sm font-black text-slate-800">0</h5>
+          <!-- Card 3: Active Orders / Completed -->
+          <div class="bg-white rounded-2xl p-3 border border-slate-100 shadow-2xs text-left relative flex flex-col justify-between h-20 overflow-hidden">
+            <p class="text-[8px] font-black text-slate-400 uppercase tracking-wider leading-none">COMPLETED</p>
+            <div class="mt-1 leading-none">
+              <h4 id="lbl-deliveries-today" class="text-sm font-black text-slate-800 font-mono tracking-tight leading-none">0</h4>
+              <span class="text-[8px] text-indigo-650 font-bold block mt-1 leading-none uppercase font-display">Target 10</span>
             </div>
-            
-            <div class="p-2.5 bg-slate-50 rounded-2xl relative space-y-1">
-              <span class="text-[8px] text-slate-400 uppercase font-black tracking-wider block">Success Rate</span>
-              <h5 id="lbl-perf-rate" class="text-sm font-black text-emerald-600">98%</h5>
-            </div>
-
-            <div class="p-2.5 bg-slate-50 rounded-2xl relative space-y-1">
-              <span class="text-[8px] text-slate-400 uppercase font-black tracking-wider block">Rider Rating</span>
-              <h5 id="lbl-perf-rating" class="text-sm font-black text-amber-600 flex items-center justify-center gap-0.5">
-                4.9 <i class="fa-solid fa-star text-[9px]"></i>
-              </h5>
-            </div>
-
           </div>
         </div>
 
-        <!-- Premium Real-time Incentives, Goals, and Payout Structures -->
-        <div class="bg-white rounded-3xl p-4 border border-slate-150/80 shadow-sm space-y-3.5 text-left text-xs animate-fade-in">
-          <h4 class="text-xs font-black text-slate-900 uppercase font-display tracking-wider flex items-center gap-1.5 border-b border-slate-50 pb-2">
-            <i class="fa-solid fa-hand-holding-dollar text-emerald-500"></i> Incentives & Streaks
-          </h4>
-          
-          <div class="space-y-2.5">
-            <div class="flex items-center justify-between">
-              <span class="text-slate-550 text-slate-550 font-bold">Standard Per-Delivery Incentive</span>
-              <span class="font-bold text-slate-800 font-mono text-indigo-650">₹40 / Order</span>
+        <!-- LIVE ORDER DASHBOARD INJECTION CONTAINER -->
+        <div id="dashboard-live-order-container" class="space-y-3">
+          <!-- Dynamically populated or standby fallback -->
+          <div class="bg-white border border-dashed border-slate-200 rounded-3xl p-5 text-center flex flex-col items-center justify-center space-y-3 shadow-2xs">
+            <div class="w-11 h-11 rounded-full bg-slate-50 text-slate-300 flex items-center justify-center text-base relative">
+              <i class="fa-solid fa-radar animate-pulse text-indigo-500"></i>
+              <span class="absolute top-0 right-0 w-2.5 h-2.5 rounded-full bg-indigo-500 animate-ping"></span>
             </div>
-            
-            <!-- Streak Goal A -->
-            <div class="p-2 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between">
-              <div class="space-y-0.5">
-                <p class="text-[9.5px] font-black text-slate-700 uppercase">Daily Delivery Bonus (5 Orders)</p>
-                <p class="text-[8px] text-slate-450 text-slate-400 leading-none">Reach 5 successful orders today</p>
-              </div>
-              <div class="text-right">
-                <span class="text-[9px] bg-slate-200 text-slate-655 font-bold px-2 py-0.5 rounded font-mono" id="lbl-incentive-streak-active">Pending</span>
-                <span class="text-[9.5px] text-emerald-600 font-black font-mono block mt-1">+₹50 Bonus</span>
+            <div class="space-y-1">
+              <h4 class="text-xs font-black text-slate-705 tracking-wider uppercase font-display text-slate-705">No Active Transit Order</h4>
+              <p class="text-[9.5px] text-slate-400 leading-normal max-w-[240px] font-medium mx-auto">Waiting for nearby pharmacies. Your Online duty state is currently active</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- My Tasks Section (Screen 1 Style) -->
+        <div class="space-y-2 text-left">
+          <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest font-display ml-0.5">My Tasks</h4>
+          <div class="grid grid-cols-2 gap-3">
+            <!-- Task Card A: Next Order -->
+            <div class="bg-white rounded-2xl p-3 border border-emerald-400/30 shadow-2xs flex flex-col justify-between h-20 text-left relative">
+              <span class="absolute top-3 right-3 text-[#00c853] text-[11px] animate-pulse"><i class="fa-solid fa-stopwatch"></i></span>
+              <p class="text-[9px] font-black text-slate-800 font-display uppercase tracking-wide">Next Order</p>
+              <div>
+                <p class="text-[10px] font-black text-slate-750 leading-tight">Estimated Arriving</p>
+                <p class="text-[8.5px] text-[#00c853] font-bold">In next 3-5 mins</p>
               </div>
             </div>
 
-            <!-- Streak Goal B -->
-            <div class="p-2 bg-indigo-50/20 rounded-2xl border border-indigo-50 flex items-center justify-between">
-              <div class="space-y-0.5">
-                <p class="text-[9.5px] font-black text-slate-700 uppercase">Weekly Super Milestone (20 Orders)</p>
-                <p class="text-[8px] text-slate-455 text-slate-400 leading-none">Complete 20 orders in current week</p>
+            <!-- Task Card B: Cash Deposit Due -->
+            <div class="bg-white rounded-2xl p-3 border border-amber-400/30 shadow-2xs flex flex-col justify-between h-20 text-left relative cursor-pointer" onclick="switchTabPanel('settlements')">
+              <span class="absolute top-3 right-3 text-amber-500 text-[11px]"><i class="fa-solid fa-indian-rupee-sign"></i></span>
+              <p class="text-[9px] font-black text-slate-800 font-display uppercase tracking-wide">Deposit Due</p>
+              <div>
+                <p class="text-[10px] font-black id-deposit-outstanding text-slate-705">Outstanding: ₹3,200</p>
+                <span class="text-[8.5px] font-extrabold text-amber-600 flex items-center gap-0.5">Pay Now <i class="fa-solid fa-chevron-right text-[7px]"></i></span>
               </div>
-              <div class="text-right">
-                <span class="text-[9px] bg-slate-200 text-slate-655 font-bold px-2 py-0.5 rounded font-mono" id="lbl-weekly-streak-active">Pending</span>
-                <span class="text-[9.5px] text-emerald-600 font-black font-mono block mt-1">+₹200 Bonus</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Activities Session Log (Screen 1 Style) -->
+        <div class="space-y-2 text-left pb-1">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-1.5">
+            <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest font-display ml-0.5">Recent Activities</h4>
+            <i class="fa-solid fa-chevron-right text-[10px] text-slate-400 cursor-pointer"></i>
+          </div>
+          <div class="space-y-2" id="dashboard-recent-activities-list">
+            <!-- Activity Item -->
+            <div class="flex items-center justify-between bg-white px-3 py-2.5 rounded-xl border border-slate-50 shadow-2xs">
+              <div class="flex items-center gap-2">
+                <span class="w-5 h-5 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-[9px] font-bold"><i class="fa-solid fa-check"></i></span>
+                <div>
+                  <p class="text-[9.5px] font-black text-slate-700 font-display font-bold">New Order Assigned! #R5M901</p>
+                  <p class="text-[8px] text-slate-400 font-bold font-mono">10:42 AM • Apollo Pharmacy</p>
+                </div>
               </div>
+              <span class="text-[8px] bg-indigo-50 text-indigo-700 font-black px-1.5 py-0.5 rounded uppercase">New</span>
+            </div>
+            <!-- Activity Item B -->
+            <div class="flex items-center justify-between bg-white px-3 py-2.5 rounded-xl border border-slate-50 shadow-2xs">
+              <div class="flex items-center gap-2">
+                <span class="w-5 h-5 rounded-full bg-emerald-50 text-[#00c853] flex items-center justify-center text-[9px] font-bold"><i class="fa-solid fa-check-double"></i></span>
+                <div>
+                  <p class="text-[9.5px] font-black text-slate-700 font-display font-bold">Earnings Settled successfully</p>
+                  <p class="text-[8px] text-slate-400 font-bold font-mono">Yesterday • UTR #820E9J</p>
+                </div>
+              </div>
+              <span class="text-[8px] bg-slate-100 text-slate-500 font-black px-1.5 py-0.5 rounded uppercase font-bold">Cleared</span>
             </div>
           </div>
         </div>
 
         <!-- Local Fleet Live Leaderboard Section -->
-        <div class="bg-white rounded-3xl p-4 border border-slate-150/80 shadow-sm space-y-3 text-left text-xs animate-fade-in select-none">
-          <h4 class="text-xs font-black text-slate-900 uppercase font-display tracking-wider flex items-center gap-1.5 border-b border-slate-50 pb-2">
+        <div class="bg-white rounded-2xl p-3 border border-slate-100 shadow-2xs space-y-3 text-left text-xs select-none">
+          <h4 class="text-xs font-black text-slate-800 uppercase font-display tracking-wider flex items-center gap-1.5 border-b border-slate-50 pb-2 leading-none">
             <i class="fa-solid fa-trophy text-amber-500"></i> Fleet Leaderboard
           </h4>
           
-          <div class="space-y-2.5" id="cnt-leaderboard-list">
+          <div class="space-y-2" id="cnt-leaderboard-list">
             <!-- Dynamically populated from script -->
-            <div class="flex items-center justify-between font-bold text-[11px] py-1 border-b border-slate-50">
+            <div class="flex items-center justify-between font-bold text-[10px] py-1 border-b border-slate-50">
               <div class="flex items-center gap-2">
-                <span class="w-5 h-5 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center font-black">1</span>
-                <span class="text-slate-800">Ramesh Kumar</span>
-                <span class="text-[8.5px] text-slate-400 font-sans uppercase">Electric Scooter</span>
+                <span class="w-4.5 h-4.5 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center font-black">1</span>
+                <span class="text-slate-705">Ramesh Kumar</span>
               </div>
-              <span class="font-mono text-indigo-650">32 Orders</span>
+              <span class="font-mono text-indigo-600">32 Orders</span>
             </div>
-            <div class="flex items-center justify-between font-bold text-[11px] py-1 border-b border-slate-50">
+            <div class="flex items-center justify-between font-bold text-[10px] py-1 border-b border-slate-50">
               <div class="flex items-center gap-2">
-                <span class="w-5 h-5 bg-slate-100 text-slate-700 rounded-full flex items-center justify-center font-black">2</span>
-                <span class="text-slate-800">Vikram Singh</span>
-                <span class="text-[8.5px] text-slate-400 font-sans uppercase">Motorcycle</span>
+                <span class="w-4.5 h-4.5 bg-slate-100 text-slate-700 rounded-full flex items-center justify-center font-black">2</span>
+                <span class="text-slate-705">Vikram Singh</span>
               </div>
-              <span class="font-mono text-indigo-650">29 Orders</span>
-            </div>
-            <div class="flex items-center justify-between font-bold text-[11px] py-1">
-              <div class="flex items-center gap-2">
-                <span class="w-5 h-5 bg-amber-50 text-amber-900 rounded-full flex items-center justify-center font-black">3</span>
-                <span class="text-slate-800">You</span>
-                <span id="lbl-leaderboard-my-vehicle" class="text-[8.5px] text-slate-400 font-sans uppercase">Scooter</span>
-              </div>
-              <span id="lbl-leaderboard-my-trips" class="font-mono text-indigo-650">-- Orders</span>
+              <span class="font-mono text-indigo-600">29 Orders</span>
             </div>
           </div>
         </div>
 
         <!-- Help Desk & SOS Assistance Section -->
-        <div class="bg-rose-50/50 border border-rose-100 rounded-3xl p-4 space-y-3.5 text-left text-xs animate-fade-in mb-3">
-          <h4 class="text-xs font-black text-rose-800 uppercase font-display tracking-wider flex items-center gap-1.5 border-b border-rose-100/40 pb-2">
-            <i class="fa-solid fa-headset text-rose-500 animate-pulse"></i> Tactical Help & SOS Center
+        <div class="bg-rose-50/30 border border-rose-100 rounded-2xl p-3.5 space-y-3 text-left text-xs mb-1">
+          <h4 class="text-xs font-black text-rose-800 uppercase font-display tracking-wider flex items-center gap-1.5 border-b border-rose-100/40 pb-2 leading-none">
+            <i class="fa-solid fa-headset text-rose-500 animate-pulse"></i> Help & SOS Center
           </h4>
           
           <div class="grid grid-cols-3 gap-2 text-center select-none">
-            <a href="tel:102" class="p-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl flex flex-col items-center justify-center gap-1 transition-all active:scale-95 border border-rose-500 shadow-md">
-              <i class="fa-solid fa-kit-medical text-lg text-rose-100"></i>
-              <span class="text-[8px] font-black uppercase">MEDICAL SOS</span>
+            <a href="tel:102" class="p-2 border border-rose-100 bg-rose-50 hover:bg-rose-100/50 text-rose-700 rounded-xl flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 shadow-2xs">
+              <i class="fa-solid fa-kit-medical text-sm text-rose-600 animate-bounce"></i>
+              <span class="text-[8px] font-black uppercase tracking-wider text-rose-700">MED SOS</span>
             </a>
-            <a href="https://wa.me/919999999999" target="_blank" class="p-2.5 bg-emerald-600 hover:bg-emerald-750 text-white rounded-2xl flex flex-col items-center justify-center gap-1 transition-all active:scale-95 border border-emerald-500 shadow-md">
-              <i class="fa-brands fa-whatsapp text-lg text-emerald-100"></i>
-              <span class="text-[8px] font-black uppercase">WA BACKUP</span>
+            <a href="https://wa.me/919999999999" target="_blank" class="p-2 border border-emerald-100 bg-emerald-50 hover:bg-emerald-100 text-[#00c853] rounded-xl flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 shadow-2xs">
+              <i class="fa-brands fa-whatsapp text-sm text-[#00c853]"></i>
+              <span class="text-[8px] font-black uppercase tracking-wider">WHATSAPP</span>
             </a>
-            <button id="btn-call-support-hotline" class="p-2.5 bg-slate-900 hover:bg-slate-850 text-white rounded-2xl flex flex-col items-center justify-center gap-1 transition-all active:scale-95 border border-slate-700 shadow-md cursor-pointer">
-              <i class="fa-solid fa-phone-volume text-lg text-amber-400"></i>
-              <span class="text-[8px] font-black uppercase">DIAL FLEET</span>
+            <button id="btn-call-support-hotline" class="p-2 border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 shadow-2xs cursor-pointer">
+              <i class="fa-solid fa-phone-volume text-sm text-indigo-600"></i>
+              <span class="text-[8px] font-black uppercase tracking-wider font-bold text-slate-700">DIAL AREA</span>
             </button>
           </div>
         </div>
 
         <!-- Comprehensive Earnings Breakdown Accordion Card -->
-        <div class="bg-white rounded-3xl p-4 border border-slate-100 shadow-sm space-y-4">
-          <h4 class="text-xs font-extrabold text-slate-900 uppercase font-display tracking-widest flex items-center gap-1.5">
-            <i class="fa-solid fa-piggy-bank text-indigo-500"></i> Earnings Overview
+        <div class="bg-white rounded-2xl p-3.5 border border-slate-100 shadow-2xs space-y-3">
+          <h4 class="text-xs font-extrabold text-slate-800 uppercase font-display tracking-wider flex items-center gap-1.5 leading-none">
+            <i class="fa-solid fa-piggy-bank text-indigo-600"></i> Earnings Overview
           </h4>
           
-          <div class="space-y-3 text-xs">
-            <div class="flex items-center justify-between border-b border-slate-50 pb-2">
-              <span class="text-slate-500 font-medium font-sans">Total Earnings (All-Time)</span>
-              <strong id="lbl-earnings-total" class="font-extrabold text-slate-900 font-mono">₹0</strong>
+          <div class="space-y-2.5 text-xs">
+            <div class="flex items-center justify-between border-b border-slate-50 pb-2.5">
+              <span class="text-slate-500 font-bold select-none text-[10px]">Total Earnings (All-Time)</span>
+              <strong id="lbl-earnings-total" class="font-black text-slate-800 font-mono text-[11px]">₹0</strong>
             </div>
-            <div class="flex items-center justify-between border-b border-slate-50 pb-2">
-              <span class="text-slate-500 font-medium font-sans">Weekly Earnings (Past 7d)</span>
-              <strong id="lbl-earnings-weekly" class="font-extrabold text-slate-900 font-mono">₹0</strong>
+            <div class="flex items-center justify-between border-b border-slate-50 pb-2.5">
+              <span class="text-slate-500 font-bold select-none text-[10px]">Weekly Earnings (Past 7d)</span>
+              <strong id="lbl-earnings-weekly" class="font-black text-slate-800 font-mono text-[11px]">₹0</strong>
             </div>
-            <div class="flex items-center justify-between border-b border-slate-50 pb-2">
-              <span class="text-slate-500 font-medium font-sans">Monthly Earnings (Past 30d)</span>
-              <strong id="lbl-earnings-monthly" class="font-extrabold text-slate-900 font-mono">₹0</strong>
+            <div class="flex items-center justify-between border-b border-slate-50 pb-2.5">
+              <span class="text-slate-500 font-bold select-none text-[10px]">Monthly Earnings (Past 30d)</span>
+              <strong id="lbl-earnings-monthly" class="font-black text-slate-800 font-mono text-[11px]">₹0</strong>
             </div>
             <div class="flex items-center justify-between text-indigo-700 bg-indigo-50/40 p-2.5 rounded-xl">
-              <span class="font-bold flex items-center gap-1"><i class="fa-solid fa-hand-holding-dollar"></i> Pending Settlement Balance</span>
-              <strong id="lbl-earnings-pending" class="font-black font-display text-sm font-mono">₹0</strong>
+              <span class="font-bold flex items-center gap-1 select-none text-[10px]"><i class="fa-solid fa-hand-holding-dollar"></i> Pending Settlement</span>
+              <strong id="lbl-earnings-pending" class="font-black font-display text-xs font-mono text-indigo-750">₹0</strong>
             </div>
           </div>
         </div>

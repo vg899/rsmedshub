@@ -232,7 +232,7 @@ function switchTabPanel(tabName: string) {
     tabButtons.forEach((btn) => {
       const bTab = btn.getAttribute("data-tab");
       if (bTab === tabName) {
-        btn.className = "flex flex-col items-center justify-center gap-1 text-amber-500 transition-all font-display group cursor-pointer w-12 text-center";
+        btn.className = "flex flex-col items-center justify-center gap-1 text-indigo-600 transition-all font-display group cursor-pointer w-12 text-center";
       } else {
         btn.className = "flex flex-col items-center justify-center gap-1 text-slate-400 transition-all font-display group cursor-pointer w-12 text-center";
       }
@@ -251,6 +251,19 @@ function switchTabPanel(tabName: string) {
     }
   });
 
+  // Dynamic header widget toggle based on active tab
+  const widgetSwitch = document.getElementById("hdr-widget-switch");
+  const widgetEarnings = document.getElementById("hdr-widget-earnings");
+  if (widgetSwitch && widgetEarnings) {
+    if (tabName === "dashboard") {
+      widgetSwitch.classList.remove("hidden");
+      widgetEarnings.classList.add("hidden");
+    } else {
+      widgetSwitch.classList.add("hidden");
+      widgetEarnings.classList.remove("hidden");
+    }
+  }
+
   // Re-adjust leaflet bounds representation if accessing active order map
   if (tabName === "active-order" && activeOrderPayload) {
     setTimeout(() => {
@@ -258,6 +271,9 @@ function switchTabPanel(tabName: string) {
     }, 400);
   }
 }
+
+// Expose globally for dynamic layout click events
+(window as any).switchTabPanel = switchTabPanel;
 
 // --- KYC REGISTRATION FORM FILE SELECTORS AND AUTO-UPLOADERS ---
 setupKycUploadTrigger("onboard-profile-photo", "img-onboard-profile-photo", "txt-onboard-profile-photo", "icon-onboard-profile-photo", "wrapper-onboard-profile-photo", (url) => {
@@ -835,10 +851,121 @@ Object.assign(window, {
   }
 });
 
+// --- HOME DASHBOARD ACTIVE TRANSIT TRACKER CARD INJECTOR ---
+function renderDashboardActiveOrderCard() {
+  const container = document.getElementById("dashboard-live-order-container");
+  if (!container) return;
+
+  if (!activeOrderPayload) {
+    container.innerHTML = `
+      <div id="card-dashboard-empty" class="bg-white border border-dashed border-slate-200 rounded-3xl p-5 text-center flex flex-col items-center justify-center space-y-3 shadow-2xs">
+        <div class="w-11 h-11 rounded-full bg-slate-50 text-slate-300 flex items-center justify-center text-base relative">
+          <i class="fa-solid fa-radar animate-pulse text-indigo-500"></i>
+          <span class="absolute top-0 right-0 w-2.5 h-2.5 rounded-full bg-indigo-500 animate-ping"></span>
+        </div>
+        <div class="space-y-1">
+          <h4 class="text-xs font-black text-slate-705 tracking-wider uppercase font-display">No Active Transit Order</h4>
+          <p class="text-[9.5px] text-slate-400 leading-normal max-w-[240px] mx-auto font-medium">Waiting for nearby pharmacies. Your Online duty state is currently active</p>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  const o = activeOrderPayload;
+  const isPickup = o.status === "packed";
+  const statusLabel = isPickup ? "Headed to Pickup" : "Headed to Client Home";
+  const customerName = o.userName || "Patient Recipient";
+  const statePct = isPickup ? "35%" : "75%";
+  const paymentText = o.paymentMethod === "cod" ? `COD Wallet: ₹${Math.ceil(o.total || 0)}` : "PREPAID ✓";
+
+  container.innerHTML = `
+    <div id="card-dashboard-live-tracker" class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-indigo-500/15 rounded-3xl p-4 text-white shadow-lg relative overflow-hidden transition-all duration-300">
+      
+      <!-- Ambient light effect -->
+      <div class="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-indigo-500/10 blur-xl select-none pointer-events-none"></div>
+      
+      <div class="flex items-center justify-between relative z-10">
+        <div class="flex items-center gap-2">
+          <!-- Active Pulsing badge -->
+          <div class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+          </div>
+          <span class="text-[9.5px] font-black text-slate-300 uppercase tracking-widest font-display leading-none">ORDER IN TRANSIT</span>
+        </div>
+        
+        <span class="text-[9px] bg-indigo-500/15 border border-indigo-500/20 text-indigo-300 font-extrabold px-2 py-0.5 rounded-lg leading-none uppercase tracking-wide">
+          ${paymentText}
+        </span>
+      </div>
+
+      <!-- Action-step & Title -->
+      <div class="mt-3 relative z-10 text-left">
+        <h3 class="text-xs text-indigo-300 font-extrabold uppercase tracking-widest leading-none font-display">${statusLabel}</h3>
+        <h2 class="text-sm font-black text-white mt-1 leading-tight tracking-tight max-w-[280px]">Delivery to ${customerName}</h2>
+      </div>
+
+      <!-- Interactive SVG routing line map tracker -->
+      <div class="my-4 relative select-none">
+        <!-- Background route track -->
+        <div class="h-1 bg-white/10 rounded-full w-full relative">
+          <!-- Filled Progress up to Rider -->
+          <div class="h-full bg-gradient-to-r from-indigo-500 to-indigo-400 rounded-full transition-all duration-500" style="width: ${statePct}"></div>
+        </div>
+
+        <!-- 3 Nodes: Store, Rider, Customer -->
+        <div class="absolute -top-1.5 left-0 right-0 flex justify-between px-0.5">
+          <!-- Node 1: Pharmacy Store -->
+          <div class="flex flex-col items-center">
+            <div class="w-4.5 h-4.5 rounded-full bg-indigo-500 text-white flex items-center justify-center text-[7.5px] font-bold shadow border border-indigo-400/20">
+              <i class="fa-solid fa-store text-[7px]"></i>
+            </div>
+            <span class="text-[7.5px] font-black text-indigo-300 uppercase tracking-wider mt-1.5 leading-none">Pharmacy</span>
+          </div>
+
+          <!-- Node 2: Rider (Positioned proportionally) -->
+          <div class="absolute -top-1.5 transition-all duration-500" style="left: calc(${statePct} - 12px)">
+            <div class="flex flex-col items-center">
+              <div class="w-6.5 h-6.5 rounded-full bg-white text-indigo-950 flex items-center justify-center text-xs shadow-md border border-indigo-600 animate-bounce">
+                <i class="fa-solid fa-motorcycle text-[9px] text-indigo-950"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Node 3: Customer destination -->
+          <div class="flex flex-col items-center">
+            <div class="w-4.5 h-4.5 rounded-full bg-[#00c853] text-white flex items-center justify-center text-[7.5px] font-bold shadow border border-emerald-400/20">
+              <i class="fa-solid fa-house text-[7px]"></i>
+            </div>
+            <span class="text-[7.5px] font-black text-[#00c853] uppercase tracking-wider mt-1.5 leading-none">Home</span>
+          </div>
+        </div>
+        
+        <!-- Bottom spacing for absolute nodes labels -->
+        <div class="h-5"></div>
+      </div>
+
+      <!-- Quick Action Buttons inside Dashboard card -->
+      <div class="flex items-center gap-2 border-t border-white/5 pt-3 relative z-10 select-none">
+        <button onclick="switchTabPanel('active-order')" class="flex-1 bg-white hover:bg-slate-50 text-slate-900 font-extrabold text-[10px] tracking-wide uppercase py-2 rounded-xl active:scale-95 transition-all duration-150 cursor-pointer flex items-center justify-center gap-1.5 shadow-sm font-display leading-none">
+          <i class="fa-solid fa-map-location-dot text-indigo-600 animate-pulse text-[10px]"></i> Open Navigation
+        </button>
+        <a href="tel:${o.userPhone || '9988776655'}" class="w-9 h-9 shrink-0 bg-white/5 hover:bg-white/10 rounded-xl flex items-center justify-center text-white cursor-pointer active:scale-95 transition-all text-xs">
+          <i class="fa-solid fa-phone"></i>
+        </a>
+      </div>
+
+    </div>
+  `;
+}
+
 // --- RENDER ACTIVE ORDER PROGRESS RUN PIPELINE ---
 function renderActiveOrderPipelineLayout() {
   const navDotBadge = document.getElementById("badge-nav-active-order");
   const navPingBadge = document.getElementById("badge-nav-active-order-ping");
+
+  renderDashboardActiveOrderCard();
 
   if (!activeOrderPayload) {
     if (navDotBadge) navDotBadge.classList.add("hidden");
