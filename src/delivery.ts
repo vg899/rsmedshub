@@ -198,6 +198,20 @@ function showActiveTerminalView(data: any) {
   const riderNameHeader = document.getElementById("delivery-profile-rider-name");
   if (riderNameHeader) riderNameHeader.innerText = data.name || "Agent Express";
 
+  const hdrProfilePic = document.getElementById("hdr-profile-pic") as HTMLImageElement;
+  if (hdrProfilePic && (data.profilePhotoUrl || data.profilePhoto)) {
+    hdrProfilePic.src = data.profilePhotoUrl || data.profilePhoto;
+  }
+
+  // Update rider ID sub title
+  const driverIdSub = document.getElementById("lbl-profile-driver-id-sub");
+  if (driverIdSub) {
+    driverIdSub.innerText = `Rider ID: ${currentRiderId.substring(0, 10).toUpperCase()}`;
+  }
+
+  // Sync duty states
+  updateDutyButtonUI();
+
   // Bootstrap live location GPS track loops
   bootstrapRiderLiveLocationTracking();
 
@@ -1386,6 +1400,27 @@ function renderRiderProfileView(data: any) {
   const lblName = document.getElementById("lbl-profile-name");
   if (lblName) lblName.innerText = data.name || "Express Rider Partner";
 
+  const lblEmail = document.getElementById("lbl-profile-email");
+  if (lblEmail) lblEmail.innerText = data.email || (loggedInUser?.email || "rider@example.com");
+
+  // Sync Top Header Dynamic Profile Picture
+  const hdrProfilePic = document.getElementById("hdr-profile-pic") as HTMLImageElement;
+  if (hdrProfilePic && (data.profilePhotoUrl || data.profilePhoto)) {
+    hdrProfilePic.src = data.profilePhotoUrl || data.profilePhoto;
+  }
+
+  // Sync Profile Tab Dynamic Selfie Picture
+  const tabProfileImg = document.getElementById("img-profile-selfie") as HTMLImageElement;
+  const tabProfilePlaceholder = document.getElementById("img-profile-selfie-placeholder");
+  if (tabProfileImg && (data.profilePhotoUrl || data.profilePhoto)) {
+    tabProfileImg.src = data.profilePhotoUrl || data.profilePhoto;
+    tabProfileImg.classList.remove("hidden");
+    if (tabProfilePlaceholder) tabProfilePlaceholder.classList.add("hidden");
+  } else if (tabProfilePlaceholder) {
+    tabProfilePlaceholder.classList.remove("hidden");
+    if (tabProfileImg) tabProfileImg.classList.add("hidden");
+  }
+
   const lblAadhaarVal = document.getElementById("lbl-profile-aadhaar");
   if (lblAadhaarVal) lblAadhaarVal.innerText = data.aadhaarNumber || "N/A";
 
@@ -1429,41 +1464,77 @@ function renderRiderProfileView(data: any) {
 
 // --- ACTIVE DUTY TOGGLE ON THE DASHBOARD HUB ---
 const btnToggleDuty = document.getElementById("btn-toggle-duty-state") as HTMLButtonElement;
-const lblDutySub = document.getElementById("lbl-duty-subtext");
+const btnToggleDutyHeader = document.getElementById("hdr-btn-toggle-switch");
 
-btnToggleDuty?.addEventListener("click", () => {
+const handleDutyToggleAction = () => {
   const nextDutyState = !isDutyActive;
   showLoader(true);
   update(ref(db, `deliveryboy1/${currentRiderId}`), { active: nextDutyState }).then(() => {
     isDutyActive = nextDutyState;
     updateDutyButtonUI();
-    showToast(`Duty Status toggled: ${nextDutyState ? "ONLINE READY" : "OFFLINE RESTING"}`, "info");
+    showToast(`Duty Status: ${nextDutyState ? "ONLINE READY" : "OFFLINE RESTING"}`, "info");
     showLoader(false);
   }).catch((err) => {
     console.error(err);
+    showToast("Failed to switch duty status.", "error");
     showLoader(false);
   });
+};
+
+btnToggleDuty?.addEventListener("click", handleDutyToggleAction);
+btnToggleDutyHeader?.addEventListener("click", (e) => {
+  e.stopPropagation(); // Prevent opening profile when toggling switch in header
+  handleDutyToggleAction();
 });
 
 function updateDutyButtonUI() {
+  // Update header switch representations
+  const bg = document.getElementById("hdr-switch-bg");
+  const knob = document.getElementById("hdr-switch-knob");
+  const txt = document.getElementById("tracker-duty-txt");
+  const dot = document.getElementById("hdr-profile-status-dot");
+  
+  if (isDutyActive) {
+    if (bg) bg.className = "w-8 h-4 rounded-full bg-emerald-500 transition-colors duration-300 relative";
+    if (knob) knob.className = "w-3.5 h-3.5 rounded-full bg-white absolute top-0.25 left-0.25 transition-transform duration-300 shadow-xs translate-x-[16px]";
+    if (txt) {
+      txt.innerText = "ONLINE";
+      txt.className = "text-[8px] font-black text-emerald-600 tracking-wider uppercase";
+    }
+    if (dot) {
+      dot.className = "absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white";
+    }
+  } else {
+    if (bg) bg.className = "w-8 h-4 rounded-full bg-slate-300 transition-colors duration-300 relative";
+    if (knob) knob.className = "w-3.5 h-3.5 rounded-full bg-white absolute top-0.25 left-0.25 transition-transform duration-300 shadow-xs translate-x-0";
+    if (txt) {
+      txt.innerText = "OFFLINE";
+      txt.className = "text-[8px] font-black text-slate-500 tracking-wider uppercase";
+    }
+    if (dot) {
+      dot.className = "absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-slate-400 border-2 border-white";
+    }
+  }
+
+  // support alternate element if present in dashboard
   const btnToggleDuty = document.getElementById("btn-toggle-duty-state") as HTMLButtonElement;
   const lblDutySub = document.getElementById("lbl-duty-subtext");
   
-  if (!btnToggleDuty) return;
-
-  if (isDutyActive) {
-    btnToggleDuty.innerText = "DUTY: ON";
-    btnToggleDuty.className = "text-[10px] font-black py-2 px-3.5 rounded-xl transition-all cursor-pointer bg-emerald-500 text-white shadow active:scale-95";
-    if (lblDutySub) {
-      lblDutySub.innerText = "Standby Ready Duty (Active)";
-      lblDutySub.className = "text-xs font-black text-emerald-400";
-    }
-  } else {
-    btnToggleDuty.innerText = "DUTY: OFF";
-    btnToggleDuty.className = "text-[10px] font-black py-2 px-3.5 rounded-xl transition-all cursor-pointer bg-slate-600 text-slate-300 shadow active:scale-95";
-    if (lblDutySub) {
-      lblDutySub.innerText = "Resting/Breather Mode (Duty Off)";
-      lblDutySub.className = "text-xs font-black text-slate-400";
+  if (btnToggleDuty) {
+    if (isDutyActive) {
+      btnToggleDuty.innerText = "DUTY: ON";
+      btnToggleDuty.className = "text-[10px] font-black py-2 px-3.5 rounded-xl transition-all cursor-pointer bg-emerald-500 text-white shadow active:scale-95";
+      if (lblDutySub) {
+        lblDutySub.innerText = "Standby Ready Duty (Active)";
+        lblDutySub.className = "text-xs font-black text-emerald-400";
+      }
+    } else {
+      btnToggleDuty.innerText = "DUTY: OFF";
+      btnToggleDuty.className = "text-[10px] font-black py-2 px-3.5 rounded-xl transition-all cursor-pointer bg-slate-600 text-slate-300 shadow active:scale-95";
+      if (lblDutySub) {
+        lblDutySub.innerText = "Resting/Breather Mode (Duty Off)";
+        lblDutySub.className = "text-xs font-black text-slate-400";
+      }
     }
   }
 }
