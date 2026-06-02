@@ -247,6 +247,15 @@ if (hdrProfileClickable) {
 
 // Bind profile image upload on My Profile tab
 const profileUploadInput = document.getElementById("profile-upload-selfie-input") as HTMLInputElement;
+const wrapperProfileSelfie = document.getElementById("wrapper-profile-selfie");
+if (wrapperProfileSelfie && profileUploadInput) {
+  wrapperProfileSelfie.addEventListener("click", (e) => {
+    if (e.target !== profileUploadInput) {
+      profileUploadInput.click();
+    }
+  });
+}
+
 if (profileUploadInput) {
   profileUploadInput.addEventListener("change", async (e) => {
     const target = e.target as HTMLInputElement;
