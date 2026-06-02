@@ -198,20 +198,6 @@ function showActiveTerminalView(data: any) {
   const riderNameHeader = document.getElementById("delivery-profile-rider-name");
   if (riderNameHeader) riderNameHeader.innerText = data.name || "Agent Express";
 
-  const hdrProfilePic = document.getElementById("hdr-profile-pic") as HTMLImageElement;
-  if (hdrProfilePic && (data.profilePhotoUrl || data.profilePhoto)) {
-    hdrProfilePic.src = data.profilePhotoUrl || data.profilePhoto;
-  }
-
-  // Update rider ID sub title
-  const driverIdSub = document.getElementById("lbl-profile-driver-id-sub");
-  if (driverIdSub) {
-    driverIdSub.innerText = `Rider ID: ${currentRiderId.substring(0, 10).toUpperCase()}`;
-  }
-
-  // Sync duty states
-  updateDutyButtonUI();
-
   // Bootstrap live location GPS track loops
   bootstrapRiderLiveLocationTracking();
 
@@ -234,49 +220,6 @@ if (navigationBar) {
         switchTabPanel(target);
       }
     });
-  });
-}
-
-// Bind header profile click to open the profile tab
-const hdrProfileClickable = document.getElementById("hdr-profile-clickable");
-if (hdrProfileClickable) {
-  hdrProfileClickable.addEventListener("click", () => {
-    switchTabPanel("profile");
-  });
-}
-
-// Bind profile image upload on My Profile tab
-const profileUploadInput = document.getElementById("profile-upload-selfie-input") as HTMLInputElement;
-const wrapperProfileSelfie = document.getElementById("wrapper-profile-selfie");
-if (wrapperProfileSelfie && profileUploadInput) {
-  wrapperProfileSelfie.addEventListener("click", (e) => {
-    if (e.target !== profileUploadInput) {
-      profileUploadInput.click();
-    }
-  });
-}
-
-if (profileUploadInput) {
-  profileUploadInput.addEventListener("change", async (e) => {
-    const target = e.target as HTMLInputElement;
-    if (target.files && target.files.length > 0) {
-      const file = target.files[0];
-      showLoader(true);
-      try {
-        const secureUrl = await uploadToCloudinary(file);
-        // Write url directly back into Firebase for this delivery boy!
-        await update(ref(db, `deliveryboy1/${currentRiderId}`), {
-          profilePhoto: secureUrl,
-          profilePhotoUrl: secureUrl // both for compatibility
-        });
-        showToast("Profile image updated successfully!", "success");
-      } catch (err: any) {
-        console.error(err);
-        showToast("Failed to upload updated profile photo.", "error");
-      } finally {
-        showLoader(false);
-      }
-    }
   });
 }
 
@@ -1443,32 +1386,11 @@ function renderRiderProfileView(data: any) {
   const lblName = document.getElementById("lbl-profile-name");
   if (lblName) lblName.innerText = data.name || "Express Rider Partner";
 
-  const lblEmail = document.getElementById("lbl-profile-email");
-  if (lblEmail) lblEmail.innerText = data.email || (loggedInUser?.email || "rider@example.com");
-
-  // Sync Top Header Dynamic Profile Picture
-  const hdrProfilePic = document.getElementById("hdr-profile-pic") as HTMLImageElement;
-  if (hdrProfilePic && (data.profilePhotoUrl || data.profilePhoto)) {
-    hdrProfilePic.src = data.profilePhotoUrl || data.profilePhoto;
-  }
-
-  // Sync Profile Tab Dynamic Selfie Picture
-  const tabProfileImg = document.getElementById("img-profile-selfie") as HTMLImageElement;
-  const tabProfilePlaceholder = document.getElementById("img-profile-selfie-placeholder");
-  if (tabProfileImg && (data.profilePhotoUrl || data.profilePhoto)) {
-    tabProfileImg.src = data.profilePhotoUrl || data.profilePhoto;
-    tabProfileImg.classList.remove("hidden");
-    if (tabProfilePlaceholder) tabProfilePlaceholder.classList.add("hidden");
-  } else if (tabProfilePlaceholder) {
-    tabProfilePlaceholder.classList.remove("hidden");
-    if (tabProfileImg) tabProfileImg.classList.add("hidden");
-  }
-
   const lblAadhaarVal = document.getElementById("lbl-profile-aadhaar");
   if (lblAadhaarVal) lblAadhaarVal.innerText = data.aadhaarNumber || "N/A";
 
   const lblDlVal = document.getElementById("lbl-profile-dl");
-  if (lblDlVal) lblDlVal.innerText = data.drivingLicenseNumber || data.licenseNumber || "N/A";
+  if (lblDlVal) lblDlVal.innerText = data.licenseNumber || "N/A";
 
   const lblLocationVal = document.getElementById("lbl-profile-location");
   if (lblLocationVal) lblLocationVal.innerText = `${data.state || "Karnataka"}, ${data.district || "Bengaluru"}`;
