@@ -27,7 +27,7 @@ let licenseFile: File | null = null;
 onAuthStateChanged(auth, (user) => {
   if (!user) {
     showToast("Session expired. Log in to merchant portal.", "error");
-    window.location.href = "/index.html";
+    window.location.href = "/store-login.html";
     return;
   }
 
@@ -100,7 +100,7 @@ onAuthStateChanged(auth, (user) => {
       }
     } else {
       signOut(auth).then(() => {
-        window.location.href = "/index.html";
+        window.location.href = "/store-login.html";
       });
     }
   });
@@ -288,7 +288,7 @@ function populateProfileFieldsFromCache() {
 document.getElementById("btn-store-signout")?.addEventListener("click", async () => {
   if (confirm("Disconnect pharmacy session from platform?")) {
     await signOut(auth);
-    window.location.href = "/index.html";
+    window.location.href = "/store-login.html";
   }
 });
 

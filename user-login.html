@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MedsHub - Customer Login & Register</title>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Global Stylesheet -->
+  <link rel="stylesheet" href="/src/index.css">
+</head>
+<body class="bg-slate-50 flex items-center justify-center min-h-screen text-slate-800 font-sans">
+
+  <!-- Main Portal Wrapper -->
+  <div class="w-full max-w-md mx-auto p-4 md:p-6">
+    <div id="portal-card" class="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden transition-all duration-300">
+      
+      <!-- Top Branding -->
+      <div class="px-6 pt-8 pb-4 text-center bg-gradient-to-b from-teal-50/50 to-white select-none relative">
+        <a href="/index.html" class="absolute left-6 top-6 text-slate-400 hover:text-slate-600 transition-colors">
+          <i class="fa-solid fa-arrow-left text-lg"></i>
+        </a>
+        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-teal-500 text-white shadow-md shadow-teal-100 mb-3">
+          <i class="fa-solid fa-user-doctor text-2xl"></i>
+        </div>
+        <h1 class="text-2xl font-extrabold tracking-tight text-slate-900 font-sans">Customer <span class="text-teal-500">Portal</span></h1>
+        <p class="text-xs text-slate-500 mt-1 font-semibold uppercase tracking-wider">Order & Refill Medicines Online</p>
+      </div>
+
+      <!-- Tab Selection -->
+      <div class="flex border-b border-slate-100 px-6">
+        <button id="tab-login" class="flex-1 py-3 text-xs font-bold border-b-2 border-teal-500 text-teal-600 focus:outline-none transition-all uppercase tracking-wider">
+          <i class="fa-solid fa-right-to-bracket mr-1.5"></i>Sign In
+        </button>
+        <button id="tab-register" class="flex-1 py-3 text-xs font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-600 focus:outline-none transition-all uppercase tracking-wider">
+          <i class="fa-solid fa-user-plus mr-1.5"></i>Sign Up
+        </button>
+      </div>
+
+      <!-- Forms Container -->
+      <div class="p-6">
+        
+        <!-- Loading overlay -->
+        <div id="portal-loader" class="hidden flex flex-col items-center justify-center py-12 text-slate-500">
+          <i class="fa-solid fa-circle-notch fa-spin text-4xl text-teal-500 mb-3"></i>
+          <span class="text-sm font-medium animate-pulse" id="loader-msg">Verifying customer credentials...</span>
+        </div>
+
+        <!-- LOGIN FORM -->
+        <form id="form-login" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Email Address</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                <i class="fa-regular fa-envelope"></i>
+              </span>
+              <input type="email" id="login-email" required placeholder="name@example.com" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Password</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                <i class="fa-solid fa-lock"></i>
+              </span>
+              <input type="password" id="login-password" required placeholder="Enter password" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all">
+            </div>
+          </div>
+
+          <!-- Forgot Password Link -->
+          <div class="flex justify-end">
+            <button type="button" id="btn-forgot-password" class="text-xs font-bold text-teal-600 hover:text-teal-700 transition-colors">
+              Forgot Password?
+            </button>
+          </div>
+
+          <button type="submit" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-md shadow-teal-100 flex items-center justify-center gap-2 cursor-pointer mt-2 hover:-translate-y-0.5">
+            <span>Customer Sign In</span>
+            <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </form>
+
+        <!-- REGISTER FORM -->
+        <form id="form-register" class="hidden space-y-4">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Full Name</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                <i class="fa-regular fa-user"></i>
+              </span>
+              <input type="text" id="reg-name" required placeholder="Your full name" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Email Address</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                <i class="fa-regular fa-envelope"></i>
+              </span>
+              <input type="email" id="reg-email" required placeholder="your.email@example.com" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Mobile Number</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                <i class="fa-solid fa-phone"></i>
+              </span>
+              <input type="tel" id="reg-mobile" required placeholder="Enter 10-digit number" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Password</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                <i class="fa-solid fa-lock"></i>
+              </span>
+              <input type="password" id="reg-password" required minlength="6" placeholder="Choose secure password" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all">
+            </div>
+          </div>
+
+          <button type="submit" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-md shadow-teal-100 flex items-center justify-center gap-2 cursor-pointer mt-2 hover:-translate-y-0.5">
+            <span>Create Customer Account</span>
+            <i class="fa-solid fa-user-plus"></i>
+          </button>
+        </form>
+
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/user-login.ts"></script>
+</body>
+</html>

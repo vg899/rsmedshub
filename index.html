@@ -3,186 +3,119 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MedsHub - Real-time Medicine Delivery Platform</title>
+  <title>MedsHub - Real-time On-Demand Medicine Delivery Network</title>
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Global Stylesheet -->
   <link rel="stylesheet" href="/src/index.css">
 </head>
-<body class="bg-slate-50 flex items-center justify-center min-h-screen text-slate-800">
+<body class="bg-slate-50 flex items-center justify-center min-h-screen text-slate-800 font-sans">
 
-  <!-- Main Portal Wrapper -->
-  <div class="w-full max-w-md mx-auto p-4 md:p-6">
-    <div id="portal-card" class="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden transition-all duration-300">
+  <!-- Main Portal Gateway Wrapper -->
+  <div class="w-full max-w-xl mx-auto p-4 md:p-8">
+    
+    <!-- Branding Header -->
+    <div class="text-center mb-8 select-none">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-teal-500 text-white shadow-lg shadow-teal-100 mb-4">
+        <i class="fa-solid fa-laptop-medical text-3xl"></i>
+      </div>
+      <h1 class="text-4xl font-black tracking-tight text-slate-900 font-sans">
+        Meds<span class="text-teal-500">Hub</span>
+      </h1>
+      <p class="text-sm font-medium text-slate-500 mt-2">
+        Real-time On-Demand Medicine Delivery Platform
+      </p>
+    </div>
+
+    <!-- Gateway Options Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       
-      <!-- Top Branding -->
-      <div class="px-6 pt-8 pb-4 text-center bg-gradient-to-b from-teal-50/50 to-white select-none">
-        <div id="branding-logo" class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-teal-500 text-white shadow-md shadow-teal-100 mb-4 animate-bounce cursor-pointer">
-          <i class="fa-solid fa-laptop-medical text-3xl"></i>
+      <!-- Customer Card -->
+      <a href="/user-login.html" class="group flex flex-col justify-between p-6 bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-md hover:border-teal-500/50 transition-all duration-300 transform hover:-translate-y-1">
+        <div class="space-y-4">
+          <div class="w-12 h-12 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center group-hover:bg-teal-500 group-hover:text-white transition-all duration-300">
+            <i class="fa-solid fa-user-doctor text-xl"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-slate-800">Customer App</h3>
+            <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+              Order medicines, connect with nearby pharmacies, track deliveries live, and manage chronic prescriptions.
+            </p>
+          </div>
         </div>
-        <h1 id="branding-title" class="text-3xl font-extrabold tracking-tight text-slate-900 font-sans cursor-pointer">Meds<span class="text-teal-500">Hub</span></h1>
-        <p class="text-sm text-slate-500 mt-2 font-medium">Real-time On-Demand Medicine Delivery Network</p>
-      </div>
-
-      <!-- Tab Selection -->
-      <div class="flex border-b border-slate-100 px-6">
-        <button id="tab-login" class="flex-1 py-3 text-sm font-semibold border-b-2 border-teal-500 text-teal-600 focus:outline-none transition-all">
-          <i class="fa-solid fa-right-to-bracket mr-2"></i>Sign In
-        </button>
-        <button id="tab-register" class="flex-1 py-3 text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-600 focus:outline-none transition-all">
-          <i class="fa-solid fa-user-plus mr-2"></i>Sign Up
-        </button>
-      </div>
-
-      <!-- Forms Container -->
-      <div class="p-6">
-        
-        <!-- Loading overlay -->
-        <div id="portal-loader" class="hidden flex flex-col items-center justify-center py-12 text-slate-500">
-          <i class="fa-solid fa-circle-notch fa-spin text-4xl text-teal-500 mb-3"></i>
-          <span class="text-sm font-medium animate-pulse" id="loader-msg">Verifying account credentials...</span>
+        <div class="mt-6 flex items-center justify-between text-xs font-bold text-teal-600 group-hover:text-teal-700">
+          <span>Enter Portal</span>
+          <i class="fa-solid fa-arrow-right transform group-hover:translate-x-1 transition-transform"></i>
         </div>
+      </a>
 
-        <!-- LOGIN FORM -->
-        <form id="form-login" class="space-y-4">
+      <!-- Pharmacy Partner Card -->
+      <a href="/store-login.html" class="group flex flex-col justify-between p-6 bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-md hover:border-teal-500/50 transition-all duration-300 transform hover:-translate-y-1">
+        <div class="space-y-4">
+          <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-all duration-300">
+            <i class="fa-solid fa-store text-xl"></i>
+          </div>
           <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Email Address</label>
-            <div class="relative">
-              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
-                <i class="fa-regular fa-envelope"></i>
-              </span>
-              <input type="email" id="login-email" required placeholder="name@example.com" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all">
-            </div>
+            <h3 class="text-lg font-bold text-slate-800">Store Partner</h3>
+            <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+              Manage inventory, process medicine orders, update stocks, view store analytics, and boost your local business.
+            </p>
           </div>
+        </div>
+        <div class="mt-6 flex items-center justify-between text-xs font-bold text-emerald-600 group-hover:text-emerald-700">
+          <span>Partner Sign In</span>
+          <i class="fa-solid fa-arrow-right transform group-hover:translate-x-1 transition-transform"></i>
+        </div>
+      </a>
 
+      <!-- Delivery Partner Card -->
+      <a href="/delivery-login.html" class="group flex flex-col justify-between p-6 bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-md hover:border-teal-500/50 transition-all duration-300 transform hover:-translate-y-1">
+        <div class="space-y-4">
+          <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-white transition-all duration-300">
+            <i class="fa-solid fa-truck-motorcycle text-xl"></i>
+          </div>
           <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Password</label>
-            <div class="relative">
-              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
-                <i class="fa-solid fa-lock"></i>
-              </span>
-              <input type="password" id="login-password" required placeholder="Enter password" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all">
-            </div>
+            <h3 class="text-lg font-bold text-slate-800">Delivery Fleet</h3>
+            <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+              Accept delivery runs, track route optimizations, record daily attendance, and request swift payout transfers.
+            </p>
           </div>
+        </div>
+        <div class="mt-6 flex items-center justify-between text-xs font-bold text-indigo-600 group-hover:text-indigo-700">
+          <span>Fleet Sign In</span>
+          <i class="fa-solid fa-arrow-right transform group-hover:translate-x-1 transition-transform"></i>
+        </div>
+      </a>
 
-          <button type="submit" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-md shadow-teal-100 flex items-center justify-center gap-2 cursor-pointer mt-2 hover:-translate-y-0.5">
-            <span>Sign In to Account</span>
-            <i class="fa-solid fa-arrow-right"></i>
-          </button>
-
-          <!-- Quick Access Demo Roles -->
-          <div class="mt-6 pt-5 border-t border-slate-100">
-            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider text-center mb-3">Quick Demo Access</p>
-            <div class="grid grid-cols-2 gap-2">
-              <button type="button" class="btn-fast-login flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl border border-slate-200 hover:border-teal-500 hover:bg-teal-50/30 text-xs font-bold text-slate-700 transition-all cursor-pointer shadow-sm" data-email="admin@medshub.com" data-pass="admin123">
-                <i class="fa-solid fa-user-shield text-teal-600"></i>
-                <span>Admin Portal</span>
-              </button>
-              <button type="button" class="btn-fast-login flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl border border-slate-200 hover:border-teal-500 hover:bg-teal-50/30 text-xs font-bold text-slate-700 transition-all cursor-pointer shadow-sm" data-email="store@medshub.com" data-pass="store123">
-                <i class="fa-solid fa-store text-teal-600"></i>
-                <span>Store Portal</span>
-              </button>
-              <button type="button" class="btn-fast-login flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl border border-slate-200 hover:border-teal-500 hover:bg-teal-50/30 text-xs font-bold text-slate-700 transition-all cursor-pointer shadow-sm" data-email="delivery@medshub.com" data-pass="delivery123">
-                <i class="fa-solid fa-truck-motorcycle text-teal-600"></i>
-                <span>Rider Portal</span>
-              </button>
-              <button type="button" class="btn-fast-login flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl border border-slate-200 hover:border-teal-500 hover:bg-teal-50/30 text-xs font-bold text-slate-700 transition-all cursor-pointer shadow-sm" data-email="user@medshub.com" data-pass="user123">
-                <i class="fa-solid fa-user text-teal-600"></i>
-                <span>Customer</span>
-              </button>
-            </div>
+      <!-- Admin Portal Card -->
+      <a href="/admin-login.html" class="group flex flex-col justify-between p-6 bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-md hover:border-teal-500/50 transition-all duration-300 transform hover:-translate-y-1">
+        <div class="space-y-4">
+          <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center group-hover:bg-slate-800 group-hover:text-white transition-all duration-300">
+            <i class="fa-solid fa-user-shield text-xl"></i>
           </div>
-        </form>
-
-        <!-- REGISTER FORM -->
-        <form id="form-register" class="hidden space-y-4">
-          <div id="role-selector-container" class="p-3.5 bg-teal-50/25 rounded-2xl border border-dashed border-teal-200 shadow-sm">
-            <div class="flex justify-between items-center mb-2">
-              <label class="block text-xs font-bold uppercase tracking-wider text-teal-700">Are you joining as?</label>
-            </div>
-            <div class="grid grid-cols-3 gap-2">
-              <label class="flex flex-col items-center justify-center p-3 rounded-xl border-2 border-teal-500 bg-teal-50/40 text-teal-700 cursor-pointer transition-all hover:bg-teal-50/20 text-center relative" id="lbl-role-user">
-                <input type="radio" name="reg-role" value="user" checked class="absolute top-2 right-2 accent-teal-500">
-                <i class="fa-solid fa-user text-lg mb-1"></i>
-                <span class="text-xs font-bold">User</span>
-              </label>
-              <label class="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-200 bg-white text-slate-600 cursor-pointer transition-all hover:bg-slate-50 text-center relative" id="lbl-role-store">
-                <input type="radio" name="reg-role" value="store" class="absolute top-2 right-2 accent-teal-500">
-                <i class="fa-solid fa-store text-lg mb-1"></i>
-                <span class="text-xs font-bold">Store</span>
-              </label>
-              <label class="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-200 bg-white text-slate-600 cursor-pointer transition-all hover:bg-slate-50 text-center relative" id="lbl-role-delivery">
-                <input type="radio" name="reg-role" value="delivery" class="absolute top-2 right-2 accent-teal-500">
-                <i class="fa-solid fa-truck-motorcycle text-lg mb-1"></i>
-                <span class="text-xs font-bold">Rider</span>
-              </label>
-            </div>
-          </div>
-
           <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5" id="lbl-fullname">Full Name</label>
-            <div class="relative">
-              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
-                <i class="fa-regular fa-user"></i>
-              </span>
-              <input type="text" id="reg-name" required value="Harshvardhan Tiwari" placeholder="Harshvardhan Tiwari" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all">
-            </div>
+            <h3 class="text-lg font-bold text-slate-800">Operations Center</h3>
+            <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+              Access internal operations dashboard to oversee financial transactions, coordinate riders, and approve drug licenses.
+            </p>
           </div>
-
-          <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Email Address</label>
-            <div class="relative">
-              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
-                <i class="fa-regular fa-envelope"></i>
-              </span>
-              <input type="email" id="reg-email" required value="harsh@example.com" placeholder="harsh@example.com" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all">
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Mobile Number</label>
-            <div class="relative">
-              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
-                <i class="fa-solid fa-phone"></i>
-              </span>
-              <input type="tel" id="reg-mobile" required value="9123456789" placeholder="9123456789" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all">
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Password</label>
-            <div class="relative">
-              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
-                <i class="fa-solid fa-lock"></i>
-              </span>
-              <input type="password" id="reg-password" required minlength="6" value="123456" placeholder="Enter password" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all">
-            </div>
-          </div>
-
-          <!-- GPS Location requirements block for Partner Store / Delivery -->
-          <div id="gps-prompt-block" class="hidden p-3.5 bg-yellow-50 rounded-xl border border-yellow-100 flex items-start gap-3">
-            <i class="fa-solid fa-location-crosshairs text-yellow-500 text-lg mt-0.5"></i>
-            <div class="flex-1">
-              <h4 class="text-xs font-bold text-yellow-900">Partner Location Required</h4>
-              <p class="text-[11px] text-yellow-700 font-medium leading-relaxed mt-0.5">Stores and Delivery riders must capture their operating GPS location to register.</p>
-              <button type="button" id="btn-capture-gps" class="mt-2 inline-flex items-center gap-1.5 bg-yellow-500 hover:bg-yellow-600 text-white font-bold text-xs px-3 py-1.5 rounded-lg transition-all">
-                <i class="fa-solid fa-location-dot"></i>
-                <span id="gps-status-txt">Capture GPS</span>
-              </button>
-            </div>
-          </div>
-
-          <button type="submit" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-md shadow-teal-100 flex items-center justify-center gap-2 cursor-pointer mt-2 hover:-translate-y-0.5">
-            <span>Register Secure Account</span>
-            <i class="fa-solid fa-user-plus"></i>
-          </button>
-        </form>
-
-      </div>
+        </div>
+        <div class="mt-6 flex items-center justify-between text-xs font-bold text-slate-700 group-hover:text-slate-950">
+          <span>Admin Access</span>
+          <i class="fa-solid fa-arrow-right transform group-hover:translate-x-1 transition-transform"></i>
+        </div>
+      </a>
 
     </div>
+
+    <!-- Footer Terms Info -->
+    <div class="text-center mt-10">
+      <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+        MedsHub Secured Enterprise Gateway
+      </p>
+    </div>
+
   </div>
 
-  <script type="module" src="/src/index.ts"></script>
 </body>
 </html>

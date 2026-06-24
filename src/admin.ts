@@ -30,7 +30,7 @@ let reviewsSearchQuery = "";
 onAuthStateChanged(auth, (user) => {
   if (!user) {
     showToast("Unauthorized. Please log in first.", "error");
-    window.location.href = "/index.html";
+    window.location.href = "/admin-login.html";
     return;
   }
 
@@ -103,7 +103,7 @@ onAuthStateChanged(auth, (user) => {
     } else {
       showToast("User details not found.", "error");
       signOut(auth).then(() => {
-        window.location.href = "/index.html";
+        window.location.href = "/admin-login.html";
       });
     }
   });
@@ -153,7 +153,7 @@ startSystemClock();
 document.getElementById("btn-signout")?.addEventListener("click", async () => {
   if (confirm("Are you sure you want to sign out from Admin Control?")) {
     await signOut(auth);
-    window.location.href = "/index.html";
+    window.location.href = "/admin-login.html";
   }
 });
 

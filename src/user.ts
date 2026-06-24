@@ -52,7 +52,7 @@ const addrInput = document.getElementById("checkout-address-input") as HTMLInput
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     showToast("Session expired. Please log in.", "error");
-    window.location.href = "/index.html";
+    window.location.href = "/user-login.html";
     return;
   }
 
@@ -170,7 +170,7 @@ onAuthStateChanged(auth, async (user) => {
       }
     } else {
       signOut(auth).then(() => {
-        window.location.href = "/index.html";
+        window.location.href = "/user-login.html";
       });
     }
   });
@@ -313,7 +313,7 @@ function toggleSections(view: "home" | "orders" | "profile") {
 document.getElementById("btn-user-signout")?.addEventListener("click", async () => {
   if (confirm("Sign out from MedsHub portal?")) {
     await signOut(auth);
-    window.location.href = "/index.html";
+    window.location.href = "/user-login.html";
   }
 });
 
@@ -2145,7 +2145,7 @@ document.getElementById("btn-opt-security")?.addEventListener("click", () => {
 document.getElementById("btn-opt-logout")?.addEventListener("click", () => {
   if (confirm("Sign out from RS Meds Hub account?")) {
     signOut(auth).then(() => {
-      window.location.href = "/index.html";
+      window.location.href = "/user-login.html";
     });
   }
 });
