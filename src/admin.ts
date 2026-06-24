@@ -4388,6 +4388,25 @@ function initPlatformSettings() {
       if (rInp) {
         rInp.value = s.deliveryRadius?.toString() || "10";
       }
+
+      // Load Company Payment Details Settings
+      const cupiInp = document.getElementById("set-admin-upi-id") as HTMLInputElement;
+      if (cupiInp) cupiInp.value = s.adminUpiId || "";
+
+      const cnameInp = document.getElementById("set-admin-upi-name") as HTMLInputElement;
+      if (cnameInp) cnameInp.value = s.adminUpiName || "";
+
+      const caccInp = document.getElementById("set-admin-bank-account") as HTMLInputElement;
+      if (caccInp) caccInp.value = s.adminBankAccount || "";
+
+      const cifscInp = document.getElementById("set-admin-bank-ifsc") as HTMLInputElement;
+      if (cifscInp) cifscInp.value = s.adminIfscCode || "";
+
+      const cholderInp = document.getElementById("set-admin-bank-holder") as HTMLInputElement;
+      if (cholderInp) cholderInp.value = s.adminAccountHolder || "";
+
+      const cqrInp = document.getElementById("set-admin-qr-code") as HTMLInputElement;
+      if (cqrInp) cqrInp.value = s.adminQrCodeUrl || "";
     }
   });
 
@@ -4402,6 +4421,13 @@ function initPlatformSettings() {
     const limitSec = parseInt((document.getElementById("set-autosafeguard-limit") as HTMLSelectElement).value);
     const deliveryRadius = parseFloat((document.getElementById("set-delivery-radius") as HTMLInputElement).value) || 10;
 
+    const adminUpiId = (document.getElementById("set-admin-upi-id") as HTMLInputElement)?.value.trim() || "";
+    const adminUpiName = (document.getElementById("set-admin-upi-name") as HTMLInputElement)?.value.trim() || "";
+    const adminBankAccount = (document.getElementById("set-admin-bank-account") as HTMLInputElement)?.value.trim() || "";
+    const adminIfscCode = (document.getElementById("set-admin-bank-ifsc") as HTMLInputElement)?.value.trim().toUpperCase() || "";
+    const adminAccountHolder = (document.getElementById("set-admin-bank-holder") as HTMLInputElement)?.value.trim() || "";
+    const adminQrCodeUrl = (document.getElementById("set-admin-qr-code") as HTMLInputElement)?.value.trim() || "";
+
     const payload = {
       appName,
       supportEmail,
@@ -4411,7 +4437,13 @@ function initPlatformSettings() {
       privacyPolicy,
       inactivityEnabled: activeToggle,
       inactivityLimitSeconds: limitSec,
-      deliveryRadius
+      deliveryRadius,
+      adminUpiId,
+      adminUpiName,
+      adminBankAccount,
+      adminIfscCode,
+      adminAccountHolder,
+      adminQrCodeUrl
     };
 
     set(ref(db, "platform_settings"), payload).then(() => {
@@ -4445,6 +4477,23 @@ function initPlatformSettings() {
         showToast("Brand logo updated!", "success");
       } catch (err) {
         showToast("Logo injection aborted", "error");
+      }
+    });
+  }
+
+  const qrFileInp = document.getElementById("set-admin-qr-file");
+  if (qrFileInp) {
+    qrFileInp.addEventListener("change", async (e: any) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      showToast("Uploading Admin QR Code asset...", "info");
+      try {
+        const url = await uploadToCloudinary(file);
+        const qInp = document.getElementById("set-admin-qr-code") as HTMLInputElement;
+        if (qInp) qInp.value = url;
+        showToast("Admin payment QR code updated successfully!", "success");
+      } catch (err) {
+        showToast("Admin QR upload failed", "error");
       }
     });
   }
@@ -6474,6 +6523,13 @@ renderPendingCODDeposits = function() {
           <span>UTR Submitted:</span>
           <strong class="text-indigo-650 font-bold uppercase">${d.utrNumber || "N/A"}</strong>
         </div>
+
+        ${d.notes ? `
+        <div class="text-[9px] font-sans text-slate-600 bg-white border border-slate-100 rounded-xl p-2">
+          <span class="block text-[8px] font-black text-slate-400 uppercase tracking-wider mb-0.5">Rider Notes</span>
+          <p class="font-semibold text-slate-700 leading-snug break-words">${d.notes}</p>
+        </div>
+        ` : ""}
 
         ${imgHtml}
 

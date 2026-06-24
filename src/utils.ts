@@ -101,19 +101,7 @@ export async function getMapplsToken(): Promise<string> {
   }
 
   try {
-    const params = new URLSearchParams();
-    params.append("grant_type", "client_credentials");
-    params.append("client_id", MAPPLS_CLIENT_ID);
-    params.append("client_secret", MAPPLS_MAP_KEY);
-
-    const res = await fetch("https://outpost.mapmyindia.com/api/security/oauth/token", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: params.toString(),
-    });
-
+    const res = await fetch("/api/mappls/token");
     if (res.ok) {
       const data = await res.json();
       if (data.access_token) {
@@ -124,7 +112,7 @@ export async function getMapplsToken(): Promise<string> {
       }
     }
   } catch (error) {
-    console.error("Mappls token server error:", error);
+    console.warn("Mappls token server error:", error);
   }
 
   return cachedMapplsToken || MAPPLS_MAP_KEY;
@@ -187,8 +175,7 @@ export async function getCurrentGPS(): Promise<GeoLocation> {
 
 export async function reverseGeocode(lat: number, lng: number): Promise<GeoLocation> {
   try {
-    const token = await getMapplsToken();
-    const url = `https://atlas.mappls.com/api/places/reverse_geocode?lat=${lat}&lng=${lng}&access_token=${token}`;
+    const url = `/api/mappls/reverse_geocode?lat=${lat}&lng=${lng}`;
     const response = await fetch(url);
     if (!response.ok) throw new Error("Mappls Reverse geocode failed");
     const data = await response.json();
@@ -204,28 +191,8 @@ export async function reverseGeocode(lat: number, lng: number): Promise<GeoLocat
       };
     }
   } catch (error) {
-    console.error("Mappls reverse geocoding error:", error);
+    console.warn("Mappls reverse geocoding error:", error);
   }
-
-  // Backup simple reverse geocode using public Mappls maps fallback APIs
-  try {
-    const url = `https://apis.mappls.com/advancedmaps/v1/${MAPPLS_MAP_KEY}/reverse_geocode?lat=${lat}&lng=${lng}`;
-    const response = await fetch(url);
-    if (response.ok) {
-      const data = await response.json();
-      if (data.results && data.results.length > 0) {
-        const properties = data.results[0];
-        return {
-          lat,
-          lng,
-          address: properties.formatted_address || `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
-          city: properties.city || "Bengaluru",
-          district: properties.district || "",
-          state: properties.state || "Karnataka",
-        };
-      }
-    }
-  } catch (err) {}
 
   return { lat, lng, address: `${lat.toFixed(5)}, ${lng.toFixed(5)}`, city: "Bengaluru", state: "Karnataka" };
 }
@@ -233,8 +200,7 @@ export async function reverseGeocode(lat: number, lng: number): Promise<GeoLocat
 export async function searchAddress(query: string): Promise<any[]> {
   if (!query || query.trim().length < 3) return [];
   try {
-    const token = await getMapplsToken();
-    const url = `https://atlas.mappls.com/api/places/autosuggest?query=${encodeURIComponent(query)}&access_token=${token}`;
+    const url = `/api/mappls/autosuggest?query=${encodeURIComponent(query)}`;
     const response = await fetch(url);
     if (!response.ok) throw new Error("Mappls geocoding search failed");
     const data = await response.json();
@@ -251,7 +217,7 @@ export async function searchAddress(query: string): Promise<any[]> {
       }
     }));
   } catch (error) {
-    console.error("Mappls Address Search Error:", error);
+    console.warn("Mappls Address Search Error:", error);
     return [];
   }
 }
@@ -300,8 +266,7 @@ export async function getMapplsRoute(
   endLng: number
 ): Promise<MapplsRouteResult> {
   try {
-    const token = await getMapplsToken();
-    const url = `https://apis.mappls.com/advancedmaps/v1/${token}/route_adv/driving/${startLng},${startLat};${endLng},${endLat}?overview=full&geometries=geojson`;
+    const url = `/api/mappls/route?startLat=${startLat}&startLng=${startLng}&endLat=${endLat}&endLng=${endLng}`;
     const response = await fetch(url);
     if (response.ok) {
       const data = await response.json();

@@ -2467,6 +2467,7 @@ function setupNewDashboardInteractivity() {
 
     const amount = Number((document.getElementById("inp-cod-deposit-amount") as HTMLInputElement).value.trim());
     const utr = (document.getElementById("inp-cod-deposit-utr") as HTMLInputElement).value.trim();
+    const notes = (document.getElementById("inp-cod-deposit-notes") as HTMLInputElement)?.value.trim() || "";
 
     if (amount <= 0) {
       showToast("Deposit amount must be positive.", "error");
@@ -2494,7 +2495,10 @@ function setupNewDashboardInteractivity() {
       riderName: currentRiderDetail?.fullName || currentRiderDetail?.name || "Express Rider Partner",
       amount,
       utrCode: utr,
+      utrNumber: utr,
       receiptUrl: stateCodDepositScreenshotUrl,
+      screenshotUrl: stateCodDepositScreenshotUrl,
+      notes,
       status: "pending",
       createdAt: Date.now()
     };
@@ -3098,4 +3102,88 @@ function initAdvancedRiderFeatures(riderData: any) {
       }
     });
   }
+
+  // --- Company Payment Details Integration ---
+  onValue(ref(db, "platform_settings"), (snapshot) => {
+    if (snapshot.exists()) {
+      const s = snapshot.val();
+      const cupiId = s.adminUpiId || "pharmacy-admin@upi";
+      const cupiName = s.adminUpiName || "RS Meds Hub Admin";
+      const cbankAccount = s.adminBankAccount || "502000492198";
+      const cbankIfsc = s.adminIfscCode || "HDFC0000120";
+      const cbankHolder = s.adminAccountHolder || "RS Meds Hub Admin";
+      const cqrUrl = s.adminQrCodeUrl || "";
+
+      const elCompanyUpiId = document.getElementById("lbl-company-upi-id");
+      if (elCompanyUpiId) elCompanyUpiId.innerText = cupiId;
+
+      const elCompanyUpiName = document.getElementById("lbl-company-upi-name");
+      if (elCompanyUpiName) elCompanyUpiName.innerText = cupiName;
+
+      const elCompanyBankAccount = document.getElementById("lbl-company-bank-account");
+      if (elCompanyBankAccount) elCompanyBankAccount.innerText = cbankAccount;
+
+      const elCompanyBankIfsc = document.getElementById("lbl-company-bank-ifsc");
+      if (elCompanyBankIfsc) elCompanyBankIfsc.innerText = cbankIfsc;
+
+      const elCompanyBankHolder = document.getElementById("lbl-company-bank-holder");
+      if (elCompanyBankHolder) elCompanyBankHolder.innerText = cbankHolder;
+
+      const elCompanyQr = document.getElementById("img-company-qr") as HTMLImageElement;
+      if (elCompanyQr) {
+        if (cqrUrl) {
+          elCompanyQr.src = cqrUrl;
+        } else {
+          elCompanyQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(cupiId)}`;
+        }
+      }
+    }
+  });
+
+  // Event Listeners for Company Payment copy, zoom & share
+  document.getElementById("btn-copy-upi")?.addEventListener("click", () => {
+    const upiId = document.getElementById("lbl-company-upi-id")?.innerText;
+    if (upiId && upiId !== "-") {
+      navigator.clipboard.writeText(upiId).then(() => {
+        showToast("UPI ID copied to clipboard!", "success");
+      });
+    }
+  });
+
+  document.getElementById("btn-share-company-payment")?.addEventListener("click", () => {
+    const upiId = document.getElementById("lbl-company-upi-id")?.innerText || "-";
+    const upiName = document.getElementById("lbl-company-upi-name")?.innerText || "-";
+    const bankAcc = document.getElementById("lbl-company-bank-account")?.innerText || "-";
+    const bankIfsc = document.getElementById("lbl-company-bank-ifsc")?.innerText || "-";
+    const bankHolder = document.getElementById("lbl-company-bank-holder")?.innerText || "-";
+
+    const shareText = `Official Company Deposit Details:\n\nUPI Name: ${upiName}\nUPI ID: ${upiId}\nBank Account: ${bankAcc}\nIFSC Code: ${bankIfsc}\nAccount Holder: ${bankHolder}`;
+    if (navigator.share) {
+      navigator.share({
+        title: "Company Payment Details",
+        text: shareText
+      }).catch(() => {
+        navigator.clipboard.writeText(shareText).then(() => {
+          showToast("Payment details copied to clipboard to share!", "success");
+        });
+      });
+    } else {
+      navigator.clipboard.writeText(shareText).then(() => {
+        showToast("Payment details copied to clipboard to share!", "success");
+      });
+    }
+  });
+
+  document.getElementById("btn-view-qr")?.addEventListener("click", () => {
+    const qrImgSrc = (document.getElementById("img-company-qr") as HTMLImageElement)?.src;
+    const modalQrImg = document.getElementById("img-modal-qr-zoom") as HTMLImageElement;
+    if (modalQrImg && qrImgSrc) {
+      modalQrImg.src = qrImgSrc;
+    }
+    document.getElementById("modal-qr-zoom")?.classList.remove("hidden");
+  });
+
+  document.getElementById("btn-close-qr-zoom")?.addEventListener("click", () => {
+    document.getElementById("modal-qr-zoom")?.classList.add("hidden");
+  });
 }
