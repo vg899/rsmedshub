@@ -90,6 +90,7 @@ export interface GeoLocation {
   city?: string;
   district?: string;
   state?: string;
+  pincode?: string;
 }
 
 let cachedMapplsToken: string | null = null;
@@ -112,7 +113,7 @@ export async function getMapplsToken(): Promise<string> {
       }
     }
   } catch (error) {
-    console.warn("Mappls token server error:", error);
+    // Silent fallback to standard map key
   }
 
   return cachedMapplsToken || MAPPLS_MAP_KEY;
@@ -181,20 +182,24 @@ export async function reverseGeocode(lat: number, lng: number): Promise<GeoLocat
     const data = await response.json();
     if (data.results && data.results.length > 0) {
       const properties = data.results[0];
+      const addressStr = properties.formatted_address || properties.formattedAddress || properties.address || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+      const pinMatch = addressStr.match(/\b\d{6}\b/);
+      const pincode = pinMatch ? pinMatch[0] : (properties.pincode || properties.pincodeCode || "271001");
       return {
         lat,
         lng,
-        address: properties.formatted_address || properties.formattedAddress || properties.address || `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
+        address: addressStr,
         city: properties.city || properties.district || properties.sublocality || "Bengaluru",
         district: properties.district || properties.sublocality || "",
         state: properties.state || "Karnataka",
+        pincode: pincode
       };
     }
   } catch (error) {
-    console.warn("Mappls reverse geocoding error:", error);
+    // Silent fallback to standard geocodes
   }
 
-  return { lat, lng, address: `${lat.toFixed(5)}, ${lng.toFixed(5)}`, city: "Bengaluru", state: "Karnataka" };
+  return { lat, lng, address: `${lat.toFixed(5)}, ${lng.toFixed(5)}`, city: "Bengaluru", state: "Karnataka", pincode: "560038" };
 }
 
 export async function searchAddress(query: string): Promise<any[]> {
@@ -217,7 +222,6 @@ export async function searchAddress(query: string): Promise<any[]> {
       }
     }));
   } catch (error) {
-    console.warn("Mappls Address Search Error:", error);
     return [];
   }
 }
@@ -284,7 +288,7 @@ export async function getMapplsRoute(
       }
     }
   } catch (error) {
-    console.error("Mappls Route API failed, using fallback:", error);
+    // Silent fallback to direct distance calculations
   }
 
   const distance = calculateDistance(startLat, startLng, endLat, endLng);

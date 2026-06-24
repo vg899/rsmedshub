@@ -181,21 +181,22 @@ onAuthStateChanged(auth, async (user) => {
 
 // Format exact area/locality and district (e.g., "Sector 62, Noida") instead of simple city name
 function formatLocationText(loc: GeoLocation | null): string {
-  if (!loc) return "Bengaluru";
+  if (!loc) return "Bengaluru - 560038";
+  const pinText = loc.pincode ? ` - ${loc.pincode}` : "";
   const address = loc.address || "";
   const parts = address.split(",");
   if (parts.length >= 2) {
     const first = parts[0].trim();
     const second = parts[1].trim();
-    // Prevent repetitive "Noida, Noida" pattern
     if (first.toLowerCase() === second.toLowerCase()) {
-      return first;
+      return (first.length > 18 ? first.substring(0, 18) + "..." : first) + pinText;
     }
-    // Limit length to keep capsule layout pristine
     const joined = `${first}, ${second}`;
-    return joined.length > 25 ? joined.substring(0, 25) + "..." : joined;
+    const truncated = joined.length > 18 ? joined.substring(0, 18) + "..." : joined;
+    return truncated + pinText;
   }
-  return loc.city || loc.address?.substring(0, 20) || "Indira Nagar, BLR";
+  const base = loc.city || loc.address?.substring(0, 15) || "Indira Nagar, BLR";
+  return base + pinText;
 }
 
 // Capture and resolve GPS on load, requesting GPS permissions
@@ -311,7 +312,7 @@ function toggleSections(view: "home" | "orders" | "profile") {
 
 // Log Out actions
 document.getElementById("btn-user-signout")?.addEventListener("click", async () => {
-  if (confirm("Sign out from MedsHub portal?")) {
+  if (confirm("Sign out from Dawado portal?")) {
     await signOut(auth);
     window.location.href = "/user-login.html";
   }
@@ -326,33 +327,42 @@ let currentDeliveryRadius = 10;
 const DEFAULT_CAROUSEL_SLIDES = [
   {
     bannerId: "default_heart",
-    imageUrl: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800",
+    imageUrl: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=300",
     redirectUrl: "#",
-    isLarge: true,
-    title: "HEART CARE PROMO",
-    description: "Get 25% discount on all premium cardiovascular segments and vitamins.",
-    badge: "25% OFF",
-    cta: "Save Now"
+    isLarge: false,
+    title: "Medicines in 15-30 Mins",
+    description: "Cold-chain sterile dispatched, authentic prescriptions straight from verified hubs.",
+    badge: "SUPERFAST",
+    cta: "Order Now",
+    colorTheme: "from-blue-600 via-indigo-600 to-blue-700 text-white",
+    badgeTheme: "bg-teal-400 text-slate-950",
+    bullets: ["100% Genuine Medicines", "Live GPS Rider Tracking", "Instant Digital Billing"]
   },
   {
     bannerId: "default_wellness",
-    imageUrl: "https://images.unsplash.com/photo-1631549916768-4119b2e55c06?w=800",
+    imageUrl: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=300",
     redirectUrl: "#",
     isLarge: false,
-    title: "Wellness & Herbs",
-    description: "Cold-chain dispatched therapeutic supplements directly from premium labs.",
-    badge: "ESSENTIAL",
-    cta: "Browse Deals"
+    title: "Upload Rx & Get 20% OFF",
+    description: "Simply snap or upload your prescription slip. Verified in 5 minutes by experts.",
+    badge: "Rx CO-PILOT",
+    cta: "Upload Rx",
+    colorTheme: "from-emerald-600 to-teal-700 text-white",
+    badgeTheme: "bg-white text-emerald-800",
+    bullets: ["Dr. Approved Alternatives", "100% Secure & Encrypted", "Automated Refill Alarms"]
   },
   {
     bannerId: "default_clinical",
-    imageUrl: "https://images.unsplash.com/photo-1607619056574-7b8d304a3b6f?w=800",
+    imageUrl: "https://images.unsplash.com/photo-1631549916768-4119b2e55c06?w=300",
     redirectUrl: "#",
-    isLarge: true,
-    title: "Clinical Safe Check",
-    description: "100% WHO complied drug licenses and certified chemists checking every order.",
-    badge: "100% VERIFIED",
-    cta: "Order Safe"
+    isLarge: false,
+    title: "Apollo & Tata 1mg Deals",
+    description: "routine health savings on chronic care pills, diabetic supplements & diagnostics.",
+    badge: "DAWADO SPECIAL",
+    cta: "Browse Deals",
+    colorTheme: "from-rose-500 to-pink-600 text-white",
+    badgeTheme: "bg-white text-rose-600",
+    bullets: ["Save up to ₹500 on billing", "Earn extra 2% DawaDo Coins", "All payment channels active"]
   }
 ];
 
@@ -486,25 +496,43 @@ function renderUserBannerCarousel() {
     const displayTitle = slide.title || "Special Medicine Delivery";
     const displayDesc = slide.description || "Grab active deals with sterile cold-chain assurance.";
     const displayCta = slide.cta || "Shop Now";
+    const bgGradient = slide.colorTheme || "from-blue-600 via-indigo-600 to-blue-700 text-white";
+    const badgeBg = slide.badgeTheme || "bg-teal-400 text-slate-950";
+    const bulletsHtml = slide.bullets ? slide.bullets.map((b: string) => `
+      <div class="flex items-center gap-1.5 text-[8.5px] font-bold opacity-90 leading-none">
+        <i class="fa-solid fa-circle-check text-[7.5px] text-teal-300"></i>
+        <span class="truncate">${b}</span>
+      </div>
+    `).join("") : "";
 
     contentHtml = `
-      <div class="relative w-full h-[140px] md:h-[185px] overflow-hidden bg-gradient-to-r from-blue-50 to-blue-100 flex items-center border border-blue-100/60 cursor-pointer p-4 pr-2 transition-all duration-300 rounded-2xl text-left" onclick="window.handleBannerCampaignClick('${slide.bannerId}', '${slide.redirectUrl || "#"}')">
-        <div class="absolute -right-10 -top-10 w-44 h-44 bg-blue-200 rounded-full blur-2xl opacity-20 pointer-events-none"></div>
-        <div class="p-2 z-10 max-w-[62%] space-y-1.5 text-slate-800">
-          <span class="bg-blue-600 text-white text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider font-display shadow-xs animate-pulse">${displayBadge}</span>
-          <h2 class="text-[12.5px] font-black text-slate-900 leading-tight uppercase tracking-tight line-clamp-2">${displayTitle}</h2>
-          <p class="text-[9.5px] text-slate-600 font-semibold leading-tight line-clamp-2">${displayDesc}</p>
-          <button class="mt-1 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-[8px] px-3.5 py-1.5 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-xs transition-all active:scale-95">
+      <div class="relative w-full h-[140px] md:h-[185px] overflow-hidden bg-gradient-to-r ${bgGradient} flex items-center border border-slate-100/25 cursor-pointer p-4 pr-2 transition-all duration-300 rounded-3xl text-left" onclick="window.handleBannerCampaignClick('${slide.bannerId}', '${slide.redirectUrl || "#"}')">
+        <div class="absolute -right-10 -top-10 w-44 h-44 bg-white/10 rounded-full blur-2xl opacity-20 pointer-events-none"></div>
+        <div class="p-1.5 z-10 max-w-[65%] space-y-2 text-white">
+          <div class="flex items-center">
+            <span class="${badgeBg} text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider font-display shadow-xs animate-pulse">${displayBadge}</span>
+          </div>
+          <h2 class="text-[12.5px] font-black leading-tight uppercase tracking-tight line-clamp-1">${displayTitle}</h2>
+          <p class="text-[9px] font-medium leading-tight line-clamp-2 opacity-90">${displayDesc}</p>
+          
+          <!-- Custom Bullets for added premium trust -->
+          ${slide.bullets ? `
+            <div class="flex flex-col gap-1 pt-0.5">
+              ${bulletsHtml}
+            </div>
+          ` : ""}
+
+          <button class="mt-1.5 bg-white text-slate-950 hover:scale-103 active:scale-97 font-extrabold text-[8px] px-3.5 py-1.5 rounded-full uppercase tracking-wider flex items-center gap-1 shadow-sm transition-all">
             <span>${displayCta}</span>
-            <i class="fa-solid fa-circle-arrow-right text-[8px]"></i>
+            <i class="fa-solid fa-circle-arrow-right text-[8.5px] text-blue-600"></i>
           </button>
         </div>
         
-        <div class="absolute right-4 top-2 bottom-2 w-[34%] flex items-center justify-center z-10">
+        <div class="absolute right-4 top-2 bottom-2 w-[32%] flex items-center justify-center z-10">
           <div class="relative select-none group">
-            <div class="absolute inset-0 bg-blue-200/50 rounded-full blur-md scale-105 opacity-40 group-hover:scale-115 transition-all"></div>
-            <div class="w-16 h-16 md:w-20 md:h-20 bg-white rounded-2xl shadow-sm p-1.5 flex items-center justify-center border border-blue-100/50 z-10 relative">
-              <img src="${slide.imageUrl}" class="w-full h-full object-contain rounded-xl select-none" referrerPolicy="no-referrer">
+            <div class="absolute inset-0 bg-white/10 rounded-full blur-md scale-105 opacity-40 group-hover:scale-115 transition-all"></div>
+            <div class="w-20 h-20 md:w-24 md:h-24 bg-white/15 backdrop-blur-md rounded-2xl shadow-md p-1.5 flex items-center justify-center border border-white/20 z-10 relative">
+              <img src="${slide.imageUrl}" class="w-full h-full object-cover rounded-xl select-none" referrerPolicy="no-referrer">
             </div>
           </div>
         </div>
@@ -544,6 +572,38 @@ function startBannerAutoplay() {
   }, 4500);
 }
 
+// Horizontal Swipe Support for mobile touchscreen slide transitions
+function initBannerTouchSwipe() {
+  const section = document.getElementById("banner-section");
+  if (!section) return;
+
+  let touchStartX = 0;
+  let touchEndX = 0;
+
+  section.addEventListener("touchstart", (e: any) => {
+    touchStartX = e.changedTouches[0].screenX;
+  }, { passive: true });
+
+  section.addEventListener("touchend", (e: any) => {
+    touchEndX = e.changedTouches[0].screenX;
+    const slidesToRender = userBannersCache.length > 0 ? userBannersCache : DEFAULT_CAROUSEL_SLIDES;
+    if (slidesToRender.length <= 1) return;
+
+    const diff = touchStartX - touchEndX;
+    if (Math.abs(diff) < 50) return;
+
+    if (diff > 50) {
+      // Swipe left -> next
+      userActiveBannerIndex = (userActiveBannerIndex + 1) % slidesToRender.length;
+    } else {
+      // Swipe right -> prev
+      userActiveBannerIndex = (userActiveBannerIndex - 1 + slidesToRender.length) % slidesToRender.length;
+    }
+    renderUserBannerCarousel();
+    startBannerAutoplay(); // Refresh timer
+  }, { passive: true });
+}
+
 // Bind carousel methods on global scope for easy window communication
 (window as any).renderUserBannerCarousel = renderUserBannerCarousel;
 (window as any).startBannerAutoplay = startBannerAutoplay;
@@ -554,6 +614,7 @@ function syncMainMarketplace() {
   // Prime first render instantly
   renderUserBannerCarousel();
   startBannerAutoplay();
+  initBannerTouchSwipe();
 
   // Fetch live global charges configuration
   get(ref(db, "charges")).then((snap) => {
@@ -1079,10 +1140,210 @@ Object.assign(window, {
   }
 });
 
-// Search input keyword tracking
-document.getElementById("search-medicine-input")?.addEventListener("input", (e) => {
+// Search suggestions, Recent searches, and Trending searches behavior
+const searchInput = document.getElementById("search-medicine-input") as HTMLInputElement;
+const searchPanel = document.getElementById("search-suggestions-panel") as HTMLDivElement;
+const recentTrendingContainer = document.getElementById("search-recent-trending-container") as HTMLDivElement;
+const dynamicResultsContainer = document.getElementById("search-dynamic-results-container") as HTMLDivElement;
+const clearRecentBtn = document.getElementById("btn-clear-recent-searches");
+
+function getRecentSearches(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem("recentSearches") || "[]");
+  } catch (e) {
+    return [];
+  }
+}
+
+function addRecentSearch(text: string) {
+  if (!text || text.trim() === "") return;
+  let list = getRecentSearches();
+  list = list.filter((i) => i.toLowerCase() !== text.toLowerCase());
+  list.unshift(text);
+  if (list.length > 6) list.pop();
+  localStorage.setItem("recentSearches", JSON.stringify(list));
+}
+
+function clearRecentSearches() {
+  localStorage.removeItem("recentSearches");
+  updateSearchSuggestionsPanel();
+}
+
+function updateSearchSuggestionsPanel() {
+  if (!searchInput || !searchPanel) return;
+  const q = searchInput.value.trim().toLowerCase();
+
+  if (q === "") {
+    recentTrendingContainer?.classList.remove("hidden");
+    dynamicResultsContainer?.classList.add("hidden");
+
+    const recentListEl = document.getElementById("recent-searches-list");
+    if (recentListEl) {
+      const list = getRecentSearches();
+      if (list.length === 0) {
+        recentListEl.innerHTML = `<span class="text-[10px] text-slate-400 font-semibold py-1">No recent searches</span>`;
+      } else {
+        recentListEl.innerHTML = list.map(item => `
+          <button onclick="triggerPresetSearch('${item.replace(/'/g, "\\'")}')" class="bg-slate-100 text-slate-700 text-[10px] font-bold px-2.5 py-1 rounded-full cursor-pointer hover:bg-blue-50 hover:text-blue-600 border border-slate-200 focus:outline-none">${item}</button>
+        `).join("");
+      }
+    }
+  } else {
+    recentTrendingContainer?.classList.add("hidden");
+    dynamicResultsContainer?.classList.remove("hidden");
+
+    // 1. Medicines found
+    const medListEl = document.getElementById("search-suggested-medicines");
+    if (medListEl) {
+      const matchedMeds = allMedicines.filter(m => 
+        (m.name || "").toLowerCase().includes(q) ||
+        (m.description || "").toLowerCase().includes(q) ||
+        (m.brand || "").toLowerCase().includes(q)
+      ).slice(0, 5);
+
+      if (matchedMeds.length === 0) {
+        medListEl.innerHTML = `<span class="text-[10px] text-slate-400 font-semibold py-1 block">No medicines found</span>`;
+      } else {
+        medListEl.innerHTML = matchedMeds.map(m => `
+          <button onclick="triggerProductDetailDrawer('${m.id}')" class="w-full text-left p-1.5 flex items-center gap-2 rounded-lg hover:bg-slate-50 transition-all cursor-pointer focus:outline-none">
+            <img src="${m.imageUrl || 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=150&auto=format&fit=crop&q=60'}" class="w-7 h-7 rounded-md object-cover border border-slate-100 shrink-0" referrerpolicy="no-referrer">
+            <div class="truncate flex-1">
+              <span class="text-[10px] font-bold text-slate-800 block leading-none truncate">${m.name}</span>
+              <span class="text-[8px] text-slate-400 font-extrabold font-mono uppercase mt-0.5 block">${m.brand || 'Central Rx'} • ₹${m.price}</span>
+            </div>
+            <i class="fa-solid fa-chevron-right text-slate-350 text-[8px]"></i>
+          </button>
+        `).join("");
+      }
+    }
+
+    // 2. Categories matches
+    const catListEl = document.getElementById("search-suggested-categories");
+    if (catListEl) {
+      const matchedCats = currentCategoriesList.filter(c => 
+        (c.name || "").toLowerCase().includes(q)
+      ).slice(0, 4);
+
+      if (matchedCats.length === 0) {
+        catListEl.innerHTML = `<span class="text-[10px] text-slate-400 font-semibold py-1 block">No category matches</span>`;
+      } else {
+        catListEl.innerHTML = matchedCats.map(c => `
+          <button onclick="triggerCategoryFilter('${c.name.replace(/'/g, "\\'")}')" class="bg-blue-50 text-blue-700 border border-blue-100 text-[9.5px] font-extrabold px-2.5 py-1 rounded-full cursor-pointer hover:scale-103 transition-all focus:outline-none">${c.name}</button>
+        `).join("");
+      }
+    }
+
+    // 3. Partner Pharmacy Stores
+    const storeListEl = document.getElementById("search-suggested-stores");
+    if (storeListEl) {
+      const matchedStores = allStores.filter(s => 
+        (s.storeName || "").toLowerCase().includes(q) ||
+        (s.city || "").toLowerCase().includes(q) ||
+        (s.address || "").toLowerCase().includes(q)
+      ).slice(0, 3);
+
+      if (matchedStores.length === 0) {
+        storeListEl.innerHTML = `<span class="text-[10px] text-slate-400 font-semibold py-1 block">No stores found</span>`;
+      } else {
+        storeListEl.innerHTML = matchedStores.map(s => `
+          <button onclick="triggerStoreFilter('${s.storeId}')" class="w-full text-left p-1.5 flex items-center gap-2 rounded-lg hover:bg-slate-50 transition-all cursor-pointer focus:outline-none">
+            <i class="fa-solid fa-store text-teal-500 text-[10px] shrink-0"></i>
+            <div class="truncate flex-1">
+              <span class="text-[10px] font-bold text-slate-800 block leading-none truncate">${s.storeName}</span>
+              <span class="text-[8px] text-slate-400 font-extrabold font-mono uppercase mt-0.5 block">${s.city || 'Delhi'} • Verified Partner</span>
+            </div>
+            <i class="fa-solid fa-chevron-right text-slate-350 text-[8px]"></i>
+          </button>
+        `).join("");
+      }
+    }
+  }
+}
+
+// Bind events
+searchInput?.addEventListener("focus", () => {
+  searchPanel?.classList.remove("hidden");
+  updateSearchSuggestionsPanel();
+});
+
+searchInput?.addEventListener("input", (e) => {
   searchQuery = (e.target as HTMLInputElement).value.trim().toLowerCase();
   renderMedicinesGrid();
+  updateSearchSuggestionsPanel();
+});
+
+searchInput?.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    const text = searchInput.value.trim();
+    if (text !== "") {
+      addRecentSearch(text);
+      searchPanel?.classList.add("hidden");
+      searchInput.blur();
+    }
+  }
+});
+
+// Close suggestions panel when clicking outside
+document.addEventListener("click", (e) => {
+  if (searchInput && searchPanel && !searchInput.contains(e.target as Node) && !searchPanel.contains(e.target as Node)) {
+    searchPanel.classList.add("hidden");
+  }
+});
+
+clearRecentBtn?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  clearRecentSearches();
+});
+
+// Global search preset triggers
+function triggerPresetSearch(text: string) {
+  if (searchInput) {
+    searchInput.value = text;
+    searchQuery = text.trim().toLowerCase();
+    addRecentSearch(text);
+    renderMedicinesGrid();
+    updateSearchSuggestionsPanel();
+    searchPanel?.classList.remove("hidden");
+  }
+}
+
+function triggerCategoryFilter(categoryName: string) {
+  activeCategory = categoryName;
+  searchPanel?.classList.add("hidden");
+  
+  // Highlight horizontal button style
+  const btns = document.querySelectorAll(".category-slider-btn");
+  btns.forEach(btn => {
+    const cat = btn.getAttribute("data-category");
+    if (cat === categoryName) {
+      btn.classList.add("scale-105", "text-blue-600");
+    } else {
+      btn.classList.remove("scale-105", "text-blue-600");
+    }
+  });
+
+  renderMedicinesGrid();
+  
+  // Scroll to medicines list
+  const gridEl = document.getElementById("user-medicines-grid");
+  gridEl?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function triggerStoreFilter(storeId: string) {
+  activeStoreId = storeId;
+  searchPanel?.classList.add("hidden");
+  renderPharmacySlider();
+  renderMedicinesGrid();
+  
+  // Scroll to medicines list
+  const gridEl = document.getElementById("user-medicines-grid");
+  gridEl?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+Object.assign(window, {
+  triggerPresetSearch,
+  triggerCategoryFilter,
+  triggerStoreFilter
 });
 
 // Rendering operational stores horizontal scroller
@@ -1212,33 +1473,50 @@ function renderMedicinesGrid() {
   container.innerHTML = filtered.map((m) => {
     const qtyInCart = cartItems[m.medicineId]?.qty || 0;
     const isFav = profileData && profileData.favorites && profileData.favorites[m.medicineId] ? true : false;
+    
+    // Deterministic premium discount for high-quality marketing layout
+    const idHash = m.medicineId ? m.medicineId.charCodeAt(0) + (m.medicineId.charCodeAt(m.medicineId.length - 1) || 0) : 10;
+    const discount = (idHash % 15) + 10; // 10% to 24%
+    const originalPrice = Math.round(m.price / (1 - discount / 100));
+
     return `
-      <div class="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-xs flex flex-col justify-between hover:shadow-md transition-all relative">
-        <button onclick="toggleFavoriteItem('${m.medicineId}')" class="absolute top-2 right-2 w-7 h-7 bg-white/85 hover:bg-white text-slate-400 hover:text-rose-500 rounded-full flex items-center justify-center border border-slate-100 transition-all cursor-pointer z-10 shadow-xs focus:outline-none">
-          <i class="${isFav ? 'fa-solid fa-heart text-rose-500' : 'fa-regular fa-heart'} text-xs"></i>
+      <div class="bg-white rounded-2xl overflow-hidden border border-slate-100/80 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-emerald-100 transition-all duration-300 relative group">
+        <!-- Discount Badging -->
+        <span class="absolute top-2.5 left-2.5 bg-rose-500 text-white text-[7.5px] font-black px-2 py-0.5 rounded-full shadow-3xs z-10 uppercase tracking-widest leading-none">${discount}% OFF</span>
+        
+        <!-- Favorite heart trigger -->
+        <button onclick="toggleFavoriteItem('${m.medicineId}')" class="absolute top-2.5 right-2.5 w-7 h-7 bg-white/90 hover:bg-white text-slate-400 hover:text-rose-500 rounded-full flex items-center justify-center border border-slate-150/40 transition-all cursor-pointer z-10 shadow-3xs focus:outline-none">
+          <i class="${isFav ? 'fa-solid fa-heart text-rose-500 scale-110' : 'fa-regular fa-heart'} text-xs"></i>
         </button>
-        <img class="w-full h-28 object-cover-no-referrer cursor-pointer hover:opacity-95" src="${m.image || "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300"}" referrerpolicy="no-referrer" alt="${m.name}" onclick="openProductDetailDrawer('${m.medicineId}')">
+
+        <div class="relative w-full h-28 overflow-hidden bg-slate-50 flex items-center justify-center p-2 cursor-pointer" onclick="openProductDetailDrawer('${m.medicineId}')">
+          <img class="max-h-full max-w-full object-contain rounded-lg select-none group-hover:scale-105 transition-transform duration-300" src="${m.image || "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300"}" referrerpolicy="no-referrer" alt="${m.name}">
+        </div>
+
         <div class="p-3 space-y-2 flex-1 flex flex-col justify-between">
           <div class="cursor-pointer" onclick="openProductDetailDrawer('${m.medicineId}')">
-            <span class="text-[7.5px] uppercase font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full tracking-wide">${m.category || "General"}</span>
-            <h4 class="font-extrabold text-slate-900 text-[11px] mt-1.5 truncate leading-tight tracking-tight font-display">${m.name}</h4>
+            <span class="text-[7px] uppercase font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full tracking-wider">${m.category || "General"}</span>
+            <h4 class="font-black text-slate-900 text-[11.5px] mt-1.5 truncate leading-tight tracking-tight font-sans">${m.name}</h4>
             <p class="text-[9px] text-slate-400 truncate mt-0.5 leading-normal" title="${m.description}">${m.description || "Certified secure pharmaceutical product"}</p>
           </div>
           
-          <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 gap-1">
-            <span class="font-black text-slate-900 text-xs text-blue-600">₹${m.price}</span>
+          <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-100/80 gap-1.5">
+            <div class="flex flex-col">
+              <span class="font-black text-slate-900 text-xs">₹${m.price}</span>
+              <span class="text-[8px] text-slate-400 line-through font-bold">₹${originalPrice}</span>
+            </div>
             
             ${qtyInCart > 0 ? `
               <!-- Quantities controller active border -->
-              <div class="flex items-center gap-1.5 bg-blue-600 text-white rounded-full px-2.5 py-1 text-[9px] font-black shadow-xs">
-                <button onclick="updateCartItemQty('${m.medicineId}', -1)" class="cursor-pointer hover:opacity-85 px-0.5"><i class="fa-solid fa-minus text-[7px]"></i></button>
-                <span class="min-w-[10px] text-center">${qtyInCart}</span>
-                <button onclick="updateCartItemQty('${m.medicineId}', 1)" class="cursor-pointer hover:opacity-85 px-0.5"><i class="fa-solid fa-plus text-[7px]"></i></button>
+              <div class="flex items-center gap-2 bg-emerald-500 text-white rounded-xl px-2.5 py-1.5 text-[8.5px] font-black shadow-sm">
+                <button onclick="updateCartItemQty('${m.medicineId}', -1)" class="cursor-pointer hover:opacity-85 px-0.5"><i class="fa-solid fa-minus text-[8px]"></i></button>
+                <span class="min-w-[12px] text-center">${qtyInCart}</span>
+                <button onclick="updateCartItemQty('${m.medicineId}', 1)" class="cursor-pointer hover:opacity-85 px-0.5"><i class="fa-solid fa-plus text-[8px]"></i></button>
               </div>
             ` : `
               <!-- Action add selection -->
-              <button onclick="addMedicineToCart('${m.medicineId}')" class="bg-blue-600 hover:bg-blue-700 text-white text-[8.5px] font-black py-1.5 px-3 rounded-full hover:shadow-xs transition-all cursor-pointer uppercase tracking-tight flex items-center gap-1">
-                Add <i class="fa-solid fa-plus text-[7px]"></i>
+              <button onclick="addMedicineToCart('${m.medicineId}')" class="bg-white hover:bg-emerald-500 hover:text-white border-2 border-emerald-500/85 text-emerald-600 text-[9px] font-black py-1 px-3 rounded-xl transition-all duration-200 cursor-pointer uppercase tracking-wider flex items-center gap-0.5 shadow-3xs hover:shadow-xs">
+                ADD <i class="fa-solid fa-plus text-[7.5px]"></i>
               </button>
             `}
           </div>
@@ -1992,7 +2270,7 @@ function renderNotificationDropdown(alerts: any[]) {
   dropdown.innerHTML = alerts.map((a) => `
     <div class="py-2.5 border-b border-slate-50 last:border-0 text-[10px] font-semibold text-slate-700">
       <div class="flex items-center justify-between">
-        <strong class="text-teal-600 font-extrabold uppercase text-[9px] block">📢 MedsHub Broadcast</strong>
+        <strong class="text-teal-600 font-extrabold uppercase text-[9px] block">📢 Dawado Broadcast</strong>
         <span class="text-[8px] text-slate-400 font-mono">${new Date(a.timestamp).toLocaleTimeString()}</span>
       </div>
       <p class="text-slate-600 leading-relaxed font-bold mt-1">${a.body}</p>
@@ -2143,7 +2421,7 @@ document.getElementById("btn-opt-security")?.addEventListener("click", () => {
   openSecurityDashboard();
 });
 document.getElementById("btn-opt-logout")?.addEventListener("click", () => {
-  if (confirm("Sign out from RS Meds Hub account?")) {
+  if (confirm("Sign out from Dawado account?")) {
     signOut(auth).then(() => {
       window.location.href = "/user-login.html";
     });
@@ -2533,7 +2811,7 @@ function openCouponsViewer() {
       <div class="p-4 bg-gradient-to-r from-amber-500 to-yellow-600 text-white rounded-2xl flex items-center justify-between shadow">
         <div>
           <span class="text-[8px] font-black uppercase tracking-widest text-yellow-100 block">Reward Balance</span>
-          <h4 class="text-2xl font-black font-display font-mono mt-0.5">${profileData.coins || 250} <span class="text-xs font-bold text-yellow-100 uppercase font-sans">Meds Coins</span></h4>
+          <h4 class="text-2xl font-black font-display font-mono mt-0.5">${profileData.coins || 250} <span class="text-xs font-bold text-yellow-100 uppercase font-sans">Dawado Coins</span></h4>
           <span class="text-[9px] text-yellow-200 font-semibold block mt-1">Claim medications at 100% discount with coins</span>
         </div>
         <i class="fa-solid fa-coins text-4xl text-amber-300 opacity-90 animate-bounce"></i>
@@ -2703,7 +2981,7 @@ async function openInvoicesViewer() {
               </div>
               <div class="border-dashed"></div>
               <div class="text-center mt-2" style="margin-top: 32px;">
-                <p>Thank you for choosing RS Meds Hub!</p>
+                <p>Thank you for choosing Dawado!</p>
                 <p>Consumed medications as specified by clinical guidelines.</p>
                 <button onclick="window.print()" style="margin-top: 16px; padding: 6px 12px; background: #000; color: #fff; cursor: pointer; font-family: inherit;">Print Invoice</button>
               </div>
@@ -2781,7 +3059,7 @@ function openRatingsSelector() {
   const html = `
     <div class="space-y-4 animate-fade-in p-1 font-sans">
       <div class="text-center space-y-2">
-        <p class="text-[10px] uppercase font-black text-slate-400 tracking-wider">How was your RS Meds Hub experience?</p>
+        <p class="text-[10px] uppercase font-black text-slate-400 tracking-wider">How was your Dawado experience?</p>
         
         <div class="flex items-center justify-center gap-2 text-2xl py-2" id="interactive-star-row">
           <button onclick="toggleFeedbackStars(1)" class="text-slate-300 hover:scale-110 active:scale-90 transition-all cursor-pointer"><i class="fa-solid fa-star"></i></button>
@@ -2833,7 +3111,7 @@ function openRatingsSelector() {
     try {
       // Find latest order storeId to mirror review
       let targetStoreId = "all";
-      let targetStoreName = "MedsHub Platform";
+      let targetStoreName = "Dawado Platform";
       try {
         const ordersSnap = await get(ref(db, "orders"));
         if (ordersSnap.exists()) {
@@ -2842,7 +3120,7 @@ function openRatingsSelector() {
             .sort((a: any, b: any) => b.createdAt - a.createdAt);
           if (sorted.length > 0) {
             targetStoreId = (sorted[0] as any).storeId || "all";
-            targetStoreName = (sorted[0] as any).storeName || "MedsHub Platform";
+            targetStoreName = (sorted[0] as any).storeName || "Dawado Platform";
           }
         }
       } catch (e) {}
@@ -2883,7 +3161,7 @@ function openReferEarnSlide() {
       
       <div class="space-y-1.5">
         <h4 class="text-xs font-extrabold text-slate-900 uppercase">Refer Friends & Earn Wallet Rewards!</h4>
-        <p class="text-[9.5px] text-slate-500 leading-relaxed font-semibold max-w-xs mx-auto">Get <strong class="text-emerald-600 font-extrabold">₹100 value</strong> credited inside Meds Hub wallet as soon as your referee confirms high-prio first orders.</p>
+        <p class="text-[9.5px] text-slate-500 leading-relaxed font-semibold max-w-xs mx-auto">Get <strong class="text-emerald-600 font-extrabold">₹100 value</strong> credited inside Dawado wallet as soon as your referee confirms high-prio first orders.</p>
       </div>
 
       <div class="p-3 bg-slate-50 border border-slate-150 rounded-2xl flex items-center justify-between shadow-inner max-w-sm mx-auto">
@@ -3001,7 +3279,7 @@ function openAIAssistantChat() {
     <div class="space-y-3 animate-fade-in p-1 flex flex-col max-h-[60vh] font-sans">
       <div class="bg-violet-50 border border-violet-100 p-2.5 rounded-xl text-[9px] font-bold text-violet-800 leading-normal flex items-start gap-2">
         <i class="fa-solid fa-circle-exclamation text-violet-500 text-[11px] shrink-0 mt-0.5"></i>
-        <span>Disclaimer: RS Meds Hub AI Pharmacist assistant is programmed for general health insights only. Please consult certified practitioner for actual prescriptions.</span>
+        <span>Disclaimer: Dawado AI Pharmacist assistant is programmed for general health insights only. Please consult certified practitioner for actual prescriptions.</span>
       </div>
 
       <div id="ai-chat-thread-box" class="flex-1 overflow-y-auto space-y-2.5 max-h-60 min-h-36 border border-slate-100 rounded-2xl p-3 bg-slate-50 font-sans custom-scrollbar">
@@ -4419,7 +4697,7 @@ async function openPrescriptionVaultManager() {
         <div class="bg-emerald-50 border border-emerald-150 p-3 rounded-2xl text-[9.5px] font-black text-emerald-800 uppercase leading-normal tracking-wide">
           Prescription fast reorder submitted
         </div>
-        <p class="leading-relaxed">Your selected prescription <strong>"${title}"</strong> has been securely routed to a licensed MedsHub pharmacist auditor.</p>
+        <p class="leading-relaxed">Your selected prescription <strong>"${title}"</strong> has been securely routed to a licensed Dawado pharmacist auditor.</p>
         <p class="leading-relaxed font-semibold text-slate-500">A dedicated medical care practitioner is compiling the specified medications inside your active checkout cart. We will issue a live notification when the compilation completes!</p>
         <button onclick="profileDrawer.classList.add('hidden')" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase rounded-xl transition-all cursor-pointer shadow-sm text-center">Close Advisor Panel</button>
       </div>
@@ -4766,7 +5044,7 @@ function initDiagnosticGreetingsAndVoiceSearch() {
     const sosHtml = `
       <div class="space-y-4 animate-fade-in text-xs font-sans text-slate-700">
         <div class="p-3 bg-red-100 border border-red-200 text-rose-800 rounded-xl leading-normal text-[10px] font-black uppercase tracking-wide">
-          WARNING: This is the critical MedsHub emergency priority channel. Bypasses regular order queues and alerts nearest apothecaries of critical medicine demands.
+          WARNING: This is the critical Dawado emergency priority channel. Bypasses regular order queues and alerts nearest apothecaries of critical medicine demands.
         </div>
         <div class="space-y-2">
           <button onclick="triggerEmergencyCall('911')" class="w-full py-3 bg-red-650 bg-red-600 hover:bg-red-700 text-white font-black uppercase rounded-2xl flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer tracking-wider text-xs">

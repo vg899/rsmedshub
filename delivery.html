@@ -764,6 +764,20 @@
       <!-- ==================== TAB B: NAVIGATION SYSTEM ==================== -->
       <section id="tab-navigation" class="px-4 py-4 space-y-4 flex-1 hidden">
         <div id="cnt-active-order-running" class="space-y-4">
+          <!-- Multi-order Selector Section -->
+          <div id="multi-order-selector-container" class="hidden bg-slate-100 border border-slate-200/60 rounded-2xl p-2.5 flex items-center justify-between shadow-2xs select-none">
+            <button onclick="window.prevActiveOrder()" class="w-8 h-8 flex items-center justify-center text-indigo-600 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl cursor-pointer active:scale-95 transition-all">
+              <i class="fa-solid fa-chevron-left text-xs"></i>
+            </button>
+            <div class="text-center">
+              <span class="text-[8px] font-black uppercase tracking-wider text-indigo-500 block leading-none">ACTIVE MULTI-ORDER TRANSIT</span>
+              <span id="lbl-multi-order-current-index" class="text-xs font-black text-slate-800 tracking-tight block mt-1">Order #1 of 1</span>
+            </div>
+            <button onclick="window.nextActiveOrder()" class="w-8 h-8 flex items-center justify-center text-indigo-600 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl cursor-pointer active:scale-95 transition-all">
+              <i class="fa-solid fa-chevron-right text-xs"></i>
+            </button>
+          </div>
+
           <!-- Live status timeline banner -->
         <div class="bg-amber-100/30 border border-amber-250/30 rounded-2xl p-3 flex items-center justify-between">
           <div class="flex items-center gap-2">
@@ -1500,8 +1514,8 @@
     <nav id="bottom-navigation-nav" class="hidden absolute bottom-0 inset-x-0 bg-white border-t border-slate-150 py-2 px-4 z-40 shadow-[0_-4px_16px_rgba(0,0,0,0.04)] select-none">
       <div class="w-full max-w-3xl mx-auto flex items-center justify-between select-none">
         <button data-tab="dashboard" class="flex flex-col items-center justify-center gap-1 text-indigo-600 transition-all font-display group cursor-pointer w-12 text-center">
-          <i class="fa-solid fa-chart-pie text-lg group-hover:scale-110 transition-all"></i>
-          <span class="text-[8px] font-black uppercase tracking-wider">Dashboard</span>
+          <i class="fa-solid fa-house text-lg group-hover:scale-110 transition-all"></i>
+          <span class="text-[8px] font-black uppercase tracking-wider">Home</span>
         </button>
 
         <button data-tab="orders" class="flex flex-col items-center justify-center gap-1 text-slate-400 transition-all font-display group cursor-pointer w-12 text-center relative">
@@ -1514,12 +1528,12 @@
           <span class="absolute -top-1 -right-1 bg-amber-500 w-2 h-2 rounded-full animate-ping hidden" id="badge-nav-active-order-ping"></span>
           <span class="absolute -top-1 -right-1 bg-amber-500 w-2 h-2 rounded-full border border-white hidden" id="badge-nav-active-order"></span>
           <i class="fa-solid fa-map-location-dot text-lg group-hover:scale-110 transition-all"></i>
-          <span class="text-[8px] font-black uppercase tracking-wider">Navigation</span>
+          <span class="text-[8px] font-black uppercase tracking-wider">Live Map</span>
         </button>
 
         <button data-tab="earnings" class="flex flex-col items-center justify-center gap-1 text-slate-400 transition-all font-display group cursor-pointer w-12 text-center">
-          <i class="fa-solid fa-indian-rupee-sign text-lg group-hover:scale-110 transition-all"></i>
-          <span class="text-[8px] font-black uppercase tracking-wider">Earnings</span>
+          <i class="fa-solid fa-wallet text-lg group-hover:scale-110 transition-all"></i>
+          <span class="text-[8px] font-black uppercase tracking-wider">Wallet</span>
         </button>
 
         <button data-tab="profile" class="flex flex-col items-center justify-center gap-1 text-slate-400 transition-all font-display group cursor-pointer w-12 text-center">

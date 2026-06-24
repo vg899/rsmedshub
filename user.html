@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RS Meds Hub - Your Certified Apothecary</title>
+  <title>Dawado - Premium Medicine Delivery</title>
   <!-- Google Fonts for premium display pairs: Outfit & Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -41,58 +41,131 @@
   <div class="w-full max-w-md h-screen md:h-[880px] bg-slate-50 relative flex flex-col md:rounded-[40px] md:shadow-2xl md:border-[10px] md:border-slate-900 overflow-hidden">
     
     <!-- TOP PARENT CONTAINER: LOGO, LOCATION & SEARCH BAR INNER SHADOW -->
-    <div class="bg-gradient-to-b from-blue-600 via-blue-500 to-blue-600 text-white shrink-0 p-4 pb-6 rounded-b-[2rem] shadow-lg relative z-15 space-y-4">
+    <div class="bg-white text-slate-800 shrink-0 p-4 pb-5 border-b border-slate-100 shadow-sm relative z-15 space-y-3.5">
       
       <!-- LOGO & LOCATION ROW -->
-      <div class="flex items-center justify-between gap-2 pt-1">
-        <!-- Brand Logo with Pill Graphics -->
-        <div class="flex items-center gap-1.5 shrink-0">
-          <div class="relative w-8.5 h-8.5 rounded-full bg-white/20 flex items-center justify-center text-white font-black">
-            <i class="fa-solid fa-prescription-bottle-medical text-sm"></i>
+      <div class="flex items-center justify-between gap-1.5 pt-1">
+        <!-- Left: Hamburger Menu Icon to access Profile/Settings -->
+        <button id="btn-hamburger" class="w-8.5 h-8.5 rounded-full bg-slate-50 hover:bg-slate-100 text-slate-600 flex items-center justify-center cursor-pointer border border-slate-150/40 transition-all active:scale-95 shadow-3xs" onclick="document.getElementById('navitem-profile').click()">
+          <i class="fa-solid fa-bars text-sm"></i>
+        </button>
+
+        <!-- Brand Logo Dawado (Centered to mimic screenshots) -->
+        <div class="flex items-center gap-1.5 select-none shrink-0" onclick="document.getElementById('navitem-home').click()">
+          <div class="w-7 h-7 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-xs">
+            <i class="fa-solid fa-capsules text-xs"></i>
           </div>
           <div class="flex flex-col">
-            <h1 class="text-sm font-black tracking-tight leading-none text-white font-display flex items-center gap-1">
-              <span>RS Meds</span>
-              <span class="bg-white text-blue-600 rounded-sm px-1 py-0.5 text-[8.5px] uppercase font-black">Hub</span>
-            </h1>
+            <div class="flex items-center gap-0.5">
+              <span class="text-xs font-black tracking-tight font-display text-blue-600 flex items-center leading-none">
+                Dawa<span class="text-emerald-500">Do</span>
+                <span class="ml-0.5 bg-emerald-500 text-white rounded-full w-2.5 h-2.5 flex items-center justify-center text-[7px] font-black leading-none">+</span>
+              </span>
+            </div>
+            <span class="text-[5.5px] text-slate-400 uppercase tracking-widest font-black block leading-none mt-0.5">Your Medicine Partner</span>
           </div>
         </div>
 
-        <!-- Location Capsule Widget -->
-        <button id="btn-location-capsule" class="flex items-center gap-1.5 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 text-white shrink-0 max-w-[48%] text-left cursor-pointer transition-all hover:bg-white/15 focus:outline-none">
-          <i class="fa-solid fa-location-dot text-rose-400 text-xs"></i>
-          <div class="truncate leading-tight flex-1">
-            <span class="text-[7.5px] text-blue-100 block font-normal uppercase tracking-wider">Current Location</span>
-            <span id="loc-city-txt" class="font-extrabold truncate text-[9.5px] block">Gonda, Uttar Pradesh</span>
-          </div>
-          <i class="fa-solid fa-angle-down text-blue-100 text-[8px] opacity-75"></i>
-        </button>
-
         <!-- Right Alerts Bar -->
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1.5">
           <!-- Notification Bell -->
-          <button id="btn-show-notifications" class="w-8.5 h-8.5 rounded-full bg-white/10 flex items-center justify-center text-white relative transition-all cursor-pointer hover:bg-white/20">
-            <i class="fa-regular fa-bell text-sm"></i>
-            <span id="badge-notifications" class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-blue-500 hidden animate-pulse"></span>
+          <button id="btn-show-notifications" class="w-8.5 h-8.5 rounded-full bg-slate-50 border border-slate-150/40 flex items-center justify-center text-slate-600 relative transition-all cursor-pointer hover:bg-slate-100 shadow-3xs">
+            <i class="fa-regular fa-bell text-xs"></i>
+            <span id="badge-notifications" class="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full border border-white hidden animate-pulse"></span>
           </button>
-          
-          <!-- Profile/Signout -->
-          <button id="btn-user-signout" class="w-8.5 h-8.5 rounded-full bg-white/10 flex items-center justify-center text-rose-205 text-white cursor-pointer hover:bg-white/20" title="Log Out App">
-            <i class="fa-solid fa-right-from-bracket text-xs"></i>
+
+          <!-- Cart Counter -->
+          <button id="btn-header-cart" class="w-8.5 h-8.5 rounded-full bg-slate-50 border border-slate-150/40 flex items-center justify-center text-slate-600 relative transition-all cursor-pointer hover:bg-slate-100 shadow-3xs">
+            <i class="fa-solid fa-cart-shopping text-xs"></i>
+            <span id="badge-header-cart" class="absolute -top-1 -right-1 bg-emerald-500 text-white text-[8px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center border-2 border-white hidden animate-bounce">0</span>
           </button>
+
+          <!-- Hidden button to satisfy JS references without cluttering UI -->
+          <button id="btn-user-signout" class="hidden"></button>
         </div>
       </div>
 
+      <!-- Location Capsule Widget (Full width elegant box below logo bar) -->
+      <div class="flex items-center justify-between gap-1 bg-slate-50 border border-slate-150/60 p-2.5 rounded-2xl cursor-pointer hover:bg-slate-100/80 transition-all" onclick="document.getElementById('btn-location-capsule').click()">
+        <div class="flex items-center gap-2 min-w-0">
+          <i class="fa-solid fa-location-dot text-rose-500 text-[11px] shrink-0"></i>
+          <div class="truncate leading-tight flex-1">
+            <span class="text-[6.5px] text-slate-400 block font-black uppercase tracking-wider leading-none">Delivering to</span>
+            <span id="loc-city-txt" class="font-extrabold truncate text-[9.5px] text-slate-800 block mt-0.5">Detecting live delivery address...</span>
+          </div>
+        </div>
+        <button id="btn-location-capsule-trigger" class="text-[8px] font-black text-blue-600 bg-blue-50 border border-blue-100/50 px-2 py-1 rounded-lg uppercase tracking-wide flex items-center gap-0.5 shrink-0">
+          <span>Change</span> <i class="fa-solid fa-angle-down text-[7px]"></i>
+        </button>
+      </div>
+
       <!-- SEARCH ENGINE INTERFACES -->
-      <div class="relative shadow-sm pt-0.5">
+      <div class="relative shadow-3xs pt-0.5">
         <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 z-10">
           <i class="fa-solid fa-magnifying-glass text-xs"></i>
         </span>
-        <input type="text" id="search-medicine-input" placeholder="Medicine Search" class="w-full pl-10 pr-10 py-3 rounded-full border-none bg-white text-slate-800 outline-none placeholder:text-slate-400 text-xs font-semibold shadow-inner transition-all focus:ring-2 focus:ring-blue-300">
-        <!-- Voice-activation placeholder decoration icon -->
-        <span id="btn-voice-search" class="absolute inset-y-0 right-0 pr-1.5 flex items-center text-rose-500 hover:scale-105 transition-all cursor-pointer z-10">
-          <i class="fa-solid fa-microphone text-xs bg-rose-50/10 p-2 text-rose-500 hover:bg-rose-50/25 rounded-full transition-all"></i>
-        </span>
+        <input type="text" id="search-medicine-input" placeholder="Search medicine, health products..." class="w-full pl-10 pr-16 py-2.5 rounded-full border border-slate-200 bg-slate-50/50 text-slate-800 outline-none placeholder:text-slate-400 text-xs font-semibold shadow-inner transition-all focus:ring-2 focus:ring-blue-100 focus:bg-white focus:border-blue-400">
+        
+        <!-- Action items inside Search input (Barcode/Scan + Voice Search Mic) -->
+        <div class="absolute inset-y-0 right-0 pr-1.5 flex items-center gap-1 z-10">
+          <!-- Scan / prescription fast upload button -->
+          <button id="btn-scan-presc-trigger" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 hover:scale-105 active:scale-95 transition-all text-blue-600 flex items-center justify-center border-none cursor-pointer" onclick="document.getElementById('btn-opt-prescription-vault').click()" title="Scan Prescription">
+            <i class="fa-solid fa-qrcode text-[10px]"></i>
+          </button>
+          
+          <!-- Mic Voice Search Button -->
+          <span id="btn-voice-search" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 hover:scale-105 active:scale-95 transition-all text-rose-500 flex items-center justify-center cursor-pointer">
+            <i class="fa-solid fa-microphone text-[10px]"></i>
+          </span>
+        </div>
+      </div>
+
+      <!-- Search Suggestions / Recent & Trending Panel Overlay -->
+      <div id="search-suggestions-panel" class="hidden absolute left-4 right-4 bg-white rounded-2xl shadow-xl z-50 border border-slate-100 p-4 max-h-[380px] overflow-y-auto space-y-4 text-slate-800 font-sans mt-1">
+        <!-- Recent and Trending (when query is empty) -->
+        <div id="search-recent-trending-container" class="space-y-4">
+          <div>
+            <h5 class="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2 flex items-center justify-between">
+              <span>Recent Searches</span>
+              <button id="btn-clear-recent-searches" class="text-[9px] font-extrabold text-blue-600 hover:underline border-none bg-transparent cursor-pointer">Clear</button>
+            </h5>
+            <div id="recent-searches-list" class="flex flex-wrap gap-1.5">
+              <span class="text-[10px] text-slate-400 font-semibold py-1">No recent searches</span>
+            </div>
+          </div>
+          <div>
+            <h5 class="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">Trending Searches</h5>
+            <div id="trending-searches-list" class="flex flex-wrap gap-1.5">
+              <span class="bg-orange-50 text-orange-700 border border-orange-100 text-[10px] font-extrabold px-3 py-1 rounded-full cursor-pointer hover:scale-103 transition-all flex items-center gap-1" onclick="triggerPresetSearch('Dolo 650mg')"><i class="fa-solid fa-fire text-[9px]"></i> Dolo 650mg</span>
+              <span class="bg-blue-50 text-blue-700 border border-blue-100 text-[10px] font-extrabold px-3 py-1 rounded-full cursor-pointer hover:scale-103 transition-all" onclick="triggerPresetSearch('Calpol')">Calpol 650mg</span>
+              <span class="bg-purple-50 text-purple-700 border border-purple-100 text-[10px] font-extrabold px-3 py-1 rounded-full cursor-pointer hover:scale-103 transition-all" onclick="triggerPresetSearch('Allergy')">Allergy Relief</span>
+              <span class="bg-emerald-50 text-emerald-700 border border-emerald-100 text-[10px] font-extrabold px-3 py-1 rounded-full cursor-pointer hover:scale-103 transition-all" onclick="triggerPresetSearch('Vitamin')">Vitamins C</span>
+              <span class="bg-rose-50 text-rose-700 border border-rose-100 text-[10px] font-extrabold px-3 py-1 rounded-full cursor-pointer hover:scale-103 transition-all" onclick="triggerPresetSearch('Fever')">Fever Care</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dynamic Results Matching (when query is typing) -->
+        <div id="search-dynamic-results-container" class="hidden space-y-3.5">
+          <div>
+            <h5 class="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Medicines Found</h5>
+            <div id="search-suggested-medicines" class="space-y-1">
+              <span class="text-[10px] text-slate-400 font-semibold py-1 block">No medicines found</span>
+            </div>
+          </div>
+          <div>
+            <h5 class="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Categories Matches</h5>
+            <div id="search-suggested-categories" class="flex flex-wrap gap-1.5">
+              <span class="text-[10px] text-slate-400 font-semibold py-1 block">No category matches</span>
+            </div>
+          </div>
+          <div>
+            <h5 class="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Partner Pharmacy Stores</h5>
+            <div id="search-suggested-stores" class="space-y-1">
+              <span class="text-[10px] text-slate-400 font-semibold py-1 block">No stores found</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -132,7 +205,7 @@
               <i class="fa-solid fa-coins animate-bounce"></i>
             </div>
             <div>
-              <p class="text-[9px] text-indigo-200 font-bold leading-none">Meds Coins Balance</p>
+              <p class="text-[9px] text-indigo-200 font-bold leading-none">DawaDo Coins Balance</p>
               <h4 class="text-xs font-black text-white mt-1" id="home-coins-display">250 Coins</h4>
             </div>
           </div>
@@ -187,6 +260,30 @@
           <span class="text-[9px] font-black text-rose-950 uppercase tracking-tight leading-tight">Refill Cycles</span>
         </div>
 
+      </div>
+
+      <!-- DAWADO HEALTHCARE TRUST GUARANTEES (Mimics status strips in Tata 1mg & Apollo) -->
+      <div class="grid grid-cols-4 gap-2 bg-white p-3.5 rounded-2xl border border-slate-100 shadow-3xs text-center font-sans">
+        <div class="flex flex-col items-center justify-center">
+          <span class="w-8.5 h-8.5 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs shadow-3xs mb-1.5"><i class="fa-solid fa-truck-fast"></i></span>
+          <span class="text-[7.5px] font-black text-slate-700 uppercase tracking-tight leading-none">Express</span>
+          <span class="text-[6.5px] text-slate-400 font-bold leading-none mt-1">15-30 Mins</span>
+        </div>
+        <div class="flex flex-col items-center justify-center">
+          <span class="w-8.5 h-8.5 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs shadow-3xs mb-1.5"><i class="fa-solid fa-shield-halved"></i></span>
+          <span class="text-[7.5px] font-black text-slate-700 uppercase tracking-tight leading-none">100% Genuine</span>
+          <span class="text-[6.5px] text-slate-400 font-bold leading-none mt-1">WHO Standards</span>
+        </div>
+        <div class="flex flex-col items-center justify-center">
+          <span class="w-8.5 h-8.5 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center text-xs shadow-3xs mb-1.5"><i class="fa-solid fa-lock"></i></span>
+          <span class="text-[7.5px] font-black text-slate-700 uppercase tracking-tight leading-none">Secure Pay</span>
+          <span class="text-[6.5px] text-slate-400 font-bold leading-none mt-1">PCI Compliant</span>
+        </div>
+        <div class="flex flex-col items-center justify-center">
+          <span class="w-8.5 h-8.5 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center text-xs shadow-3xs mb-1.5"><i class="fa-solid fa-user-nurse"></i></span>
+          <span class="text-[7.5px] font-black text-slate-700 uppercase tracking-tight leading-none">Registered Rx</span>
+          <span class="text-[6.5px] text-slate-400 font-bold leading-none mt-1">24x7 Consult</span>
+        </div>
       </div>
 
       <!-- SERVICE UNAVAILABLE VIEW -->
@@ -244,7 +341,7 @@
         <div class="flex-1">
           <h4 class="text-xs font-extrabold text-violet-900">AI Personal Healthcare Offer</h4>
           <p class="text-[10px] text-violet-750 text-violet-700 leading-relaxed font-semibold mt-0.5" id="ai-smart-tip-text">Recommend Cetirizine 10mg allergy pills if you feel local standard cold signs this season!</p>
-          <span class="text-[8px] font-black text-violet-400 uppercase tracking-wide mt-1 inline-block">MedsHub SmartCare Insight</span>
+          <span class="text-[8px] font-black text-violet-400 uppercase tracking-wide mt-1 inline-block">Dawado SmartCare Insight</span>
         </div>
       </div>
 
@@ -880,7 +977,7 @@
           
           <div class="p-3 bg-rose-50 text-rose-800 rounded-xl border border-rose-100 space-y-1 mt-2">
             <h5 class="text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation"></i> Location Note</h5>
-            <p class="text-[9px] font-medium leading-relaxed leading-snug">RS Meds Hub processes listings dynamically. Selecting a city instantly re-calibrates nearest operational pharma store distances and products availability nearby.</p>
+            <p class="text-[9px] font-medium leading-relaxed leading-snug">Dawado processes listings dynamically. Selecting a city instantly re-calibrates nearest operational pharma store distances and products availability nearby.</p>
           </div>
         </div>
 

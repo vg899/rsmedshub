@@ -9,6 +9,7 @@ let currentRiderId = "";
 let currentRiderDetail: any = null;
 let isDutyActive = true;
 let activeOrderPayload: any = null;
+let currentSelectedActiveOrderIndex = 0;
 let riderGPSInterval: any = null;
 let activeStoreProfile: any = null;
 let activeTab = "dashboard";
@@ -371,13 +372,15 @@ if (navigationBar) {
 }
 
 function switchTabPanel(tabName: string) {
-  // Alias old identifiers to new production standard
-  if (tabName === "active-order") {
+  // Alias old/new identifiers to production standard
+  if (tabName === "active-order" || tabName === "live-map" || tabName === "livemap") {
     tabName = "navigation";
   } else if (tabName === "pools") {
     tabName = "orders";
-  } else if (tabName === "settlements") {
+  } else if (tabName === "settlements" || tabName === "wallet") {
     tabName = "earnings";
+  } else if (tabName === "home") {
+    tabName = "dashboard";
   }
 
   activeTab = tabName;
@@ -387,16 +390,19 @@ function switchTabPanel(tabName: string) {
     const tabButtons = navigationBar.querySelectorAll("button[data-tab]");
     tabButtons.forEach((btn) => {
       let bTab = btn.getAttribute("data-tab");
-      if (bTab === "active-order") {
+      if (bTab === "active-order" || bTab === "live-map" || bTab === "livemap" || bTab === "navigation") {
         bTab = "navigation";
-      } else if (bTab === "pools") {
+      } else if (bTab === "pools" || bTab === "orders") {
         bTab = "orders";
-      } else if (bTab === "settlements") {
+      } else if (bTab === "settlements" || bTab === "wallet" || bTab === "earnings") {
         bTab = "earnings";
+      } else if (bTab === "home" || bTab === "dashboard") {
+        bTab = "dashboard";
       }
 
-      if (bTab === tabName) {
-        btn.className = "flex flex-col items-center justify-center gap-1 text-indigo-700 font-black transition-all font-display group cursor-pointer w-12 text-center scale-102";
+      const isCurrent = bTab === tabName;
+      if (isCurrent) {
+        btn.className = "flex flex-col items-center justify-center gap-1 text-indigo-600 font-black transition-all font-display group cursor-pointer w-12 text-center scale-102";
       } else {
         btn.className = "flex flex-col items-center justify-center gap-1 text-slate-400 font-medium transition-all font-display group cursor-pointer w-12 text-center opacity-70 hover:opacity-100 hover:scale-102";
       }
@@ -786,12 +792,19 @@ function subscribeToDispatchPoolAndOrders() {
             }
           }
 
-          // Active unresolved order trace assigned to me
-          if (o.deliveryId === currentRiderId && o.status !== "delivered" && o.status !== "cancelled") {
-            activeOrderPayload = o;
-          }
         }
       });
+    }
+
+    const activeOrdersList = globalOrdersCache.filter(o => o.deliveryId === currentRiderId && o.status !== "delivered" && o.status !== "cancelled");
+    if (activeOrdersList.length > 0) {
+      if (currentSelectedActiveOrderIndex >= activeOrdersList.length) {
+        currentSelectedActiveOrderIndex = 0;
+      }
+      activeOrderPayload = activeOrdersList[currentSelectedActiveOrderIndex];
+    } else {
+      activeOrderPayload = null;
+      currentSelectedActiveOrderIndex = 0;
     }
 
     // Lazy load active store profile
@@ -1117,8 +1130,9 @@ Object.assign(window, {
       showToast("Toggled Offline! Turn on Duty Readiness to pull dispatches.", "error");
       return;
     }
-    if (activeOrderPayload) {
-      showToast("Blocked: You have a busy transit in progress. Deliver first!", "error");
+    const activeOrdersList = globalOrdersCache.filter(o => o.deliveryId === currentRiderId && o.status !== "delivered" && o.status !== "cancelled");
+    if (activeOrdersList.length >= 3) {
+      showToast("Blocked: Limit reached. You can handle up to 3 active transit orders concurrently.", "error");
       return;
     }
     showLoader(true);
@@ -1164,8 +1178,9 @@ Object.assign(window, {
       return;
     }
 
-    if (activeOrderPayload) {
-      showToast("Blocked: You have a busy transit in progress. Deliver first!", "error");
+    const activeOrdersList = globalOrdersCache.filter(o => o.deliveryId === currentRiderId && o.status !== "delivered" && o.status !== "cancelled");
+    if (activeOrdersList.length >= 3) {
+      showToast("Blocked: Limit reached. You can handle up to 3 active transit orders concurrently.", "error");
       return;
     }
 
@@ -1195,6 +1210,44 @@ Object.assign(window, {
         showLoader(false);
       });
     });
+  },
+
+  prevActiveOrder() {
+    const activeOrdersList = globalOrdersCache.filter(o => o.deliveryId === currentRiderId && o.status !== "delivered" && o.status !== "cancelled");
+    if (activeOrdersList.length <= 1) return;
+    currentSelectedActiveOrderIndex = (currentSelectedActiveOrderIndex - 1 + activeOrdersList.length) % activeOrdersList.length;
+    activeOrderPayload = activeOrdersList[currentSelectedActiveOrderIndex];
+    
+    // Lazy load active store profile
+    if (activeOrderPayload && (!activeStoreProfile || activeStoreProfile.storeId !== activeOrderPayload.storeId)) {
+      get(ref(db, `stores/${activeOrderPayload.storeId}`)).then((snap) => {
+        if (snap.exists()) {
+          activeStoreProfile = snap.val();
+          triggerActiveOrderMapDraw();
+        }
+      }).catch((e) => console.error("Error fetching store profile:", e));
+    }
+    
+    renderActiveOrderPipelineLayout();
+  },
+
+  nextActiveOrder() {
+    const activeOrdersList = globalOrdersCache.filter(o => o.deliveryId === currentRiderId && o.status !== "delivered" && o.status !== "cancelled");
+    if (activeOrdersList.length <= 1) return;
+    currentSelectedActiveOrderIndex = (currentSelectedActiveOrderIndex + 1) % activeOrdersList.length;
+    activeOrderPayload = activeOrdersList[currentSelectedActiveOrderIndex];
+    
+    // Lazy load active store profile
+    if (activeOrderPayload && (!activeStoreProfile || activeStoreProfile.storeId !== activeOrderPayload.storeId)) {
+      get(ref(db, `stores/${activeOrderPayload.storeId}`)).then((snap) => {
+        if (snap.exists()) {
+          activeStoreProfile = snap.val();
+          triggerActiveOrderMapDraw();
+        }
+      }).catch((e) => console.error("Error fetching store profile:", e));
+    }
+    
+    renderActiveOrderPipelineLayout();
   }
 });
 
@@ -1316,6 +1369,29 @@ function renderActiveOrderPipelineLayout() {
 
   const runSub = document.getElementById("cnt-active-order-running");
   const emptySub = document.getElementById("cnt-active-order-empty");
+
+  const activeOrdersList = globalOrdersCache.filter(o => o.deliveryId === currentRiderId && o.status !== "delivered" && o.status !== "cancelled");
+
+  if (activeOrdersList.length > 0) {
+    if (currentSelectedActiveOrderIndex >= activeOrdersList.length) {
+      currentSelectedActiveOrderIndex = 0;
+    }
+    activeOrderPayload = activeOrdersList[currentSelectedActiveOrderIndex];
+  } else {
+    activeOrderPayload = null;
+    currentSelectedActiveOrderIndex = 0;
+  }
+
+  const selectorContainer = document.getElementById("multi-order-selector-container");
+  const lblMultiIndex = document.getElementById("lbl-multi-order-current-index");
+  if (selectorContainer && lblMultiIndex) {
+    if (activeOrdersList.length > 1) {
+      selectorContainer.classList.remove("hidden");
+      lblMultiIndex.innerText = `Order ${currentSelectedActiveOrderIndex + 1} of ${activeOrdersList.length} (#${activeOrderPayload.orderId.substring(0, 8)})`;
+    } else {
+      selectorContainer.classList.add("hidden");
+    }
+  }
 
   if (!activeOrderPayload) {
     if (navDotBadge) navDotBadge.classList.add("hidden");
