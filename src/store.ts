@@ -39,17 +39,59 @@ onAuthStateChanged(auth, (user) => {
     if (snapshot.exists()) {
       const data = snapshot.val();
       if (data.role !== "store") {
-        showToast("Access Denied: Redirecting to your panel...", "info");
+        let targetUrl = "/index.html";
         if (data.role === "admin") {
-          window.location.href = "/admin.html";
+          targetUrl = "/admin.html";
         } else if (data.role === "user") {
-          window.location.href = "/user.html";
-        } else if (data.role === "delivery") {
-          window.location.href = "/delivery.html";
-        } else {
+          targetUrl = "/user.html";
+        } else if (data.role === "delivery" || data.role === "deliveryboy1") {
+          targetUrl = "/delivery.html";
+        }
+
+        // Show beautiful, full-screen Access Denied overlay and auto-redirect
+        const overlay = document.createElement("div");
+        overlay.id = "access-denied-overlay";
+        overlay.className = "fixed inset-0 z-[999999] bg-slate-950 flex flex-col items-center justify-center text-center p-6 text-white font-sans";
+        overlay.innerHTML = `
+          <div class="relative mb-6">
+            <div class="absolute inset-0 bg-rose-500 rounded-full blur-xl scale-125 opacity-20 animate-pulse"></div>
+            <div class="w-20 h-20 bg-rose-600 rounded-full flex items-center justify-center shadow-lg border border-rose-500/30 z-10 relative">
+              <i class="fa-solid fa-shield-halved text-white text-3xl animate-pulse"></i>
+            </div>
+          </div>
+          <div class="space-y-4 max-w-sm">
+            <h3 class="text-2xl font-black tracking-tight text-rose-500 uppercase">ACCESS DENIED</h3>
+            <p class="text-xs text-slate-400 font-semibold leading-relaxed px-4">
+              This is an isolated portal. You are trying to access the <strong>STORE</strong> panel, but your account is registered as <strong>${(data.role || "unknown").toUpperCase()}</strong>.
+            </p>
+            <div class="p-4 bg-white/5 border border-white/10 rounded-2xl mt-4">
+              <p class="text-[10px] text-teal-400 font-mono font-bold tracking-widest uppercase animate-pulse">
+                Redirecting to your authorized panel...
+              </p>
+              <div class="w-full bg-white/10 h-1.5 rounded-full mt-2 overflow-hidden">
+                <div id="access-denied-progress" class="bg-teal-500 h-full transition-all ease-linear" style="width: 0%; transition-duration: 2500ms;"></div>
+              </div>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(overlay);
+
+        // Animate the progress bar width
+        setTimeout(() => {
+          const bar = document.getElementById("access-denied-progress");
+          if (bar) bar.style.width = "100%";
+        }, 50);
+
+        if (targetUrl === "/index.html") {
           signOut(auth).then(() => {
-            window.location.href = "/index.html";
+            setTimeout(() => {
+              window.location.href = targetUrl;
+            }, 2500);
           });
+        } else {
+          setTimeout(() => {
+            window.location.href = targetUrl;
+          }, 2500);
         }
       } else {
         // Safe access confirmed

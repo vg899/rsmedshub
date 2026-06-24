@@ -156,7 +156,7 @@ async function handleUserRedirect(uid: string) {
     }
 
     // Checking of approval status for partners
-    if (userData.role === "store" || userData.role === "delivery") {
+    if (userData.role === "store" || userData.role === "delivery" || userData.role === "deliveryboy1") {
       if (!userData.approved) {
         showToast("Your registration is pending admin approval.", "info");
         await signOut(auth);
@@ -173,7 +173,7 @@ async function handleUserRedirect(uid: string) {
       window.location.href = "/user.html";
     } else if (userData.role === "store") {
       window.location.href = "/store.html";
-    } else if (userData.role === "delivery") {
+    } else if (userData.role === "delivery" || userData.role === "deliveryboy1") {
       window.location.href = "/delivery.html";
     }
   } catch (error) {
