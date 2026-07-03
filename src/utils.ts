@@ -79,9 +79,39 @@ export async function uploadToCloudinary(file: File): Promise<string> {
   }
 }
 
-// // Mappls REST API & Web Maps Integration Keys
-export const MAPPLS_MAP_KEY = "3d8330747c66c6f01c3c680f12d5298d";
+import * as maptilersdk from "@maptiler/sdk";
+import "@maptiler/sdk/dist/maptiler-sdk.css";
+import { db } from "./firebase";
+import { ref, get, set, onValue } from "firebase/database";
+
+// MapTiler REST API & Web Maps Integration Keys
+export const MAPPLS_MAP_KEY = "3d8330747c66c6f01c3c680f12d5298d"; // retained for backward-compatibility stub
 export const MAPPLS_CLIENT_ID = "96dHZVzsAut5eW6crFBJRerLd4L_8GLV3wy72csWzFe6rl-64qpQl3owhoO3DU5h2CRClplvfHFvH0jc7_ZadA==";
+
+// Dynamic central MapTiler API Key
+let maptilerApiKey = "v5kU4Y8LwB078Nf51Y7W"; // Default fallback key
+
+// Realtime sync from Firebase DB
+export function getMapTilerKey(): string {
+  return maptilerApiKey;
+}
+
+export function setMapTilerKey(key: string) {
+  maptilerApiKey = key;
+  try {
+    maptilersdk.config.apiKey = key;
+  } catch (e) {}
+}
+
+// Auto load / sync key
+onValue(ref(db, "config/maptilerKey"), (snap) => {
+  if (snap.exists()) {
+    setMapTilerKey(snap.val());
+  } else {
+    // Seed default if empty
+    set(ref(db, "config/maptilerKey"), maptilerApiKey);
+  }
+});
 
 export interface GeoLocation {
   lat: number;
@@ -93,64 +123,52 @@ export interface GeoLocation {
   pincode?: string;
 }
 
-let cachedMapplsToken: string | null = null;
-let tokenExpiryTime: number = 0;
+export function getApiBaseUrl(): string {
+  if (typeof window !== "undefined" && window.location && window.location.origin && !window.location.origin.includes("file://")) {
+    return window.location.origin;
+  }
+  return "http://localhost:3000";
+}
+
+export async function mapplsFetch(pathWithQuery: string): Promise<Response> {
+  // Retained stub for compatibility
+  return fetch(pathWithQuery);
+}
 
 export async function getMapplsToken(): Promise<string> {
-  if (cachedMapplsToken && Date.now() < tokenExpiryTime) {
-    return cachedMapplsToken;
-  }
-
-  try {
-    const res = await fetch("/api/mappls/token");
-    if (res.ok) {
-      const data = await res.json();
-      if (data.access_token) {
-        cachedMapplsToken = data.access_token;
-        const expiresInSec = data.expires_in || 86399;
-        tokenExpiryTime = Date.now() + (expiresInSec - 300) * 1000;
-        return cachedMapplsToken!;
-      }
-    }
-  } catch (error) {
-    // Silent fallback to standard map key
-  }
-
-  return cachedMapplsToken || MAPPLS_MAP_KEY;
+  return getMapTilerKey();
 }
 
 export function loadMapplsScript(callback: () => void) {
-  if ((window as any).mappls) {
-    callback();
-    return;
-  }
-
-  const existingScript = document.getElementById("mappls-sdk-script");
-  if (existingScript) {
-    existingScript.addEventListener("load", () => callback());
-    return;
-  }
-
-  const script = document.createElement("script");
-  script.id = "mappls-sdk-script";
-  script.src = `https://apis.mappls.com/advancedmaps/api/${MAPPLS_MAP_KEY}/map_sdk?v=3.0&layer=vector`;
-  script.async = true;
-  script.defer = true;
-  script.onload = () => {
-    const interval = setInterval(() => {
-      if ((window as any).mappls) {
-        clearInterval(interval);
-        callback();
-      }
-    }, 50);
-  };
-  document.head.appendChild(script);
+  // Instantly execute callback as MapTiler is bundled at compile-time
+  setTimeout(callback, 0);
 }
 
-export async function getCurrentGPS(): Promise<GeoLocation> {
+export async function getCurrentGPS(silent: boolean = false): Promise<GeoLocation> {
+  const loadingIds = [
+    "tracker-map-div-loading",
+    "rider-leaflet-map-loading",
+    "store-tracking-map-loading",
+    "mappls-admin-map-loading"
+  ];
+
+  // Trigger loading state overlays
+  loadingIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove("hidden");
+  });
+
+  const clearLoading = () => {
+    loadingIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.add("hidden");
+    });
+  };
+
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
-      showToast("Geolocation is not supported by your browser", "error");
+      if (!silent) showToast("Geolocation is not supported by your browser", "error");
+      clearLoading();
       reject(new Error("Geolocation unsupported"));
       return;
     }
@@ -160,43 +178,63 @@ export async function getCurrentGPS(): Promise<GeoLocation> {
         const { latitude, longitude } = position.coords;
         try {
           const detail = await reverseGeocode(latitude, longitude);
+          clearLoading();
           resolve(detail);
         } catch (error) {
+          clearLoading();
           resolve({ lat: latitude, lng: longitude });
         }
       },
       (error) => {
-        showToast("GPS position query denied or failed. Please enable location.", "error");
+        if (!silent) showToast("GPS position query denied or failed. Please enable location.", "error");
+        clearLoading();
         reject(error);
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 5000 }
     );
   });
 }
 
 export async function reverseGeocode(lat: number, lng: number): Promise<GeoLocation> {
+  const key = getMapTilerKey();
   try {
-    const url = `/api/mappls/reverse_geocode?lat=${lat}&lng=${lng}`;
+    const url = `https://api.maptiler.com/geocoding/${lng},${lat}.json?key=${key}`;
     const response = await fetch(url);
-    if (!response.ok) throw new Error("Mappls Reverse geocode failed");
-    const data = await response.json();
-    if (data.results && data.results.length > 0) {
-      const properties = data.results[0];
-      const addressStr = properties.formatted_address || properties.formattedAddress || properties.address || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-      const pinMatch = addressStr.match(/\b\d{6}\b/);
-      const pincode = pinMatch ? pinMatch[0] : (properties.pincode || properties.pincodeCode || "271001");
-      return {
-        lat,
-        lng,
-        address: addressStr,
-        city: properties.city || properties.district || properties.sublocality || "Bengaluru",
-        district: properties.district || properties.sublocality || "",
-        state: properties.state || "Karnataka",
-        pincode: pincode
-      };
+    if (response.ok) {
+      const data = await response.json();
+      if (data.features && data.features.length > 0) {
+        const feature = data.features[0];
+        const addressStr = feature.place_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        
+        let city = "Bengaluru";
+        let state = "Karnataka";
+        let pincode = "560038";
+        
+        if (feature.context) {
+          for (const ctx of feature.context) {
+            if (ctx.id.startsWith("postal_code")) {
+              pincode = ctx.text;
+            } else if (ctx.id.startsWith("place")) {
+              city = ctx.text;
+            } else if (ctx.id.startsWith("region")) {
+              state = ctx.text;
+            }
+          }
+        }
+        
+        return {
+          lat,
+          lng,
+          address: addressStr,
+          city,
+          district: city,
+          state,
+          pincode
+        };
+      }
     }
   } catch (error) {
-    // Silent fallback to standard geocodes
+    console.error("MapTiler reverse geocode failed:", error);
   }
 
   return { lat, lng, address: `${lat.toFixed(5)}, ${lng.toFixed(5)}`, city: "Bengaluru", state: "Karnataka", pincode: "560038" };
@@ -204,26 +242,29 @@ export async function reverseGeocode(lat: number, lng: number): Promise<GeoLocat
 
 export async function searchAddress(query: string): Promise<any[]> {
   if (!query || query.trim().length < 3) return [];
+  const key = getMapTilerKey();
   try {
-    const url = `/api/mappls/autosuggest?query=${encodeURIComponent(query)}`;
+    const url = `https://api.maptiler.com/geocoding/${encodeURIComponent(query)}.json?key=${key}&proximity=77.5946,12.9716`;
     const response = await fetch(url);
-    if (!response.ok) throw new Error("Mappls geocoding search failed");
-    const data = await response.json();
-    const suggested = data.suggestedLocations || data.results || [];
-    return suggested.map((item: any) => ({
-      properties: {
-        formatted: item.placeAddress || item.placeName || item.formatted_address || item.address || ""
-      },
-      geometry: {
-        coordinates: [
-          parseFloat(item.longitude || item.lng || "77.5946"),
-          parseFloat(item.latitude || item.lat || "12.9716")
-        ]
-      }
-    }));
+    if (response.ok) {
+      const data = await response.json();
+      const features = data.features || [];
+      return features.map((item: any) => ({
+        properties: {
+          formatted: item.place_name || item.text || ""
+        },
+        geometry: {
+          coordinates: [
+            item.geometry?.coordinates?.[0] || 77.5946,
+            item.geometry?.coordinates?.[1] || 12.9716
+          ]
+        }
+      }));
+    }
   } catch (error) {
-    return [];
+    console.error("MapTiler geocoding search failed:", error);
   }
+  return [];
 }
 
 // Distance Calculation (Haversine formula in KM)
@@ -241,9 +282,10 @@ export function calculateDistance(lat1: number, lon1: number, lat2: number, lon2
   return parseFloat((R * c).toFixed(2));
 }
 
-// Map Rendering Image URL (Static map for display using Mappls APIs)
+// Map Rendering Image URL (Static map for display using MapTiler APIs)
 export function getStaticMapUrl(lat: number, lng: number, zoom: number = 14, width: number = 400, height: number = 250): string {
-  return `https://apis.mappls.com/advancedmaps/v1/${MAPPLS_MAP_KEY}/staticmap?center=${lat},${lng}&zoom=${zoom}&size=${width}x${height}&markers=color:red|${lat},${lng}`;
+  const key = getMapTilerKey();
+  return `https://api.maptiler.com/maps/streets-v2/static/${lng},${lat},${zoom}/${width}x${height}.png?key=${key}&markers=${lng},${lat}`;
 }
 
 export function getRouteMapUrl(
@@ -254,7 +296,10 @@ export function getRouteMapUrl(
   width: number = 400,
   height: number = 250
 ): string {
-  return `https://apis.mappls.com/advancedmaps/v1/${MAPPLS_MAP_KEY}/staticmap?size=${width}x${height}&path=color:0x3b82f6|weight:4|${startLat},${startLng}|${endLat},${endLng}&markers=color:green|${startLat},${startLng}|color:red|${endLat},${endLng}`;
+  const key = getMapTilerKey();
+  const midLat = (startLat + endLat) / 2;
+  const midLng = (startLng + endLng) / 2;
+  return `https://api.maptiler.com/maps/streets-v2/static/${midLng},${midLat},12/${width}x${height}.png?key=${key}&markers=${startLng},${startLat}|${endLng},${endLat}`;
 }
 
 export interface MapplsRouteResult {
@@ -269,8 +314,9 @@ export async function getMapplsRoute(
   endLat: number,
   endLng: number
 ): Promise<MapplsRouteResult> {
+  const key = getMapTilerKey();
   try {
-    const url = `/api/mappls/route?startLat=${startLat}&startLng=${startLng}&endLat=${endLat}&endLng=${endLng}`;
+    const url = `https://api.maptiler.com/navigation/routing/v1/driving/${startLng},${startLat};${endLng},${endLat}.json?key=${key}&geometries=geojson`;
     const response = await fetch(url);
     if (response.ok) {
       const data = await response.json();
@@ -288,7 +334,7 @@ export async function getMapplsRoute(
       }
     }
   } catch (error) {
-    // Silent fallback to direct distance calculations
+    console.error("MapTiler routing query failed:", error);
   }
 
   const distance = calculateDistance(startLat, startLng, endLat, endLng);
@@ -319,47 +365,45 @@ export function updateLeafletMap(
   middleIconClass: string = "marker-store",
   middleIconAwesome: string = "fa-prescription-bottle-medical"
 ) {
-  const mappls = (window as any).mappls;
-  if (!mappls) {
-    console.warn("Mappls JS SDK not loaded yet. Fetching script...");
-    loadMapplsScript(() => {
-      updateLeafletMap(containerId, startLat, startLng, endLat, endLng, isSingleMarker, startIconClass, startIconAwesome, endIconClass, endIconAwesome, middleLat, middleLng, middleIconClass, middleIconAwesome);
-    });
-    return;
-  }
-
   const mapContainer = document.getElementById(containerId);
   if (!mapContainer) return;
 
-  // Initialize Map Instance if not present
+  const key = getMapTilerKey();
+  maptilersdk.config.apiKey = key;
+
   let mapInstance = (window as any)["map_" + containerId];
   if (!mapInstance) {
     mapContainer.innerHTML = "";
     try {
-      // Mappls expectations on center coordinates: { lat, lng } or MapLibre standard [lng, lat]
-      mapInstance = new mappls.Map(containerId, {
-        center: { lat: endLat, lng: endLng },
+      const isDarkTheme = document.body.classList.contains("dark") || document.documentElement.classList.contains("dark");
+      const mapStyle = isDarkTheme ? "darkmatter" : "streets-v2";
+      
+      mapInstance = new maptilersdk.Map({
+        container: containerId,
+        style: mapStyle as any,
+        center: [endLng, endLat],
         zoom: 14,
-        zoomControl: true,
-        attributionControl: false
+        geolocate: false,
+        navigationControl: true,
+        scaleControl: false,
+        attributionControl: false as any
       });
       (window as any)["map_" + containerId] = mapInstance;
     } catch (e) {
-      console.error("Failed to init Mappls map on container:", containerId, e);
+      console.error("Failed to init MapTiler map on container:", containerId, e);
       return;
     }
   }
 
-  // Force size adjustments
   setTimeout(() => {
     try {
-      if (mapInstance && typeof mapInstance.invalidateSize === "function") {
-        mapInstance.invalidateSize();
+      if (mapInstance && typeof mapInstance.resize === "function") {
+        mapInstance.resize();
       }
     } catch (e) {}
   }, 100);
 
-  // Clear previous overlays
+  // Clear previous markers
   let activeOverlays = (window as any)["overlays_" + containerId] || [];
   activeOverlays.forEach((ol: any) => {
     try {
@@ -370,113 +414,147 @@ export function updateLeafletMap(
   });
   activeOverlays = [];
 
+  // Clear previous route layers and sources
+  try {
+    const segments = ["route-segment-1", "route-segment-2", "route-direct"];
+    segments.forEach(segId => {
+      const fullSegId = `${containerId}-${segId}`;
+      if (mapInstance.getLayer(fullSegId)) mapInstance.removeLayer(fullSegId);
+      if (mapInstance.getSource(fullSegId)) mapInstance.removeSource(fullSegId);
+    });
+  } catch (e) {
+    console.error("Error clearing map route layers:", e);
+  }
+
   try {
     if (isSingleMarker) {
       // Single Location Map View
-      const marker = new mappls.Marker({
-        map: mapInstance,
-        position: { lat: endLat, lng: endLng },
-        html: `<div class="mappls-custom-marker ${endIconClass} w-8.5 h-8.5 rounded-full shadow border-2 border-white flex items-center justify-center bg-teal-500 text-white"><i class="fa-solid ${endIconAwesome} text-xs"></i></div>`
-      });
+      const el = document.createElement("div");
+      el.className = `custom-maptiler-marker ${endIconClass} w-8.5 h-8.5 rounded-full shadow border-2 border-white flex items-center justify-center bg-teal-500 text-white`;
+      el.innerHTML = `<i class="fa-solid ${endIconAwesome} text-xs"></i>`;
+
+      const marker = new maptilersdk.Marker({ element: el })
+        .setLngLat([endLng, endLat])
+        .addTo(mapInstance);
       activeOverlays.push(marker);
-      mapInstance.setCenter({ lat: endLat, lng: endLng });
+
+      mapInstance.setCenter([endLng, endLat]);
       mapInstance.setZoom(14);
     } else {
       // Dual/Triple Pin Routing Map View
-      const riderMarker = new mappls.Marker({
-        map: mapInstance,
-        position: { lat: startLat, lng: startLng },
-        html: `<div class="mappls-custom-marker ${startIconClass} w-8.5 h-8.5 rounded-full shadow border-2 border-white flex items-center justify-center bg-indigo-500 text-white"><i class="fa-solid ${startIconAwesome} text-xs"></i></div>`
-      });
+      const elStart = document.createElement("div");
+      elStart.className = `custom-maptiler-marker ${startIconClass} w-8.5 h-8.5 rounded-full shadow border-2 border-white flex items-center justify-center bg-indigo-500 text-white`;
+      elStart.innerHTML = `<i class="fa-solid ${startIconAwesome} text-xs"></i>`;
+      const riderMarker = new maptilersdk.Marker({ element: elStart })
+        .setLngLat([startLng, startLat])
+        .addTo(mapInstance);
       activeOverlays.push(riderMarker);
 
-      const userMarker = new mappls.Marker({
-        map: mapInstance,
-        position: { lat: endLat, lng: endLng },
-        html: `<div class="mappls-custom-marker ${endIconClass} w-8.5 h-8.5 rounded-full shadow border-2 border-white flex items-center justify-center bg-teal-500 text-white"><i class="fa-solid ${endIconAwesome} text-xs"></i></div>`
-      });
+      const elEnd = document.createElement("div");
+      elEnd.className = `custom-maptiler-marker ${endIconClass} w-8.5 h-8.5 rounded-full shadow border-2 border-white flex items-center justify-center bg-teal-500 text-white`;
+      elEnd.innerHTML = `<i class="fa-solid ${endIconAwesome} text-xs"></i>`;
+      const userMarker = new maptilersdk.Marker({ element: elEnd })
+        .setLngLat([endLng, endLat])
+        .addTo(mapInstance);
       activeOverlays.push(userMarker);
 
-      if (middleLat && middleLng) {
-        const middleMarker = new mappls.Marker({
-          map: mapInstance,
-          position: { lat: middleLat, lng: middleLng },
-          html: `<div class="mappls-custom-marker ${middleIconClass} w-8.5 h-8.5 rounded-full shadow border-2 border-white flex items-center justify-center bg-amber-500 text-white"><i class="fa-solid ${middleIconAwesome} text-xs"></i></div>`
-        });
-        activeOverlays.push(middleMarker);
+      const drawRoutes = () => {
+        if (middleLat && middleLng) {
+          const elMid = document.createElement("div");
+          elMid.className = `custom-maptiler-marker ${middleIconClass} w-8.5 h-8.5 rounded-full shadow border-2 border-white flex items-center justify-center bg-amber-500 text-white`;
+          elMid.innerHTML = `<i class="fa-solid ${middleIconAwesome} text-xs"></i>`;
+          const middleMarker = new maptilersdk.Marker({ element: elMid })
+            .setLngLat([middleLng, middleLat])
+            .addTo(mapInstance);
+          activeOverlays.push(middleMarker);
 
-        // Segment 1 (Rider -> Store)
-        getMapplsRoute(startLat, startLng, middleLat, middleLng).then((res1) => {
-          try {
-            const polyline1 = new mappls.Polyline({
-              map: mapInstance,
-              paths: res1.polyline.map((p: any) => ({ lat: p[0], lng: p[1] })),
-              strokeColor: '#3b82f6', // Solid light blue for rider transit to store
-              strokeWeight: 5,
-              strokeOpacity: 0.95
-            });
-            activeOverlays.push(polyline1);
-          } catch (pe) {
-            console.error("Store route polyline exception:", pe);
-          }
-        });
+          // Segment 1 (Rider -> Store)
+          getMapplsRoute(startLat, startLng, middleLat, middleLng).then((res1) => {
+            try {
+              addRouteLayer(mapInstance, `${containerId}-route-segment-1`, res1.polyline, "#3b82f6", false);
+            } catch (pe) {
+              console.error("Store route polyline exception:", pe);
+            }
+          });
 
-        // Segment 2 (Store -> Customer) - dashed
-        getMapplsRoute(middleLat, middleLng, endLat, endLng).then((res2) => {
-          try {
-            const polyline2 = new mappls.Polyline({
-              map: mapInstance,
-              paths: res2.polyline.map((p: any) => ({ lat: p[0], lng: p[1] })),
-              strokeColor: '#94a3b8', // Gray dashed representation
-              strokeWeight: 4,
-              strokeOpacity: 0.8,
-              dashArray: '10, 10'
-            });
-            activeOverlays.push(polyline2);
-          } catch (pe) {
-            console.error("Customer route polyline exception:", pe);
-          }
-        });
+          // Segment 2 (Store -> Customer) - dashed
+          getMapplsRoute(middleLat, middleLng, endLat, endLng).then((res2) => {
+            try {
+              addRouteLayer(mapInstance, `${containerId}-route-segment-2`, res2.polyline, "#94a3b8", true);
+            } catch (pe) {
+              console.error("Customer route polyline exception:", pe);
+            }
+          });
+        } else {
+          // Direct segment (Rider -> Customer)
+          getMapplsRoute(startLat, startLng, endLat, endLng).then((res) => {
+            try {
+              addRouteLayer(mapInstance, `${containerId}-route-direct`, res.polyline, "#4f46e5", false);
+            } catch (pe) {
+              console.error("Direct segment polyline exception:", pe);
+            }
+          });
+        }
+      };
 
-        const midLat = (startLat + middleLat + endLat) / 3;
-        const midLng = (startLng + middleLng + endLng) / 3;
-        mapInstance.setCenter({ lat: midLat, lng: midLng });
+      if (mapInstance.isStyleLoaded()) {
+        drawRoutes();
       } else {
-        // Direct segment (Rider -> Customer)
-        getMapplsRoute(startLat, startLng, endLat, endLng).then((res) => {
-          try {
-            const polyline = new mappls.Polyline({
-              map: mapInstance,
-              paths: res.polyline.map((p: any) => ({ lat: p[0], lng: p[1] })),
-              strokeColor: '#4f46e5',
-              strokeWeight: 5,
-              strokeOpacity: 0.9
-            });
-            activeOverlays.push(polyline);
-          } catch (pe) {
-            console.error("Direct segment polyline exception:", pe);
-          }
-        });
-
-        const midLat = (startLat + endLat) / 2;
-        const midLng = (startLng + endLng) / 2;
-        mapInstance.setCenter({ lat: midLat, lng: midLng });
+        mapInstance.once("load", drawRoutes);
       }
 
-      // Adjust Zoom dynamically based on distance
-      const dist = calculateDistance(startLat, startLng, endLat, endLng);
-      let zoom = 14;
-      if (dist > 15) zoom = 10;
-      else if (dist > 8) zoom = 11;
-      else if (dist > 4) zoom = 12;
-      else if (dist > 1.5) zoom = 13;
-      else zoom = 14;
-      mapInstance.setZoom(zoom);
+      const bounds = new maptilersdk.LngLatBounds();
+      bounds.extend([startLng, startLat]);
+      bounds.extend([endLng, endLat]);
+      if (middleLng && middleLat) {
+        bounds.extend([middleLng, middleLat]);
+      }
+      mapInstance.fitBounds(bounds, { padding: 50, maxZoom: 15 });
     }
   } catch (overlayErr) {
-    console.error("Drawing Mappls overlays error:", overlayErr);
+    console.error("Drawing MapTiler overlays error:", overlayErr);
   }
 
   (window as any)["overlays_" + containerId] = activeOverlays;
+}
+
+function addRouteLayer(map: any, id: string, coordinates: number[][], color: string, dash: boolean = false) {
+  const geojsonCoords = coordinates.map(p => [p[1], p[0]]);
+  
+  if (map.getLayer(id)) map.removeLayer(id);
+  if (map.getSource(id)) map.removeSource(id);
+  
+  map.addSource(id, {
+    type: "geojson",
+    data: {
+      type: "Feature",
+      properties: {},
+      geometry: {
+        type: "LineString",
+        coordinates: geojsonCoords
+      }
+    }
+  });
+  
+  const paintConfig: any = {
+    "line-color": color,
+    "line-width": 5,
+    "line-opacity": 0.85
+  };
+  
+  if (dash) {
+    paintConfig["line-dasharray"] = [2, 2];
+  }
+  
+  map.addLayer({
+    id: id,
+    type: "line",
+    source: id,
+    layout: {
+      "line-join": "round",
+      "line-cap": "round"
+    },
+    paint: paintConfig
+  });
 }
 

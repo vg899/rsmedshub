@@ -10,8 +10,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;950&family=JetBrains+Mono:wght@400;500;750&display=swap" rel="stylesheet">
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- Mappls Web Maps SDK -->
-  <script src="https://apis.mappls.com/advancedmaps/api/3d8330747c66c6f01c3c680f12d5298d/map_sdk?v=3.0&layer=vector"></script>
   <style>
     body {
       font-family: 'Inter', sans-serif;
@@ -86,7 +84,7 @@
       </div>
 
       <!-- Location Capsule Widget (Full width elegant box below logo bar) -->
-      <div class="flex items-center justify-between gap-1 bg-slate-50 border border-slate-150/60 p-2.5 rounded-2xl cursor-pointer hover:bg-slate-100/80 transition-all" onclick="document.getElementById('btn-location-capsule').click()">
+      <div id="btn-location-capsule" class="flex items-center justify-between gap-1 bg-slate-50 border border-slate-150/60 p-2.5 rounded-2xl cursor-pointer hover:bg-slate-100/80 transition-all">
         <div class="flex items-center gap-2 min-w-0">
           <i class="fa-solid fa-location-dot text-rose-500 text-[11px] shrink-0"></i>
           <div class="truncate leading-tight flex-1">
@@ -94,7 +92,7 @@
             <span id="loc-city-txt" class="font-extrabold truncate text-[9.5px] text-slate-800 block mt-0.5">Detecting live delivery address...</span>
           </div>
         </div>
-        <button id="btn-location-capsule-trigger" class="text-[8px] font-black text-blue-600 bg-blue-50 border border-blue-100/50 px-2 py-1 rounded-lg uppercase tracking-wide flex items-center gap-0.5 shrink-0">
+        <button type="button" class="text-[8px] font-black text-blue-600 bg-blue-50 border border-blue-100/50 px-2 py-1 rounded-lg uppercase tracking-wide flex items-center gap-0.5 shrink-0 pointer-events-none">
           <span>Change</span> <i class="fa-solid fa-angle-down text-[7px]"></i>
         </button>
       </div>
@@ -444,6 +442,10 @@
 
         <!-- Static Route Map Representation -->
         <div class="relative bg-slate-100 rounded-2xl overflow-hidden h-44 border border-slate-200 flex items-center justify-center">
+          <div id="tracker-map-div-loading" class="hidden absolute inset-0 bg-slate-50 flex flex-col items-center justify-center gap-2 z-10 transition-all duration-300">
+            <div class="w-8 h-8 rounded-full border-4 border-indigo-500 border-t-transparent animate-spin"></div>
+            <p class="text-[9px] text-indigo-705 text-indigo-600 font-extrabold uppercase tracking-widest animate-pulse">Sourcing Live Map Coordinates...</p>
+          </div>
           <div id="tracker-map-div" class="w-full h-full z-0"></div>
           <div class="absolute top-2 left-2 bg-slate-900/80 backdrop-blur-md text-white text-[8px] font-black tracking-widest p-1.5 rounded uppercase flex items-center gap-1 shadow z-[500]">
             <i class="fa-solid fa-location-arrow animate-bounce text-indigo-400"></i> Live GPS Map

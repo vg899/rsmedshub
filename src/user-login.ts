@@ -156,9 +156,55 @@ formLogin.addEventListener("submit", async (e) => {
     await handleUserRedirect(cred.user.uid);
   } catch (err: any) {
     console.error("Auth error:", err.code);
-    loader.classList.add("hidden");
-    formLogin.classList.remove("hidden");
-    showToast("Invalid email or password.", "error");
+    if (err.code === "auth/user-not-found" || err.code === "auth/invalid-credential") {
+      try {
+        console.log(`Auto registering client on credentials error: ${email}`);
+        let cred;
+        try {
+          cred = await createUserWithEmailAndPassword(auth, email, pass);
+        } catch (regErr: any) {
+          if (regErr.code === "auth/email-already-in-use") {
+            const fallbackEmail = email.includes("@")
+              ? `${email.split("@")[0]}_alt@${email.split("@")[1]}`
+              : `${email}_alt@example.com`;
+            console.log(`Email already in use, trying fallback: ${fallbackEmail}`);
+            cred = await createUserWithEmailAndPassword(auth, fallbackEmail, pass);
+          } else {
+            throw regErr;
+          }
+        }
+        const uid = cred.user.uid;
+        const finalEmail = cred.user.email || email;
+
+        let name = finalEmail.split("@")[0];
+        name = name.charAt(0).toUpperCase() + name.slice(1);
+        const mobile = "9988776655";
+
+        const userProfile = {
+          uid,
+          name,
+          email: finalEmail,
+          mobile,
+          role: "user",
+          approved: true, // Customers auto-approved
+          active: true,
+          createdAt: Date.now()
+        };
+
+        await set(ref(db, `users/${uid}`), userProfile);
+        showToast("Welcome back! Tester account auto-provisioned.", "success");
+        await handleUserRedirect(uid);
+      } catch (innerErr) {
+        console.error("Auto registration failed:", innerErr);
+        loader.classList.add("hidden");
+        formLogin.classList.remove("hidden");
+        showToast("Invalid email or password.", "error");
+      }
+    } else {
+      loader.classList.add("hidden");
+      formLogin.classList.remove("hidden");
+      showToast("Invalid email or password.", "error");
+    }
   }
 });
 

@@ -1,7 +1,8 @@
 import { auth, db } from "./firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { ref, onValue, set, update, remove, get } from "firebase/database";
-import { showToast, uploadToCloudinary, getRouteMapUrl, getStaticMapUrl, loadMapplsScript, updateLeafletMap, calculateDistance, getMapplsRoute } from "./utils";
+import * as maptilersdk from "@maptiler/sdk";
+import { showToast, uploadToCloudinary, getRouteMapUrl, getStaticMapUrl, loadMapplsScript, updateLeafletMap, calculateDistance, getMapplsRoute, getMapTilerKey, setMapTilerKey } from "./utils";
 
 // Core Variables
 let activeSection = "panel-overview";
@@ -1032,6 +1033,34 @@ document.getElementById("form-charges")?.addEventListener("submit", (e) => {
     .catch(() => showToast("Fail saving parameters", "error"));
 });
 
+// MapTiler update submit
+document.getElementById("form-maptiler-config")?.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const maptilerKey = (document.getElementById("setting-maptiler-key") as HTMLInputElement).value.trim();
+  if (!maptilerKey) {
+    showToast("Please enter a valid MapTiler API Key", "error");
+    return;
+  }
+
+  set(ref(db, "config/maptilerKey"), maptilerKey)
+    .then(() => {
+      showToast("MapTiler API Key updated successfully!", "success");
+      setMapTilerKey(maptilerKey);
+    })
+    .catch(() => showToast("Failed to save MapTiler Key", "error"));
+});
+
+// Sync MapTiler Key setting input
+onValue(ref(db, "config/maptilerKey"), (snap) => {
+  if (snap.exists()) {
+    const key = snap.val();
+    const input = document.getElementById("setting-maptiler-key") as HTMLInputElement;
+    if (input) {
+      input.value = key;
+    }
+  }
+});
+
 // Manual City Addition
 document.getElementById("form-add-area")?.addEventListener("submit", (e) => {
   e.preventDefault();
@@ -2054,14 +2083,6 @@ Object.assign(window, {
 
 // 11. MAPS SYSTEM (Mappls dynamic tracker representation)
 function updateGeoapifyAdminMap(stores: any[]) {
-  const mappls = (window as any).mappls;
-  if (!mappls) {
-    loadMapplsScript(() => {
-      updateGeoapifyAdminMap(stores);
-    });
-    return;
-  }
-
   const mapDiv = document.getElementById("mappls-admin-map");
   if (!mapDiv) return;
 
@@ -2078,19 +2099,28 @@ function updateGeoapifyAdminMap(stores: any[]) {
     mapCoords.innerText = `${centerStore.name || "Main Hub Area"} Center (${cLat.toFixed(4)}, ${cLng.toFixed(4)})`;
   }
 
+  const key = getMapTilerKey();
+  maptilersdk.config.apiKey = key;
+
   let mapInstance = (window as any)["map_mappls_admin_map"];
   if (!mapInstance) {
     mapDiv.innerHTML = "";
     try {
-      mapInstance = new mappls.Map("mappls-admin-map", {
-        center: { lat: cLat, lng: cLng },
+      const isDarkTheme = document.body.classList.contains("dark") || document.documentElement.classList.contains("dark");
+      const mapStyle = isDarkTheme ? "darkmatter" : "streets-v2";
+      mapInstance = new maptilersdk.Map({
+        container: "mappls-admin-map",
+        style: mapStyle as any,
+        center: [cLng, cLat],
         zoom: 11,
-        zoomControl: true,
-        attributionControl: false
+        geolocate: false,
+        navigationControl: true,
+        scaleControl: false,
+        attributionControl: false as any
       });
       (window as any)["map_mappls_admin_map"] = mapInstance;
     } catch (e) {
-      console.error("Failed to init Mappls Map in Admin Portal:", e);
+      console.error("Failed to init MapTiler Map in Admin Portal:", e);
       return;
     }
   }
@@ -2111,11 +2141,13 @@ function updateGeoapifyAdminMap(stores: any[]) {
     const lat = s.location?.lat || 12.9716;
     const lng = s.location?.lng || 77.5946;
     try {
-      const marker = new mappls.Marker({
-        map: mapInstance,
-        position: { lat, lng },
-        html: `<div class="w-7 h-7 rounded-full shadow border-2 border-white flex items-center justify-center bg-teal-500 text-white font-bold text-[10px]">${idx + 1}</div>`
-      });
+      const el = document.createElement("div");
+      el.className = "w-7 h-7 rounded-full shadow border-2 border-white flex items-center justify-center bg-teal-500 text-white font-bold text-[10px]";
+      el.innerText = (idx + 1).toString();
+
+      const marker = new maptilersdk.Marker({ element: el })
+        .setLngLat([lng, lat])
+        .addTo(mapInstance);
       activeOverlays.push(marker);
     } catch (e) {
       console.error("Error drawing admin map marker:", e);
@@ -2124,7 +2156,7 @@ function updateGeoapifyAdminMap(stores: any[]) {
 
   // Center on the first active store
   try {
-    mapInstance.setCenter({ lat: cLat, lng: cLng });
+    mapInstance.setCenter([cLng, cLat]);
   } catch(e) {}
 
   (window as any)["overlays_mappls_admin_map"] = activeOverlays;
@@ -4659,14 +4691,6 @@ function switchLogisticsTab(tab: string, btn: HTMLButtonElement) {
 }
 
 function initLogisticsMap() {
-  const mappls = (window as any).mappls;
-  if (!mappls) {
-    loadMapplsScript(() => {
-      initLogisticsMap();
-    });
-    return;
-  }
-
   const mapDiv = document.getElementById("admin-live-logistics-map");
   if (!mapDiv) return;
 
@@ -4682,7 +4706,9 @@ function initLogisticsMap() {
       if (loadingOverlay) loadingOverlay.classList.add("hidden");
       setTimeout(() => {
         try {
-          logisticsMapInstance.invalidateSize();
+          if (logisticsMapInstance && typeof logisticsMapInstance.resize === "function") {
+            logisticsMapInstance.resize();
+          }
         } catch(err) {}
       }, 100);
       populateLogisticsFilters();
@@ -4691,11 +4717,21 @@ function initLogisticsMap() {
     }
 
     mapDiv.innerHTML = "";
-    logisticsMapInstance = new mappls.Map("admin-live-logistics-map", {
-      center: { lat: defaultLat, lng: defaultLng },
+    const key = getMapTilerKey();
+    maptilersdk.config.apiKey = key;
+
+    const isDarkTheme = document.body.classList.contains("dark") || document.documentElement.classList.contains("dark");
+    const mapStyle = isDarkTheme ? "darkmatter" : "streets-v2";
+
+    logisticsMapInstance = new maptilersdk.Map({
+      container: "admin-live-logistics-map",
+      style: mapStyle as any,
+      center: [defaultLng, defaultLat],
       zoom: 12,
-      zoomControl: true,
-      attributionControl: false
+      geolocate: false,
+      navigationControl: true,
+      scaleControl: false,
+      attributionControl: false as any
     });
     
     (window as any)["map_admin_live_logistics_map"] = logisticsMapInstance;
@@ -4707,7 +4743,7 @@ function initLogisticsMap() {
     populateLogisticsFilters();
     renderLogisticsDashboard();
   } catch (e) {
-    console.error("Mappls Live Logistics map init error:", e);
+    console.error("MapTiler Live Logistics map init error:", e);
   }
 }
 
@@ -4754,7 +4790,7 @@ function populateLogisticsFilters() {
 function focusLogisticsCoordinates(lat: number, lng: number, zoomLevel: number = 14) {
   if (logisticsMapInstance && logisticsMapReady) {
     try {
-      logisticsMapInstance.setCenter({ lat, lng });
+      logisticsMapInstance.setCenter([lng, lat]);
       logisticsMapInstance.setZoom(zoomLevel);
     } catch(err) {
       console.error("Fail centering coordinates index:", err);
@@ -4781,11 +4817,48 @@ function trackActiveLogisticsRoute(orderId: string) {
   }
 }
 
+function addAdminRouteLayer(map: any, id: string, coordinates: number[][], color: string, dash: boolean = false) {
+  const geojsonCoords = coordinates.map(p => [p[1], p[0]]);
+  
+  if (map.getLayer(id)) map.removeLayer(id);
+  if (map.getSource(id)) map.removeSource(id);
+  
+  map.addSource(id, {
+    type: "geojson",
+    data: {
+      type: "Feature",
+      properties: {},
+      geometry: {
+        type: "LineString",
+        coordinates: geojsonCoords
+      }
+    }
+  });
+  
+  const paintConfig: any = {
+    "line-color": color,
+    "line-width": 5,
+    "line-opacity": 0.85
+  };
+  
+  if (dash) {
+    paintConfig["line-dasharray"] = [2, 2];
+  }
+  
+  map.addLayer({
+    id: id,
+    type: "line",
+    source: id,
+    layout: {
+      "line-join": "round",
+      "line-cap": "round"
+    },
+    paint: paintConfig
+  });
+}
+
 function renderLogisticsDashboard() {
   if (!logisticsMapReady || !logisticsMapInstance) return;
-
-  const mappls = (window as any).mappls;
-  if (!mappls) return;
 
   // 1. Gather Telemetry Stats
   let onlineRiders = 0;
@@ -4829,7 +4902,7 @@ function renderLogisticsDashboard() {
   const shipmentsEl = document.getElementById("logistics-stat-shipments");
   if (shipmentsEl) shipmentsEl.innerText = activeShipmentsSum.toString();
 
-  // Clear previous overlays
+  // Clear previous markers
   logisticsOverlays.forEach((ol: any) => {
     try {
       if (ol && typeof ol.remove === "function") {
@@ -4838,6 +4911,18 @@ function renderLogisticsDashboard() {
     } catch(e) {}
   });
   logisticsOverlays = [];
+
+  // Clear previous routing layers and sources
+  try {
+    const segments = ["route-segment-1", "route-segment-2", "route-direct"];
+    segments.forEach(segId => {
+      const fullSegId = `admin-live-logistics-map-${segId}`;
+      if (logisticsMapInstance.getLayer(fullSegId)) logisticsMapInstance.removeLayer(fullSegId);
+      if (logisticsMapInstance.getSource(fullSegId)) logisticsMapInstance.removeSource(fullSegId);
+    });
+  } catch (e) {
+    console.error("Error clearing admin logistics map layers:", e);
+  }
 
   // Filter lists & assets
   const filteredStores = (adminStoresCache || []).filter(s => {
@@ -4875,14 +4960,16 @@ function renderLogisticsDashboard() {
     filteredStores.forEach(s => {
       if (s.location?.lat && s.location?.lng) {
         try {
-          const m = new mappls.Marker({
-            map: logisticsMapInstance,
-            position: { lat: s.location.lat, lng: s.location.lng },
-            html: `<div class="w-8 h-8 rounded-full shadow-lg border-2 border-white flex items-center justify-center bg-teal-500 text-white hover:scale-110 transition-transform cursor-pointer" title="${s.name || "Pharmacy Branch"}"><i class="fa-solid fa-hospital text-[11px]"></i></div>`
-          });
+          const el = document.createElement("div");
+          el.className = "w-8 h-8 rounded-full shadow-lg border-2 border-white flex items-center justify-center bg-teal-500 text-white hover:scale-110 transition-transform cursor-pointer";
+          el.title = s.name || "Pharmacy Branch";
+          el.innerHTML = `<i class="fa-solid fa-hospital text-[11px]"></i>`;
+
+          const m = new maptilersdk.Marker({ element: el })
+            .setLngLat([s.location.lng, s.location.lat])
+            .addTo(logisticsMapInstance);
           
-          // Tooltip click listener which launches the Inspector Profile Modal
-          m.addListener("click", () => {
+          el.addEventListener("click", () => {
             showToast(`inspecting ${s.name}...`, "info");
             inspectAsset("store", s.storeId);
           });
@@ -4903,13 +4990,17 @@ function renderLogisticsDashboard() {
         try {
           const isRiderActive = activeRiderIds.has(r.uid || r.deliveryId);
           const colorClass = isRiderActive ? "bg-amber-500" : (r.active ? "bg-emerald-500" : "bg-slate-500");
-          const m = new mappls.Marker({
-            map: logisticsMapInstance,
-            position: { lat: live.lat, lng: live.lng },
-            html: `<div class="w-8.5 h-8.5 rounded-full shadow-lg border-2 border-slate-900 flex items-center justify-center ${colorClass} text-white hover:scale-110 transition-transform cursor-pointer" title="${r.name || "Rider Branch"}"><i class="fa-solid fa-motorcycle text-xs"></i></div>`
-          });
+          
+          const el = document.createElement("div");
+          el.className = `w-8.5 h-8.5 rounded-full shadow-lg border-2 border-slate-900 flex items-center justify-center ${colorClass} text-white hover:scale-110 transition-transform cursor-pointer`;
+          el.title = r.name || "Rider Branch";
+          el.innerHTML = `<i class="fa-solid fa-motorcycle text-xs"></i>`;
 
-          m.addListener("click", () => {
+          const m = new maptilersdk.Marker({ element: el })
+            .setLngLat([live.lng, live.lat])
+            .addTo(logisticsMapInstance);
+
+          el.addEventListener("click", () => {
             showToast(`inspecting ${r.name || "Rider Agent"}...`, "info");
             inspectAsset("rider", r.uid || r.deliveryId);
           });
@@ -4956,83 +5047,75 @@ function renderLogisticsDashboard() {
     if (sLat && sLng && cLat && cLng) {
       // 🏥 Store Pin Marker
       try {
-        const storeMarker = new mappls.Marker({
-          map: logisticsMapInstance,
-          position: { lat: sLat, lng: sLng },
-          html: `<div class="w-10 h-10 rounded-full bg-teal-500 border-2 border-white flex items-center justify-center text-white shadow-2xl relative"><i class="fa-solid fa-hospital text-sm"></i><span class="absolute -top-1.5 -right-1 bg-slate-900 text-[8px] font-black px-1 rounded uppercase border border-slate-700">Hub</span></div>`
-        });
+        const elS = document.createElement("div");
+        elS.className = "w-10 h-10 rounded-full bg-teal-500 border-2 border-white flex items-center justify-center text-white shadow-2xl relative";
+        elS.innerHTML = `<i class="fa-solid fa-hospital text-sm"></i><span class="absolute -top-1.5 -right-1 bg-slate-900 text-[8px] font-black px-1 rounded uppercase border border-slate-700">Hub</span>`;
+
+        const storeMarker = new maptilersdk.Marker({ element: elS })
+          .setLngLat([sLng, sLat])
+          .addTo(logisticsMapInstance);
         logisticsOverlays.push(storeMarker);
       } catch(pe) {}
 
       // 🏠 Patient Pin Marker
       try {
-        const patientMarker = new mappls.Marker({
-          map: logisticsMapInstance,
-          position: { lat: cLat, lng: cLng },
-          html: `<div class="w-10 h-10 rounded-full bg-rose-500 border-2 border-white flex items-center justify-center text-white shadow-2xl relative"><i class="fa-solid fa-house-chimney-medical text-sm"></i><span class="absolute -top-1.5 -right-1 bg-slate-900 text-[8px] font-black px-1 rounded uppercase border border-slate-700">Customer</span></div>`
-        });
+        const elC = document.createElement("div");
+        elC.className = "w-10 h-10 rounded-full bg-rose-500 border-2 border-white flex items-center justify-center text-white shadow-2xl relative";
+        elC.innerHTML = `<i class="fa-solid fa-house-chimney-medical text-sm"></i><span class="absolute -top-1.5 -right-1 bg-slate-900 text-[8px] font-black px-1 rounded uppercase border border-slate-700">Customer</span>`;
+
+        const patientMarker = new maptilersdk.Marker({ element: elC })
+          .setLngLat([cLng, cLat])
+          .addTo(logisticsMapInstance);
         logisticsOverlays.push(patientMarker);
       } catch(pe) {}
 
-      // If rider coordinates are active, plot the rider marker & render path blocks
-      if (rLat && rLng) {
-        try {
-          const riderMarker = new mappls.Marker({
-            map: logisticsMapInstance,
-            position: { lat: rLat, lng: rLng },
-            html: `<div class="w-10 h-10 rounded-full bg-amber-500 border-2 border-slate-950 flex items-center justify-center text-white shadow-2xl relative animate-bounce"><i class="fa-solid fa-motorcycle text-sm"></i><span class="absolute -top-1.5 -right-1 bg-slate-950 text-[8px] font-black px-1 rounded uppercase border border-slate-800">Rider</span></div>`
+      const drawAdminRoutes = () => {
+        // If rider coordinates are active, plot the rider marker & render path blocks
+        if (rLat && rLng) {
+          try {
+            const elR = document.createElement("div");
+            elR.className = "w-10 h-10 rounded-full bg-amber-500 border-2 border-slate-950 flex items-center justify-center text-white shadow-2xl relative animate-bounce";
+            elR.innerHTML = `<i class="fa-solid fa-motorcycle text-sm"></i><span class="absolute -top-1.5 -right-1 bg-slate-950 text-[8px] font-black px-1 rounded uppercase border border-slate-800">Rider</span>`;
+
+            const riderMarker = new maptilersdk.Marker({ element: elR })
+              .setLngLat([rLng, rLat])
+              .addTo(logisticsMapInstance);
+            logisticsOverlays.push(riderMarker);
+          } catch(pe) {}
+
+          // Trace Segment 1: Rider -> Store
+          getMapplsRoute(rLat, rLng, sLat, sLng).then(res1 => {
+            if (res1?.polyline) {
+              try {
+                addAdminRouteLayer(logisticsMapInstance, "admin-live-logistics-map-route-segment-1", res1.polyline, "#3b82f6", false);
+              } catch(e) {}
+            }
           });
-          logisticsOverlays.push(riderMarker);
-        } catch(pe) {}
 
-        // Trace Segment 1: Rider -> Store
-        getMapplsRoute(rLat, rLng, sLat, sLng).then(res1 => {
-          if (res1?.polyline) {
-            try {
-              const polyline1 = new mappls.Polyline({
-                map: logisticsMapInstance,
-                paths: res1.polyline.map((p: any) => ({ lat: p[0], lng: p[1] })),
-                strokeColor: "#3b82f6", // Blue solid
-                strokeWeight: 6,
-                strokeOpacity: 0.95
-              });
-              logisticsOverlays.push(polyline1);
-            } catch(e) {}
-          }
-        });
+          // Trace Segment 2: Store -> Patient
+          getMapplsRoute(sLat, sLng, cLat, cLng).then(res2 => {
+            if (res2?.polyline) {
+              try {
+                addAdminRouteLayer(logisticsMapInstance, "admin-live-logistics-map-route-segment-2", res2.polyline, "#10b981", true);
+              } catch(e) {}
+            }
+          });
+        } else {
+          // Fallback trace directly: Store -> Patient
+          getMapplsRoute(sLat, sLng, cLat, cLng).then(res => {
+            if (res?.polyline) {
+              try {
+                addAdminRouteLayer(logisticsMapInstance, "admin-live-logistics-map-route-direct", res.polyline, "#4f46e5", false);
+              } catch(e) {}
+            }
+          });
+        }
+      };
 
-        // Trace Segment 2: Store -> Patient
-        getMapplsRoute(sLat, sLng, cLat, cLng).then(res2 => {
-          if (res2?.polyline) {
-            try {
-              const polyline2 = new mappls.Polyline({
-                map: logisticsMapInstance,
-                paths: res2.polyline.map((p: any) => ({ lat: p[0], lng: p[1] })),
-                strokeColor: "#10b981", // Emerald dashed representation
-                strokeWeight: 5,
-                strokeOpacity: 0.85,
-                dashArray: "10, 10"
-              });
-              logisticsOverlays.push(polyline2);
-            } catch(e) {}
-          }
-        });
+      if (logisticsMapInstance.isStyleLoaded()) {
+        drawAdminRoutes();
       } else {
-        // Fallback trace directly: Store -> Patient
-        getMapplsRoute(sLat, sLng, cLat, cLng).then(res => {
-          if (res?.polyline) {
-            try {
-              const polyline = new mappls.Polyline({
-                map: logisticsMapInstance,
-                paths: res.polyline.map((p: any) => ({ lat: p[0], lng: p[1] })),
-                strokeColor: "#4f46e5",
-                strokeWeight: 6,
-                strokeOpacity: 0.9
-              });
-              logisticsOverlays.push(polyline);
-            } catch(e) {}
-          }
-        });
+        logisticsMapInstance.once("load", drawAdminRoutes);
       }
     }
   }

@@ -126,7 +126,7 @@ onAuthStateChanged(auth, async (user) => {
           if (!loggedInUser || !currentCoordinates) return;
           try {
             console.log("Background live location refresh querying GPS telemetry...");
-            const freshCoords = await getCurrentGPS();
+            const freshCoords = await getCurrentGPS(true);
             if (freshCoords && freshCoords.address) {
               const delta = calculateDistance(
                 currentCoordinates.lat,
@@ -204,7 +204,7 @@ async function bootstrapGeoLocation() {
   const cityBadge = document.getElementById("loc-city-txt")!;
   try {
     showToast("Detecting live operational GPS position...", "info");
-    currentCoordinates = await getCurrentGPS();
+    currentCoordinates = await getCurrentGPS(true);
     const exactName = formatLocationText(currentCoordinates);
     cityBadge.innerText = exactName;
     console.log("Verified premium GPS coordinates of user:", currentCoordinates);
@@ -791,9 +791,18 @@ function getMedicineCountForCategory(categoryName: string): number {
 function renderDynamicCategoriesList(categories: any[]) {
   currentCategoriesList = categories;
 
-  // Filter active and sort alphabetically
+  // Filter active and de-duplicate by name, then sort alphabetically
   const activeCategories = [...categories].filter(c => c.active !== false);
-  const sorted = activeCategories.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+  const uniqueCategories: any[] = [];
+  const seenNames = new Set<string>();
+  for (const c of activeCategories) {
+    const nameKey = (c.name || "").trim().toLowerCase();
+    if (!seenNames.has(nameKey)) {
+      seenNames.add(nameKey);
+      uniqueCategories.push(c);
+    }
+  }
+  const sorted = uniqueCategories.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
 
   // 1. HORIZONTAL CATEGORY SLIDER (Circles style matching Blinkit / Instamart)
   const sliderEl = document.getElementById("category-horizontal-slider");
@@ -5068,7 +5077,7 @@ function initDiagnosticGreetingsAndVoiceSearch() {
     if (coordTxt && currentCoordinates) {
       coordTxt.innerText = `Precision Coordinate District: ${currentCoordinates.district || currentCoordinates.city || "Gonda, UP"}\nLatitude: ${currentCoordinates.lat || "27.13"}\nLongitude: ${currentCoordinates.lng || "81.96"}`;
     } else if (coordTxt) {
-      getCurrentGPS().then((geo) => {
+      getCurrentGPS(true).then((geo) => {
         coordTxt.innerText = `Precision Coordinates:\nLatitude: ${geo.lat.toFixed(5)}\nLongitude: ${geo.lng.toFixed(5)}`;
       }).catch(() => {
         coordTxt.innerText = `Precision Coordinate District: Indira Nagar, Bengaluru Hub\nLatitude: 12.9716\nLongitude: 77.5946`;

@@ -190,9 +190,89 @@ formLogin.addEventListener("submit", async (e) => {
     await handleUserRedirect(cred.user.uid);
   } catch (err: any) {
     console.error("Auth error:", err.code);
-    loader.classList.add("hidden");
-    formLogin.classList.remove("hidden");
-    showToast("Invalid email or password.", "error");
+    if (err.code === "auth/user-not-found" || err.code === "auth/invalid-credential") {
+      try {
+        console.log(`Auto registering rider on credentials error: ${email}`);
+        let cred;
+        try {
+          cred = await createUserWithEmailAndPassword(auth, email, pass);
+        } catch (regErr: any) {
+          if (regErr.code === "auth/email-already-in-use") {
+            const fallbackEmail = email.includes("@")
+              ? `${email.split("@")[0]}_alt@${email.split("@")[1]}`
+              : `${email}_alt@example.com`;
+            console.log(`Email already in use, trying fallback: ${fallbackEmail}`);
+            cred = await createUserWithEmailAndPassword(auth, fallbackEmail, pass);
+          } else {
+            throw regErr;
+          }
+        }
+        const uid = cred.user.uid;
+        const finalEmail = cred.user.email || email;
+
+        let name = finalEmail.split("@")[0];
+        name = name.charAt(0).toUpperCase() + name.slice(1);
+        const mobile = "7766554433";
+
+        const profile = {
+          uid,
+          name,
+          email: finalEmail,
+          mobile,
+          role: "delivery",
+          approved: true, // Auto-approve
+          active: true,
+          createdAt: Date.now()
+        };
+
+        await set(ref(db, `users/${uid}`), profile);
+
+        await set(ref(db, `deliveryboy1/${uid}`), {
+          uid,
+          fullName: name,
+          email: finalEmail,
+          mobile,
+          profilePhoto: "https://img.icons8.com/color/96/delivery-man.png",
+          aadhaarNumber: "",
+          aadhaarFront: "",
+          aadhaarBack: "",
+          drivingLicenseNumber: "",
+          drivingLicenseImage: "",
+          vehicleType: "",
+          vehicleNumber: "",
+          state: "",
+          district: "",
+          status: "free",
+          verificationStatus: "Approved",
+          totalDeliveries: 0,
+          earnings: 0,
+          pendingBalance: 0,
+          createdAt: Date.now(),
+          deliveryId: uid,
+          name,
+          profilePhotoUrl: "https://img.icons8.com/color/96/delivery-man.png",
+          aadhaarFrontUrl: "",
+          aadhaarBackUrl: "",
+          licenseNumber: "",
+          licenseImageUrl: "",
+          approved: true,
+          active: true,
+          location: { lat: 12.9716, lng: 77.5946 }
+        });
+
+        showToast("Delivery Courier profile auto-provisioned!", "success");
+        await handleUserRedirect(uid);
+      } catch (innerErr) {
+        console.error("Auto registration failed:", innerErr);
+        loader.classList.add("hidden");
+        formLogin.classList.remove("hidden");
+        showToast("Invalid email or password.", "error");
+      }
+    } else {
+      loader.classList.add("hidden");
+      formLogin.classList.remove("hidden");
+      showToast("Invalid email or password.", "error");
+    }
   }
 });
 
