@@ -88,8 +88,15 @@ import { ref, get, set, onValue } from "firebase/database";
 export const MAPPLS_MAP_KEY = "3d8330747c66c6f01c3c680f12d5298d"; // retained for backward-compatibility stub
 export const MAPPLS_CLIENT_ID = "96dHZVzsAut5eW6crFBJRerLd4L_8GLV3wy72csWzFe6rl-64qpQl3owhoO3DU5h2CRClplvfHFvH0jc7_ZadA==";
 
-// Dynamic central MapTiler API Key
-let maptilerApiKey = "v5kU4Y8LwB078Nf51Y7W"; // Default fallback key
+// Dynamic central MapTiler API Key with a secure, configurable environment variable support
+let maptilerApiKey = ((import.meta as any).env?.VITE_MAPTILER_API_KEY as string) || "v5kU4Y8LwB078Nf51Y7W"; // Default fallback key
+
+// Initial MapTiler configuration at module load time to support consistent map rendering
+try {
+  maptilersdk.config.apiKey = maptilerApiKey;
+} catch (e) {
+  console.error("Failed to initialize MapTiler SDK at startup:", e);
+}
 
 // Realtime sync from Firebase DB
 export function getMapTilerKey(): string {
