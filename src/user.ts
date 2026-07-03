@@ -120,53 +120,6 @@ onAuthStateChanged(auth, async (user) => {
       } else {
         showToast(`Logged in safely!`, "success");
         bootstrapGeoLocation();
-        
-        // Automatic live location background refresh thread (triggers every 30 seconds)
-        setInterval(async () => {
-          if (!loggedInUser || !currentCoordinates) return;
-          try {
-            console.log("Background live location refresh querying GPS telemetry...");
-            const freshCoords = await getCurrentGPS(true);
-            if (freshCoords && freshCoords.address) {
-              const delta = calculateDistance(
-                currentCoordinates.lat,
-                currentCoordinates.lng,
-                freshCoords.lat,
-                freshCoords.lng
-              );
-              // Telemetry threshold of shift: > 50 meters
-              if (delta > 0.05) {
-                currentCoordinates = freshCoords;
-                const cityBadge = document.getElementById("loc-city-txt")!;
-                if (cityBadge) {
-                  cityBadge.innerText = formatLocationText(freshCoords);
-                }
-                if (addrInput) {
-                  addrInput.value = freshCoords.address;
-                }
-                
-                // Keep Firebase in perfect synchronization
-                await update(ref(db, `users/${loggedInUser.uid}`), {
-                  currentLocation: {
-                    lat: freshCoords.lat,
-                    lng: freshCoords.lng,
-                    address: freshCoords.address,
-                    city: freshCoords.city || "",
-                    district: freshCoords.district || "",
-                    state: freshCoords.state || "",
-                    timestamp: Date.now()
-                  }
-                });
-
-                renderPharmacySlider();
-                renderMedicinesGrid();
-                showToast(`Location auto-refreshed: ${cityBadge.innerText}`, "info");
-              }
-            }
-          } catch (e) {
-            console.warn("Background GPS scan skipped (permission suspended or device in motion mismatch).");
-          }
-        }, 30000);
       }
     } else {
       signOut(auth).then(() => {
@@ -199,51 +152,211 @@ function formatLocationText(loc: GeoLocation | null): string {
   return base + pinText;
 }
 
-// Capture and resolve GPS on load, requesting GPS permissions
-async function bootstrapGeoLocation() {
-  const cityBadge = document.getElementById("loc-city-txt")!;
-  try {
-    showToast("Detecting live operational GPS position...", "info");
-    currentCoordinates = await getCurrentGPS(true);
-    const exactName = formatLocationText(currentCoordinates);
-    cityBadge.innerText = exactName;
-    console.log("Verified premium GPS coordinates of user:", currentCoordinates);
-    
-    // Write exact detected user location to Firebase Realtime Database
-    if (loggedInUser && currentCoordinates) {
-      await update(ref(db, `users/${loggedInUser.uid}`), {
-        currentLocation: {
-          lat: currentCoordinates.lat,
-          lng: currentCoordinates.lng,
-          address: currentCoordinates.address || "",
-          city: currentCoordinates.city || "",
-          district: currentCoordinates.district || "",
-          state: currentCoordinates.state || "",
-          timestamp: Date.now()
-        }
-      });
-    }
+class UserLiveLocationManager {
+  private watchId: number | null = null;
+  private reconnectTimeout: any = null;
+  private lastLat: number | null = null;
+  private lastLng: number | null = null;
+  private minDistanceThreshold: number = 0.005; // ~5 meters change threshold to optimize battery and DB usage
 
-    // Auto preset address bar
-    if (addrInput && currentCoordinates.address) {
-      addrInput.value = currentCoordinates.address;
-    }
-  } catch (err) {
-    cityBadge.innerText = "Indira Nagar, BLR";
-    // Defaults Bengaluru coords
-    currentCoordinates = { 
-      lat: 12.9716, 
-      lng: 77.5946, 
-      address: "Indira Nagar, Bengaluru, Karnataka, India", 
-      city: "Bengaluru", 
-      district: "Bengaluru Urban",
-      state: "Karnataka" 
-    };
-    if (addrInput) addrInput.value = currentCoordinates.address;
-    showToast("GPS permission denied or timed out. Falling back to default Indira Nagar, Bengaluru.", "info");
+  constructor() {
+    window.addEventListener("online", () => {
+      console.log("Internet restored. Re-starting GPS live watch...");
+      showToast("Online: Restoring real-time GPS tracking.", "info");
+      this.restartTracking();
+    });
+
+    window.addEventListener("offline", () => {
+      console.warn("Internet offline.");
+      showToast("Offline. GPS tracking will resume when connection is restored.", "error");
+      this.updateUIStatus("offline");
+    });
   }
 
-  // Loaded primary listings after location resolved
+  public async startTracking() {
+    this.stopTracking();
+
+    if (!navigator.geolocation) {
+      showToast("GPS Tracking Unavailable: Geolocation is not supported by your browser.", "error");
+      this.updateUIStatus("disabled");
+      return;
+    }
+
+    this.updateUIStatus("loading");
+
+    const options: PositionOptions = {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 0
+    };
+
+    this.watchId = navigator.geolocation.watchPosition(
+      async (position) => {
+        await this.handleLocationUpdate(position.coords.latitude, position.coords.longitude);
+      },
+      (error) => {
+        this.handleLocationError(error);
+      },
+      options
+    );
+  }
+
+  public stopTracking() {
+    if (this.watchId !== null) {
+      navigator.geolocation.clearWatch(this.watchId);
+      this.watchId = null;
+    }
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+  }
+
+  private restartTracking() {
+    this.stopTracking();
+    this.startTracking();
+  }
+
+  private async handleLocationUpdate(lat: number, lng: number) {
+    if (this.lastLat !== null && this.lastLng !== null) {
+      const shift = calculateDistance(lat, lng, this.lastLat, this.lastLng);
+      // Limit updates if shift is less than 5 meters to optimize resources
+      if (shift < this.minDistanceThreshold && currentCoordinates?.address) {
+        return;
+      }
+    }
+
+    this.lastLat = lat;
+    this.lastLng = lng;
+
+    try {
+      const geoLoc = await reverseGeocode(lat, lng);
+      currentCoordinates = geoLoc;
+
+      const cityBadge = document.getElementById("loc-city-txt");
+      if (cityBadge) {
+        cityBadge.innerText = formatLocationText(geoLoc);
+      }
+      if (addrInput) {
+        addrInput.value = geoLoc.address || "";
+      }
+
+      // Save to Firebase RTD
+      if (loggedInUser) {
+        await update(ref(db, `users/${loggedInUser.uid}`), {
+          currentLocation: {
+            lat: geoLoc.lat,
+            lng: geoLoc.lng,
+            address: geoLoc.address || "",
+            city: geoLoc.city || "",
+            district: geoLoc.district || "",
+            state: geoLoc.state || "",
+            timestamp: Date.now()
+          }
+        });
+      }
+
+      // Refresh nearby pharmacies slider & meds grid
+      renderPharmacySlider();
+      renderMedicinesGrid();
+
+      // Recalculate route and ETA if active order tracking is open
+      if (activeOrderTrackingId) {
+        await update(ref(db, `orders/${activeOrderTrackingId}`), {
+          userLocation: {
+            lat: geoLoc.lat,
+            lng: geoLoc.lng,
+            address: geoLoc.address || ""
+          }
+        });
+      }
+
+    } catch (err) {
+      console.error("Error processing real-time location update:", err);
+      currentCoordinates = {
+        lat,
+        lng,
+        address: `Latitude: ${lat.toFixed(5)}, Longitude: ${lng.toFixed(5)}`,
+        city: "Current Location",
+        state: ""
+      };
+      
+      const cityBadge = document.getElementById("loc-city-txt");
+      if (cityBadge) {
+        cityBadge.innerText = `GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      }
+
+      if (loggedInUser) {
+        await update(ref(db, `users/${loggedInUser.uid}`), {
+          currentLocation: {
+            lat,
+            lng,
+            address: `Latitude: ${lat.toFixed(5)}, Longitude: ${lng.toFixed(5)}`,
+            timestamp: Date.now()
+          }
+        });
+      }
+    }
+  }
+
+  private handleLocationError(error: GeolocationPositionError) {
+    console.warn(`Geolocation error (${error.code}): ${error.message}`);
+    
+    let statusState: "disabled" | "denied" | "offline" = "disabled";
+    if (error.code === error.PERMISSION_DENIED) {
+      showToast("GPS precise permission denied. Please allow location access in browser/system settings.", "error");
+      statusState = "denied";
+    } else if (error.code === error.POSITION_UNAVAILABLE) {
+      showToast("GPS position currently unavailable. Retrying...", "info");
+      statusState = "disabled";
+    } else if (error.code === error.TIMEOUT) {
+      showToast("GPS location request timed out. Retrying...", "info");
+      statusState = "disabled";
+    }
+
+    this.updateUIStatus(statusState);
+
+    // Auto-reconnect if temporary loss
+    if (error.code !== error.PERMISSION_DENIED) {
+      if (!this.reconnectTimeout) {
+        this.reconnectTimeout = setTimeout(() => {
+          this.reconnectTimeout = null;
+          console.log("Attempting to reconnect GPS watch...");
+          this.startTracking();
+        }, 10000);
+      }
+    }
+  }
+
+  private updateUIStatus(state: "loading" | "connected" | "disabled" | "denied" | "offline") {
+    const cityBadge = document.getElementById("loc-city-txt");
+    if (!cityBadge) return;
+
+    switch (state) {
+      case "loading":
+        cityBadge.innerHTML = `<span class="flex items-center gap-1.5 text-blue-500 font-bold"><i class="fa-solid fa-spinner fa-spin text-[10px]"></i> Sourcing live GPS...</span>`;
+        break;
+      case "disabled":
+        cityBadge.innerHTML = `<span class="flex items-center gap-1.5 text-amber-500 font-bold"><i class="fa-solid fa-triangle-exclamation animate-pulse"></i> GPS Disabled</span>`;
+        break;
+      case "denied":
+        cityBadge.innerHTML = `<span class="flex items-center gap-1.5 text-rose-500 font-bold"><i class="fa-solid fa-circle-xmark"></i> GPS Permission Denied</span>`;
+        break;
+      case "offline":
+        cityBadge.innerHTML = `<span class="flex items-center gap-1.5 text-slate-500 font-bold"><i class="fa-solid fa-wifi animate-pulse"></i> Connection Lost</span>`;
+        break;
+    }
+  }
+}
+
+let userLocationManager: UserLiveLocationManager | null = null;
+
+// Capture and resolve GPS on load, requesting GPS permissions
+async function bootstrapGeoLocation() {
+  if (!userLocationManager) {
+    userLocationManager = new UserLiveLocationManager();
+  }
+  userLocationManager.startTracking();
   syncMainMarketplace();
 }
 
