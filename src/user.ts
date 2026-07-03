@@ -2413,7 +2413,8 @@ document.getElementById("btn-clear-notify")?.addEventListener("click", () => {
 // 9. DYNAMIC AI HEALTH RECOMMENDER INTENSITY
 function triggerAISuggestion() {
   const items = Object.values(cartItems);
-  const tipText = document.getElementById("ai-smart-tip-text")!;
+  const tipText = document.getElementById("ai-smart-tip-text");
+  if (!tipText) return;
 
   if (items.length === 0) {
     tipText.innerText = "Recommend Multivitamins & Zinc supplements to stay robust during cold seasons!";
