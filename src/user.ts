@@ -3868,6 +3868,52 @@ function openProductDetailDrawer(medId: string) {
   document.getElementById("spec-warnings")!.innerText = med.warnings || "Consult doctor before use if you suffer from liver kidney disorders, chronic alcoholism history, or severe heart stroke issues. Never take in empty empty stomach.";
   document.getElementById("spec-storage")!.innerText = med.storage || "Keep securely out of reach of residential infants and domestic pets. Store safely under 25°C temperature blocks away from excessive light or damp humidity.";
   
+  // Populate new detailed Composition and Safety Spec Accordions
+  document.getElementById("detail-spec-generic")!.innerText = med.genericName || med.name || "N/A";
+  document.getElementById("detail-spec-strength")!.innerText = med.strength || med.dosage || "Standard strength";
+  document.getElementById("detail-spec-dosage-form")!.innerText = med.dosageForm || "Tablet";
+  document.getElementById("detail-spec-age-group")!.innerText = med.ageGroup || "All age groups";
+  document.getElementById("detail-spec-composition")!.innerText = med.composition || "Active clinical ingredients composition not specified.";
+  document.getElementById("detail-spec-directions")!.innerText = med.directionsForUse || "Consume with water as advised by a qualified healthcare professional.";
+  
+  const instContainer = document.getElementById("detail-spec-instructions-container");
+  if (med.dosageInstructions) {
+    document.getElementById("detail-spec-dosage-inst")!.innerText = med.dosageInstructions;
+    instContainer?.classList.remove("hidden");
+  } else {
+    instContainer?.classList.add("hidden");
+  }
+
+  document.getElementById("detail-spec-pregnancy")!.innerText = med.pregnancySafety || "Consult with your healthcare practitioner before use.";
+  document.getElementById("detail-spec-breastfeeding")!.innerText = med.breastfeedingSafety || "Consult with your doctor before use while breastfeeding.";
+  document.getElementById("detail-spec-driving")!.innerText = med.drivingSafety || "No known side effects affecting driving ability.";
+  document.getElementById("detail-spec-alcohol")!.innerText = med.alcoholWarning || "Avoid alcohol consumption while on this medication.";
+  document.getElementById("detail-spec-safety-advice")!.innerText = med.safetyAdvice || "Store in a cool, dry place. Keep out of reach of children.";
+
+  const contraContainer = document.getElementById("detail-spec-contraindications-container");
+  if (med.contraindications) {
+    document.getElementById("detail-spec-contraindications")!.innerText = med.contraindications;
+    contraContainer?.classList.remove("hidden");
+  } else {
+    contraContainer?.classList.add("hidden");
+  }
+
+  const drugContainer = document.getElementById("detail-spec-drug-interactions-container");
+  if (med.drugInteractions) {
+    document.getElementById("detail-spec-drug-interactions")!.innerText = med.drugInteractions;
+    drugContainer?.classList.remove("hidden");
+  } else {
+    drugContainer?.classList.add("hidden");
+  }
+
+  const foodContainer = document.getElementById("detail-spec-food-interaction-container");
+  if (med.foodInteraction) {
+    document.getElementById("detail-spec-food-interaction")!.innerText = med.foodInteraction;
+    foodContainer?.classList.remove("hidden");
+  } else {
+    foodContainer?.classList.add("hidden");
+  }
+
   // Sync wishlist button icon state in drawer
   syncWishlistIconState(med.medicineId);
   

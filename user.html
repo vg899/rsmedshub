@@ -1257,10 +1257,72 @@
               <div class="spec-accordion-item">
                 <button type="button" class="w-full flex items-center justify-between p-3.5 bg-slate-50/55 text-slate-800 text-[10px] font-extrabold uppercase tracking-wide border-none select-none text-left cursor-pointer font-sans" onclick="toggleDetailSpecsAccordion('spec-storage', this)">
                   <span><i class="fa-solid fa-snowflake text-indigo-500 mr-1.5"></i> Storage Instructions</span>
-                  <i class="fa-solid fa-chevron-down text-[9x] text-slate-400 transition-transform"></i>
+                  <i class="fa-solid fa-chevron-down text-[9px] text-slate-400 transition-transform"></i>
                 </button>
                 <div id="spec-storage" class="hidden p-3.5 bg-white text-[11px] font-semibold leading-relaxed border-t border-slate-100 text-slate-600">
                   <!-- Populated -->
+                </div>
+              </div>
+
+              <!-- Item 7: Active Composition & Strength -->
+              <div class="spec-accordion-item">
+                <button type="button" class="w-full flex items-center justify-between p-3.5 bg-slate-50/50 text-slate-800 text-[10px] font-extrabold uppercase tracking-wide border-none select-none text-left cursor-pointer font-sans" onclick="toggleDetailSpecsAccordion('spec-composition-box', this)">
+                  <span><i class="fa-solid fa-microscope text-teal-600 mr-1.5"></i> Composition & Formula Spec</span>
+                  <i class="fa-solid fa-chevron-down text-[9px] text-slate-400 transition-transform"></i>
+                </button>
+                <div id="spec-composition-box" class="hidden p-3.5 bg-white text-[11px] font-semibold leading-relaxed border-t border-slate-100 text-slate-600 space-y-2">
+                  <div class="grid grid-cols-2 gap-2 text-[10px]">
+                    <div><span class="text-slate-400 block font-bold">Generic Name:</span> <span id="detail-spec-generic" class="font-extrabold text-slate-800">Paracetamol</span></div>
+                    <div><span class="text-slate-400 block font-bold">Active Strength:</span> <span id="detail-spec-strength" class="font-extrabold text-slate-800">650 mg</span></div>
+                    <div><span class="text-slate-400 block font-bold">Dosage Form:</span> <span id="detail-spec-dosage-form" class="font-extrabold text-slate-800">Tablet</span></div>
+                    <div><span class="text-slate-400 block font-bold">Age Group:</span> <span id="detail-spec-age-group" class="font-extrabold text-slate-800">Adults</span></div>
+                  </div>
+                  <div class="border-t border-slate-100 pt-2">
+                    <span class="text-slate-400 block text-[9px] font-bold">Chemical Composition:</span>
+                    <p id="detail-spec-composition" class="text-[10px] text-slate-600 mt-0.5 font-medium">Loading formula composition...</p>
+                  </div>
+                  <div class="border-t border-slate-100 pt-2">
+                    <span class="text-slate-400 block text-[9px] font-bold">Directions for Use:</span>
+                    <p id="detail-spec-directions" class="text-[10px] text-slate-600 mt-0.5 font-medium">Loading directions...</p>
+                  </div>
+                  <div id="detail-spec-instructions-container" class="border-t border-slate-100 pt-2 hidden">
+                    <span class="text-slate-400 block text-[9px] font-bold">Dosage Instructions:</span>
+                    <p id="detail-spec-dosage-inst" class="text-[10px] text-slate-600 mt-0.5 font-medium"></p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Item 8: Safety Warnings & Warnings -->
+              <div class="spec-accordion-item">
+                <button type="button" class="w-full flex items-center justify-between p-3.5 bg-slate-50/50 text-slate-800 text-[10px] font-extrabold uppercase tracking-wide border-none select-none text-left cursor-pointer font-sans" onclick="toggleDetailSpecsAccordion('spec-safety-box', this)">
+                  <span><i class="fa-solid fa-user-shield text-rose-500 mr-1.5"></i> Interactive Safety Advice</span>
+                  <i class="fa-solid fa-chevron-down text-[9px] text-slate-400 transition-transform"></i>
+                </button>
+                <div id="spec-safety-box" class="hidden p-3.5 bg-white text-[11px] font-semibold leading-relaxed border-t border-slate-100 text-slate-600 space-y-2">
+                  <div class="space-y-1.5">
+                    <div class="flex items-start gap-1.5"><span class="w-20 shrink-0 font-bold text-slate-400 text-[10px]">Pregnancy:</span> <span id="detail-spec-pregnancy" class="text-slate-700 text-[10px]">Safe if prescribed</span></div>
+                    <div class="flex items-start gap-1.5"><span class="w-20 shrink-0 font-bold text-slate-400 text-[10px]">Breastfeeding:</span> <span id="detail-spec-breastfeeding" class="text-slate-700 text-[10px]">Consult doctor</span></div>
+                    <div class="flex items-start gap-1.5"><span class="w-20 shrink-0 font-bold text-slate-400 text-[10px]">Driving:</span> <span id="detail-spec-driving" class="text-slate-700 text-[10px]">No drowsiness warnings</span></div>
+                    <div class="flex items-start gap-1.5"><span class="w-20 shrink-0 font-bold text-slate-400 text-[10px]">Alcohol:</span> <span id="detail-spec-alcohol" class="text-slate-700 text-[10px]">Avoid alcohol</span></div>
+                  </div>
+                  <div class="border-t border-slate-100 pt-2 space-y-1.5">
+                    <div>
+                      <span class="text-slate-400 block text-[9px] font-bold">Safety Advice:</span>
+                      <p id="detail-spec-safety-advice" class="text-[10px] text-slate-600 mt-0.5 font-medium"></p>
+                    </div>
+                    <div id="detail-spec-contraindications-container" class="hidden">
+                      <span class="text-slate-400 block text-[9px] font-bold">Contraindications:</span>
+                      <p id="detail-spec-contraindications" class="text-[10px] text-slate-600 mt-0.5 font-medium"></p>
+                    </div>
+                    <div id="detail-spec-drug-interactions-container" class="hidden">
+                      <span class="text-slate-400 block text-[9px] font-bold">Drug Interactions:</span>
+                      <p id="detail-spec-drug-interactions" class="text-[10px] text-slate-600 mt-0.5 font-medium"></p>
+                    </div>
+                    <div id="detail-spec-food-interaction-container" class="hidden">
+                      <span class="text-slate-400 block text-[9px] font-bold">Food Interaction:</span>
+                      <p id="detail-spec-food-interaction" class="text-[10px] text-slate-600 mt-0.5 font-medium"></p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

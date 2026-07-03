@@ -730,6 +730,30 @@ document.getElementById("form-add-medicine")?.addEventListener("submit", async (
   const warnings = (document.getElementById("med-warnings") as HTMLTextAreaElement).value.trim();
   const storage = (document.getElementById("med-storage") as HTMLInputElement).value.trim();
 
+  // New Clinical & Metadata fields
+  const composition = (document.getElementById("med-composition") as HTMLTextAreaElement).value.trim();
+  const strength = (document.getElementById("med-strength") as HTMLInputElement).value.trim();
+  const dosageForm = (document.getElementById("med-dosage-form") as HTMLInputElement).value.trim();
+  const prescriptionRequired = (document.getElementById("med-prescription-req") as HTMLSelectElement).value;
+  const directionsForUse = (document.getElementById("med-directions") as HTMLTextAreaElement).value.trim();
+  const dosageInstructions = (document.getElementById("med-dosage-inst") as HTMLTextAreaElement).value.trim();
+  const safetyAdvice = (document.getElementById("med-safety-advice") as HTMLTextAreaElement).value.trim();
+  const drugInteractions = (document.getElementById("med-drug-interactions") as HTMLTextAreaElement).value.trim();
+  const contraindications = (document.getElementById("med-contraindications") as HTMLTextAreaElement).value.trim();
+  const ageGroup = (document.getElementById("med-age-group") as HTMLInputElement).value.trim();
+  const pregnancySafety = (document.getElementById("med-pregnancy-safety") as HTMLInputElement).value.trim();
+  const breastfeedingSafety = (document.getElementById("med-breastfeeding-safety") as HTMLInputElement).value.trim();
+  const drivingSafety = (document.getElementById("med-driving-safety") as HTMLInputElement).value.trim();
+  const alcoholWarning = (document.getElementById("med-alcohol-warning") as HTMLInputElement).value.trim();
+  const foodInteraction = (document.getElementById("med-food-interaction") as HTMLInputElement).value.trim();
+  const mrp = parseFloat((document.getElementById("med-mrp") as HTMLInputElement).value) || 0;
+  const gstRate = parseFloat((document.getElementById("med-gst-rate") as HTMLInputElement).value) || 0;
+  const hsnCode = (document.getElementById("med-hsn-code") as HTMLInputElement).value.trim();
+  const medicineTags = (document.getElementById("med-tags") as HTMLInputElement).value.trim();
+  const searchKeywords = (document.getElementById("med-keywords") as HTMLInputElement).value.trim();
+  const seoMetaTitle = (document.getElementById("med-seo-title") as HTMLInputElement).value.trim();
+  const seoMetaDescription = (document.getElementById("med-seo-desc") as HTMLTextAreaElement).value.trim();
+
   const submitBtn = document.getElementById("btn-submit-med") as HTMLButtonElement;
   submitBtn.disabled = true;
   submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Syncing Cover Image...`;
@@ -768,6 +792,28 @@ document.getElementById("form-add-medicine")?.addEventListener("submit", async (
       sideEffects: sideEffects || "Minor nausea or dry mouth if any.",
       warnings: warnings || "Take under supervision and store carefully.",
       storage: storage || "Store below 30°C in dry dark space.",
+      composition,
+      strength,
+      dosageForm,
+      prescriptionRequired,
+      directionsForUse,
+      dosageInstructions,
+      safetyAdvice,
+      drugInteractions,
+      contraindications,
+      ageGroup,
+      pregnancySafety,
+      breastfeedingSafety,
+      drivingSafety,
+      alcoholWarning,
+      foodInteraction,
+      mrp,
+      gstRate,
+      hsnCode,
+      medicineTags,
+      searchKeywords,
+      seoMetaTitle,
+      seoMetaDescription,
       createdAt: Date.now()
     };
 
@@ -879,6 +925,30 @@ document.getElementById("form-edit-medicine")?.addEventListener("submit", async 
   const warnings = (document.getElementById("edit-med-warnings") as HTMLTextAreaElement).value.trim();
   const storage = (document.getElementById("edit-med-storage") as HTMLInputElement).value.trim();
 
+  // New Clinical & Metadata fields for Edit Form
+  const composition = (document.getElementById("edit-med-composition") as HTMLTextAreaElement).value.trim();
+  const strength = (document.getElementById("edit-med-strength") as HTMLInputElement).value.trim();
+  const dosageForm = (document.getElementById("edit-med-dosage-form") as HTMLInputElement).value.trim();
+  const prescriptionRequired = (document.getElementById("edit-med-prescription-req") as HTMLSelectElement).value;
+  const directionsForUse = (document.getElementById("edit-med-directions") as HTMLTextAreaElement).value.trim();
+  const dosageInstructions = (document.getElementById("edit-med-dosage-inst") as HTMLTextAreaElement).value.trim();
+  const safetyAdvice = (document.getElementById("edit-med-safety-advice") as HTMLTextAreaElement).value.trim();
+  const drugInteractions = (document.getElementById("edit-med-drug-interactions") as HTMLTextAreaElement).value.trim();
+  const contraindications = (document.getElementById("edit-med-contraindications") as HTMLTextAreaElement).value.trim();
+  const ageGroup = (document.getElementById("edit-med-age-group") as HTMLInputElement).value.trim();
+  const pregnancySafety = (document.getElementById("edit-med-pregnancy-safety") as HTMLInputElement).value.trim();
+  const breastfeedingSafety = (document.getElementById("edit-med-breastfeeding-safety") as HTMLInputElement).value.trim();
+  const drivingSafety = (document.getElementById("edit-med-driving-safety") as HTMLInputElement).value.trim();
+  const alcoholWarning = (document.getElementById("edit-med-alcohol-warning") as HTMLInputElement).value.trim();
+  const foodInteraction = (document.getElementById("edit-med-food-interaction") as HTMLInputElement).value.trim();
+  const mrp = parseFloat((document.getElementById("edit-med-mrp") as HTMLInputElement).value) || 0;
+  const gstRate = parseFloat((document.getElementById("edit-med-gst-rate") as HTMLInputElement).value) || 0;
+  const hsnCode = (document.getElementById("edit-med-hsn-code") as HTMLInputElement).value.trim();
+  const medicineTags = (document.getElementById("edit-med-tags") as HTMLInputElement).value.trim();
+  const searchKeywords = (document.getElementById("edit-med-keywords") as HTMLInputElement).value.trim();
+  const seoMetaTitle = (document.getElementById("edit-med-seo-title") as HTMLInputElement).value.trim();
+  const seoMetaDescription = (document.getElementById("edit-med-seo-desc") as HTMLTextAreaElement).value.trim();
+
   const submitBtn = document.getElementById("btn-save-edited-med") as HTMLButtonElement;
   submitBtn.disabled = true;
   submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Syncing update parameters...`;
@@ -906,7 +976,29 @@ document.getElementById("form-edit-medicine")?.addEventListener("submit", async 
       benefits,
       sideEffects,
       warnings,
-      storage
+      storage,
+      composition,
+      strength,
+      dosageForm,
+      prescriptionRequired,
+      directionsForUse,
+      dosageInstructions,
+      safetyAdvice,
+      drugInteractions,
+      contraindications,
+      ageGroup,
+      pregnancySafety,
+      breastfeedingSafety,
+      drivingSafety,
+      alcoholWarning,
+      foodInteraction,
+      mrp,
+      gstRate,
+      hsnCode,
+      medicineTags,
+      searchKeywords,
+      seoMetaTitle,
+      seoMetaDescription
     };
 
     if (coverUrl) {
@@ -1078,6 +1170,30 @@ Object.assign(window, {
     (document.getElementById("edit-med-warnings") as HTMLTextAreaElement).value = med.warnings || "";
     (document.getElementById("edit-med-storage") as HTMLInputElement).value = med.storage || "";
 
+    // New Clinical & Metadata fields for Edit Form
+    (document.getElementById("edit-med-composition") as HTMLTextAreaElement).value = med.composition || "";
+    (document.getElementById("edit-med-strength") as HTMLInputElement).value = med.strength || "";
+    (document.getElementById("edit-med-dosage-form") as HTMLInputElement).value = med.dosageForm || "";
+    (document.getElementById("edit-med-prescription-req") as HTMLSelectElement).value = med.prescriptionRequired || "No";
+    (document.getElementById("edit-med-directions") as HTMLTextAreaElement).value = med.directionsForUse || "";
+    (document.getElementById("edit-med-dosage-inst") as HTMLTextAreaElement).value = med.dosageInstructions || "";
+    (document.getElementById("edit-med-safety-advice") as HTMLTextAreaElement).value = med.safetyAdvice || "";
+    (document.getElementById("edit-med-drug-interactions") as HTMLTextAreaElement).value = med.drugInteractions || "";
+    (document.getElementById("edit-med-contraindications") as HTMLTextAreaElement).value = med.contraindications || "";
+    (document.getElementById("edit-med-age-group") as HTMLInputElement).value = med.ageGroup || "";
+    (document.getElementById("edit-med-pregnancy-safety") as HTMLInputElement).value = med.pregnancySafety || "";
+    (document.getElementById("edit-med-breastfeeding-safety") as HTMLInputElement).value = med.breastfeedingSafety || "";
+    (document.getElementById("edit-med-driving-safety") as HTMLInputElement).value = med.drivingSafety || "";
+    (document.getElementById("edit-med-alcohol-warning") as HTMLInputElement).value = med.alcoholWarning || "";
+    (document.getElementById("edit-med-food-interaction") as HTMLInputElement).value = med.foodInteraction || "";
+    (document.getElementById("edit-med-mrp") as HTMLInputElement).value = med.mrp || "";
+    (document.getElementById("edit-med-gst-rate") as HTMLInputElement).value = med.gstRate || "";
+    (document.getElementById("edit-med-hsn-code") as HTMLInputElement).value = med.hsnCode || "";
+    (document.getElementById("edit-med-tags") as HTMLInputElement).value = med.medicineTags || "";
+    (document.getElementById("edit-med-keywords") as HTMLInputElement).value = med.searchKeywords || "";
+    (document.getElementById("edit-med-seo-title") as HTMLInputElement).value = med.seoMetaTitle || "";
+    (document.getElementById("edit-med-seo-desc") as HTMLTextAreaElement).value = med.seoMetaDescription || "";
+
     // Load slider images
     editMedicineSliderImages = med.images ? [...med.images] : (med.image ? [med.image] : []);
     renderEditMedicineThumbs();
@@ -1196,4 +1312,172 @@ Object.assign(window, {
       }
     });
   }
+});
+
+// === AI MEDICINE AUTO-FILL SYSTEM ===
+const addFormFieldsMap = {
+  "med-brand": "brand",
+  "med-generic": "genericName",
+  "med-manufacturer": "manufacturer",
+  "med-dosage": "strength",
+  "med-pack-size": "packSize",
+  "med-uses": "uses",
+  "med-benefits": "benefits",
+  "med-side-effects": "sideEffects",
+  "med-warnings": "warnings",
+  "med-storage": "storage",
+  "med-composition": "composition",
+  "med-strength": "strength",
+  "med-dosage-form": "dosageForm",
+  "med-prescription-req": "prescriptionRequired",
+  "med-directions": "directionsForUse",
+  "med-dosage-inst": "dosageInstructions",
+  "med-safety-advice": "safetyAdvice",
+  "med-drug-interactions": "drugInteractions",
+  "med-contraindications": "contraindications",
+  "med-age-group": "ageGroup",
+  "med-pregnancy-safety": "pregnancySafety",
+  "med-breastfeeding-safety": "breastfeedingSafety",
+  "med-driving-safety": "drivingSafety",
+  "med-alcohol-warning": "alcoholWarning",
+  "med-food-interaction": "foodInteraction",
+  "med-mrp": "mrp",
+  "med-gst-rate": "gstRate",
+  "med-hsn-code": "hsnCode",
+  "med-tags": "medicineTags",
+  "med-keywords": "searchKeywords",
+  "med-seo-title": "seoMetaTitle",
+  "med-seo-desc": "seoMetaDescription",
+  "med-desc": "description",
+  "med-category": "category"
+};
+
+const editFormFieldsMap = {
+  "edit-med-brand": "brand",
+  "edit-med-generic": "genericName",
+  "edit-med-manufacturer": "manufacturer",
+  "edit-med-dosage": "strength",
+  "edit-med-pack-size": "packSize",
+  "edit-med-uses": "uses",
+  "edit-med-benefits": "benefits",
+  "edit-med-side-effects": "sideEffects",
+  "edit-med-warnings": "warnings",
+  "edit-med-storage": "storage",
+  "edit-med-composition": "composition",
+  "edit-med-strength": "strength",
+  "edit-med-dosage-form": "dosageForm",
+  "edit-med-prescription-req": "prescriptionRequired",
+  "edit-med-directions": "directionsForUse",
+  "edit-med-dosage-inst": "dosageInstructions",
+  "edit-med-safety-advice": "safetyAdvice",
+  "edit-med-drug-interactions": "drugInteractions",
+  "edit-med-contraindications": "contraindications",
+  "edit-med-age-group": "ageGroup",
+  "edit-med-pregnancy-safety": "pregnancySafety",
+  "edit-med-breastfeeding-safety": "breastfeedingSafety",
+  "edit-med-driving-safety": "drivingSafety",
+  "edit-med-alcohol-warning": "alcoholWarning",
+  "edit-med-food-interaction": "foodInteraction",
+  "edit-med-mrp": "mrp",
+  "edit-med-gst-rate": "gstRate",
+  "edit-med-hsn-code": "hsnCode",
+  "edit-med-tags": "medicineTags",
+  "edit-med-keywords": "searchKeywords",
+  "edit-med-seo-title": "seoMetaTitle",
+  "edit-med-seo-desc": "seoMetaDescription",
+  "edit-med-desc": "description",
+  "edit-med-category": "category"
+};
+
+async function runMedicineAutofill(nameInputId: string, fieldsMap: Record<string, string>, statusId: string, btnId: string) {
+  const nameInput = document.getElementById(nameInputId) as HTMLInputElement;
+  const nameVal = nameInput?.value.trim();
+  if (!nameVal) {
+    showToast("Please enter a medicine name first to trigger AI auto-fill!", "error");
+    return;
+  }
+
+  const statusEl = document.getElementById(statusId);
+  const btnEl = document.getElementById(btnId) as HTMLButtonElement;
+
+  if (statusEl) statusEl.classList.remove("hidden");
+  if (btnEl) btnEl.disabled = true;
+
+  try {
+    const res = await fetch("/api/medicine-autofill", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: nameVal })
+    });
+
+    if (!res.ok) {
+      throw new Error("Could not fetch clinical auto-fill specifications.");
+    }
+
+    const data = await res.json();
+    let fillCount = 0;
+
+    for (const [elementId, jsonKey] of Object.entries(fieldsMap)) {
+      const inputEl = document.getElementById(elementId) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+      if (!inputEl) continue;
+
+      const aiVal = data[jsonKey];
+      if (aiVal === undefined || aiVal === null || aiVal === "") {
+        continue; // Confidence check: keep blank if AI isn't confident
+      }
+
+      // Check if value is already populated manually
+      let isDefaultOrEmpty = false;
+      if (inputEl.tagName === "SELECT") {
+        isDefaultOrEmpty = inputEl.value === "" || inputEl.value === "No";
+      } else {
+        const valTrimmed = inputEl.value.trim();
+        isDefaultOrEmpty = !valTrimmed || valTrimmed === "0";
+      }
+
+      if (isDefaultOrEmpty) {
+        inputEl.value = aiVal.toString();
+        fillCount++;
+
+        // Clearly highlight auto-filled fields
+        inputEl.classList.add("border-indigo-400", "bg-indigo-50/20", "ring-1", "ring-indigo-400");
+
+        // Clear highlight upon focus/change/input
+        const clearHighlight = () => {
+          inputEl.classList.remove("border-indigo-400", "bg-indigo-50/20", "ring-1", "ring-indigo-400");
+        };
+        inputEl.addEventListener("focus", clearHighlight, { once: true });
+        inputEl.addEventListener("input", clearHighlight, { once: true });
+        inputEl.addEventListener("change", clearHighlight, { once: true });
+      }
+    }
+
+    if (fillCount > 0) {
+      showToast(`AI auto-filled ${fillCount} empty fields with clinical data!`, "success");
+
+      // Auto-expand advanced panel for Add Medicine form if collapsed
+      if (nameInputId === "med-name") {
+        const advancedPanel = document.getElementById("add-advanced-specs-collapsed");
+        if (advancedPanel && advancedPanel.classList.contains("hidden")) {
+          advancedPanel.classList.remove("hidden");
+          document.getElementById("icon-add-advanced-chev")?.classList.replace("fa-chevron-down", "fa-chevron-up");
+        }
+      }
+    } else {
+      showToast("No empty fields were available or no confidence clinical data found.", "info");
+    }
+  } catch (err: any) {
+    showToast(err.message || "Auto-fill failed.", "error");
+  } finally {
+    if (statusEl) statusEl.classList.add("hidden");
+    if (btnEl) btnEl.disabled = false;
+  }
+}
+
+document.getElementById("btn-add-ai-autofill")?.addEventListener("click", () => {
+  runMedicineAutofill("med-name", addFormFieldsMap, "add-ai-status", "btn-add-ai-autofill");
+});
+
+document.getElementById("btn-edit-ai-autofill")?.addEventListener("click", () => {
+  runMedicineAutofill("edit-med-name", editFormFieldsMap, "edit-ai-status", "btn-edit-ai-autofill");
 });

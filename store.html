@@ -102,8 +102,16 @@
 
           <form id="form-add-medicine" class="space-y-3.5 text-xs font-semibold">
             <div>
-              <label class="block text-[10px] text-slate-500 font-bold uppercase mb-1">Medicine Name</label>
-              <input type="text" id="med-name" required placeholder="Paracetamol 650mg, Zincovit, etc." class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-indigo-500">
+              <label class="block text-[10px] text-slate-500 font-bold uppercase mb-1 flex items-center justify-between">
+                <span>Medicine Name</span>
+                <span id="add-ai-status" class="text-[9px] text-indigo-650 font-bold hidden animate-pulse"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI working...</span>
+              </label>
+              <div class="flex gap-2">
+                <input type="text" id="med-name" required placeholder="Paracetamol 650mg, Zincovit, etc." class="flex-1 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-indigo-500">
+                <button type="button" id="btn-add-ai-autofill" class="px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-xl border border-indigo-200 cursor-pointer flex items-center gap-1.5 transition-all text-[11px] font-bold" title="AI Auto-fill Empty Fields">
+                  <i class="fa-solid fa-wand-magic-sparkles"></i> AI Auto-fill
+                </button>
+              </div>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
@@ -226,6 +234,125 @@
                 <div class="space-y-1.5">
                   <label class="block text-[9.5px] text-slate-500 font-bold uppercase">Storage Instructions</label>
                   <input type="text" id="med-storage" placeholder="e.g. Store below 25°C dynamically away from direct solar radiation" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white focus:border-indigo-500 text-[11px]">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-[9.5px] text-slate-500 font-bold uppercase mb-1">Composition</label>
+                    <textarea id="med-composition" rows="2" placeholder="e.g. Paracetamol 650 mg" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-[11px] outline-none focus:bg-white focus:border-indigo-500 resize-none"></textarea>
+                  </div>
+                  <div>
+                    <label class="block text-[9.5px] text-slate-500 font-bold uppercase mb-1">Strength</label>
+                    <input type="text" id="med-strength" placeholder="e.g. 650 mg" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white focus:border-indigo-500 text-[11px]">
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-[9.5px] text-slate-500 font-bold uppercase mb-1">Dosage Form</label>
+                    <input type="text" id="med-dosage-form" placeholder="e.g. Tablet, Capsule, Syrup" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white focus:border-indigo-500 text-[11px]">
+                  </div>
+                  <div>
+                    <label class="block text-[9.5px] text-slate-500 font-bold uppercase mb-1">Prescription Required</label>
+                    <select id="med-prescription-req" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white focus:border-indigo-500 text-[11px]">
+                      <option value="No">No</option>
+                      <option value="Yes">Yes</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="space-y-1.5">
+                  <label class="block text-[9.5px] text-slate-500 font-bold uppercase">Directions for Use</label>
+                  <textarea id="med-directions" rows="2" placeholder="e.g. Swallow the tablet as a whole with water." class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-[11px] outline-none focus:bg-white focus:border-indigo-500 resize-none"></textarea>
+                </div>
+
+                <div class="space-y-1.5">
+                  <label class="block text-[9.5px] text-slate-500 font-bold uppercase">Dosage Instructions</label>
+                  <textarea id="med-dosage-inst" rows="2" placeholder="e.g. 1 tablet daily or as advised by the physician." class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-[11px] outline-none focus:bg-white focus:border-indigo-500 resize-none"></textarea>
+                </div>
+
+                <div class="space-y-1.5">
+                  <label class="block text-[9.5px] text-slate-500 font-bold uppercase">Safety Advice</label>
+                  <textarea id="med-safety-advice" rows="2" placeholder="e.g. Keep out of reach of children. Avoid alcohol while taking." class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-[11px] outline-none focus:bg-white focus:border-indigo-500 resize-none"></textarea>
+                </div>
+
+                <div class="space-y-1.5">
+                  <label class="block text-[9.5px] text-slate-500 font-bold uppercase">Drug Interactions</label>
+                  <textarea id="med-drug-interactions" rows="2" placeholder="e.g. Warfarin, ketoconazole..." class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-[11px] outline-none focus:bg-white focus:border-indigo-500 resize-none"></textarea>
+                </div>
+
+                <div class="space-y-1.5">
+                  <label class="block text-[9.5px] text-slate-500 font-bold uppercase">Contraindications</label>
+                  <textarea id="med-contraindications" rows="2" placeholder="e.g. Known hypersensitivity, liver damage..." class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-[11px] outline-none focus:bg-white focus:border-indigo-500 resize-none"></textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-[9.5px] text-slate-500 font-bold uppercase mb-1">Age Group</label>
+                    <input type="text" id="med-age-group" placeholder="e.g. Adults" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white focus:border-indigo-500 text-[11px]">
+                  </div>
+                  <div>
+                    <label class="block text-[9.5px] text-slate-500 font-bold uppercase mb-1">Pregnancy Safety</label>
+                    <input type="text" id="med-pregnancy-safety" placeholder="e.g. Safe if prescribed" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white focus:border-indigo-500 text-[11px]">
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-[9.5px] text-slate-500 font-bold uppercase mb-1">Breastfeeding Safety</label>
+                    <input type="text" id="med-breastfeeding-safety" placeholder="e.g. Safe if prescribed" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white focus:border-indigo-500 text-[11px]">
+                  </div>
+                  <div>
+                    <label class="block text-[9.5px] text-slate-500 font-bold uppercase mb-1">Driving Safety</label>
+                    <input type="text" id="med-driving-safety" placeholder="e.g. Safe, does not cause sleepiness" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white focus:border-indigo-500 text-[11px]">
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-[9.5px] text-slate-500 font-bold uppercase mb-1">Alcohol Warning</label>
+                    <input type="text" id="med-alcohol-warning" placeholder="e.g. Avoid alcohol" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white focus:border-indigo-500 text-[11px]">
+                  </div>
+                  <div>
+                    <label class="block text-[9.5px] text-slate-500 font-bold uppercase mb-1">Food Interaction</label>
+                    <input type="text" id="med-food-interaction" placeholder="e.g. No interactions found" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white focus:border-indigo-500 text-[11px]">
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2">
+                  <div>
+                    <label class="block text-[9px] text-slate-500 font-bold uppercase mb-1">MRP (₹)</label>
+                    <input type="number" id="med-mrp" placeholder="e.g. 100" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white focus:border-indigo-500 text-[11px]">
+                  </div>
+                  <div>
+                    <label class="block text-[9px] text-slate-500 font-bold uppercase mb-1">GST Rate (%)</label>
+                    <input type="number" id="med-gst-rate" placeholder="e.g. 12" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white focus:border-indigo-500 text-[11px]">
+                  </div>
+                  <div>
+                    <label class="block text-[9px] text-slate-500 font-bold uppercase mb-1">HSN Code</label>
+                    <input type="text" id="med-hsn-code" placeholder="e.g. 3004" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white focus:border-indigo-500 text-[11px]">
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-[9.5px] text-slate-500 font-bold uppercase mb-1">Medicine Tags</label>
+                    <input type="text" id="med-tags" placeholder="e.g. fever, pain" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white focus:border-indigo-500 text-[11px]">
+                  </div>
+                  <div>
+                    <label class="block text-[9.5px] text-slate-500 font-bold uppercase mb-1">Search Keywords</label>
+                    <input type="text" id="med-keywords" placeholder="e.g. calpol, crocin" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white focus:border-indigo-500 text-[11px]">
+                  </div>
+                </div>
+
+                <div class="space-y-1.5">
+                  <label class="block text-[9.5px] text-slate-500 font-bold uppercase">SEO Meta Title</label>
+                  <input type="text" id="med-seo-title" placeholder="e.g. Buy Calpol 650mg Online" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white focus:border-indigo-500 text-[11px]">
+                </div>
+
+                <div class="space-y-1.5">
+                  <label class="block text-[9.5px] text-slate-500 font-bold uppercase">SEO Meta Description</label>
+                  <textarea id="med-seo-desc" rows="2" placeholder="e.g. Order Calpol 650mg Tablet online at best discounts." class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-[11px] outline-none focus:bg-white focus:border-indigo-500 resize-none"></textarea>
                 </div>
               </div>
             </div>
@@ -494,8 +621,16 @@
         <input type="hidden" id="edit-med-id">
 
         <div>
-          <label class="block text-[10px] text-slate-500 font-bold uppercase mb-1">Medicine Name</label>
-          <input type="text" id="edit-med-name" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-indigo-500">
+          <label class="block text-[10px] text-slate-500 font-bold uppercase mb-1 flex items-center justify-between">
+            <span>Medicine Name</span>
+            <span id="edit-ai-status" class="text-[9px] text-indigo-650 font-bold hidden animate-pulse"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI working...</span>
+          </label>
+          <div class="flex gap-2">
+            <input type="text" id="edit-med-name" required class="flex-1 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-indigo-500">
+            <button type="button" id="btn-edit-ai-autofill" class="px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-xl border border-indigo-200 cursor-pointer flex items-center gap-1.5 transition-all text-[11px] font-bold" title="AI Auto-fill Empty Fields">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> AI Auto-fill
+            </button>
+          </div>
         </div>
 
         <div class="grid grid-cols-2 gap-3">
@@ -614,6 +749,125 @@
           <div class="space-y-1.5">
             <label class="block text-[9px] text-slate-500 font-bold uppercase">Storage Instructions</label>
             <input type="text" id="edit-med-storage" class="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-indigo-500 text-slate-800">
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[9px] text-slate-500 font-bold uppercase mb-1">Composition</label>
+              <textarea id="edit-med-composition" rows="2" placeholder="e.g. Paracetamol 650 mg" class="w-full p-2 bg-white border border-slate-200 rounded-lg text-slate-800 outline-none focus:border-indigo-500 resize-none"></textarea>
+            </div>
+            <div>
+              <label class="block text-[9px] text-slate-500 font-bold uppercase mb-1">Strength</label>
+              <input type="text" id="edit-med-strength" placeholder="e.g. 650 mg" class="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-indigo-500 text-slate-800">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[9px] text-slate-500 font-bold uppercase mb-1">Dosage Form</label>
+              <input type="text" id="edit-med-dosage-form" placeholder="e.g. Tablet, Capsule, Syrup" class="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-indigo-500 text-slate-800">
+            </div>
+            <div>
+              <label class="block text-[9px] text-slate-500 font-bold uppercase mb-1">Prescription Required</label>
+              <select id="edit-med-prescription-req" class="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-indigo-500 text-slate-800 text-[11px]">
+                <option value="No">No</option>
+                <option value="Yes">Yes</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="block text-[9px] text-slate-500 font-bold uppercase">Directions for Use</label>
+            <textarea id="edit-med-directions" rows="2" placeholder="e.g. Swallow the tablet as a whole with water." class="w-full p-2 bg-white border border-slate-200 rounded-lg text-slate-800 outline-none focus:border-indigo-500 resize-none"></textarea>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="block text-[9px] text-slate-500 font-bold uppercase">Dosage Instructions</label>
+            <textarea id="edit-med-dosage-inst" rows="2" placeholder="e.g. 1 tablet daily or as advised by the physician." class="w-full p-2 bg-white border border-slate-200 rounded-lg text-slate-800 outline-none focus:border-indigo-500 resize-none"></textarea>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="block text-[9px] text-slate-500 font-bold uppercase">Safety Advice</label>
+            <textarea id="edit-med-safety-advice" rows="2" placeholder="e.g. Keep out of reach of children. Avoid alcohol while taking." class="w-full p-2 bg-white border border-slate-200 rounded-lg text-slate-800 outline-none focus:border-indigo-500 resize-none"></textarea>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="block text-[9px] text-slate-500 font-bold uppercase">Drug Interactions</label>
+            <textarea id="edit-med-drug-interactions" rows="2" placeholder="e.g. Warfarin, ketoconazole..." class="w-full p-2 bg-white border border-slate-200 rounded-lg text-slate-800 outline-none focus:border-indigo-500 resize-none"></textarea>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="block text-[9px] text-slate-500 font-bold uppercase">Contraindications</label>
+            <textarea id="edit-med-contraindications" rows="2" placeholder="e.g. Known hypersensitivity, liver damage..." class="w-full p-2 bg-white border border-slate-200 rounded-lg text-slate-800 outline-none focus:border-indigo-500 resize-none"></textarea>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[9px] text-slate-500 font-bold uppercase mb-1">Age Group</label>
+              <input type="text" id="edit-med-age-group" placeholder="e.g. Adults" class="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-indigo-500 text-slate-800">
+            </div>
+            <div>
+              <label class="block text-[9px] text-slate-500 font-bold uppercase mb-1">Pregnancy Safety</label>
+              <input type="text" id="edit-med-pregnancy-safety" placeholder="e.g. Safe if prescribed" class="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-indigo-500 text-slate-800">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[9px] text-slate-500 font-bold uppercase mb-1">Breastfeeding Safety</label>
+              <input type="text" id="edit-med-breastfeeding-safety" placeholder="e.g. Safe if prescribed" class="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-indigo-500 text-slate-800">
+            </div>
+            <div>
+              <label class="block text-[9px] text-slate-500 font-bold uppercase mb-1">Driving Safety</label>
+              <input type="text" id="edit-med-driving-safety" placeholder="e.g. Safe, does not cause sleepiness" class="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-indigo-500 text-slate-800">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[9px] text-slate-500 font-bold uppercase mb-1">Alcohol Warning</label>
+              <input type="text" id="edit-med-alcohol-warning" placeholder="e.g. Avoid alcohol" class="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-indigo-500 text-slate-800">
+            </div>
+            <div>
+              <label class="block text-[9px] text-slate-500 font-bold uppercase mb-1">Food Interaction</label>
+              <input type="text" id="edit-med-food-interaction" placeholder="e.g. No interactions found" class="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-indigo-500 text-slate-800">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <label class="block text-[9px] text-slate-500 font-bold uppercase mb-1">MRP (₹)</label>
+              <input type="number" id="edit-med-mrp" placeholder="e.g. 100" class="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-indigo-500 text-slate-800">
+            </div>
+            <div>
+              <label class="block text-[9px] text-slate-500 font-bold uppercase mb-1">GST Rate (%)</label>
+              <input type="number" id="edit-med-gst-rate" placeholder="e.g. 12" class="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-indigo-500 text-slate-800">
+            </div>
+            <div>
+              <label class="block text-[9px] text-slate-500 font-bold uppercase mb-1">HSN Code</label>
+              <input type="text" id="edit-med-hsn-code" placeholder="e.g. 3004" class="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-indigo-500 text-slate-800">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[9px] text-slate-500 font-bold uppercase mb-1">Medicine Tags</label>
+              <input type="text" id="edit-med-tags" placeholder="e.g. fever, pain" class="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-indigo-500 text-slate-800">
+            </div>
+            <div>
+              <label class="block text-[9px] text-slate-500 font-bold uppercase mb-1">Search Keywords</label>
+              <input type="text" id="edit-med-keywords" placeholder="e.g. calpol, crocin" class="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-indigo-500 text-slate-800">
+            </div>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="block text-[9px] text-slate-500 font-bold uppercase">SEO Meta Title</label>
+            <input type="text" id="edit-med-seo-title" placeholder="e.g. Buy Calpol 650mg Online" class="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-indigo-500 text-slate-800">
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="block text-[9px] text-slate-500 font-bold uppercase">SEO Meta Description</label>
+            <textarea id="edit-med-seo-desc" rows="2" placeholder="e.g. Order Calpol 650mg Tablet online at best discounts." class="w-full p-2 bg-white border border-slate-200 rounded-lg text-slate-800 outline-none focus:border-indigo-500 resize-none"></textarea>
           </div>
         </div>
 

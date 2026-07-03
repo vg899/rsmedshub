@@ -1,7 +1,7 @@
 import express from "express";
 import path from "path";
 import dotenv from "dotenv";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import { createServer as createViteServer } from "vite";
 
 dotenv.config();
@@ -122,6 +122,94 @@ app.post("/api/ai-assistant", async (req, res) => {
     console.error("AI Assistant Endpoint Error:", err);
     res.status(500).json({
       error: err.message || "An internal error occurred during compounding.",
+    });
+  }
+});
+
+// 3. API: AI Medicine Auto-Fill System
+app.post("/api/medicine-autofill", async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name) {
+      res.status(400).json({ error: "Missing medicine name query." });
+      return;
+    }
+
+    const ai = getAiClient();
+
+    const systemInstruction = `
+      You are "Apothecary Auto-fill Intelligence", a highly precise clinical medicine database search and extraction assistant.
+      Given a medicine name, your goal is to extract and populate detailed specifications, composition, warnings, and usage details from verified clinical knowledge (e.g., Apollo, 1mg, WebMD style).
+
+      CRITICAL RULE FOR CONFIDENCE:
+      If you are NOT confident about a specific value or if the information is unavailable/unverified for this medicine, leave the field blank ("") or use null. Do NOT guess or hallucinate.
+
+      Return a JSON object conforming exactly to the requested schema. Map the "category" to one of these exact values: "Fever & Cold", "Prescription", "Allergies", "Wellness & Vitamins" (if it fits, otherwise leave blank or choose the closest fit).
+    `;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: `Extract detailed clinical specifications for the medicine: "${name}"`,
+      config: {
+        systemInstruction: systemInstruction,
+        temperature: 0.1, // low temperature for high precision
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            genericName: { type: Type.STRING, description: "Generic/salt name of the medicine (e.g. Paracetamol IP, Ibuprofen)" },
+            brand: { type: Type.STRING, description: "Common or brand name of the medicine (e.g. Crocin, Calpol)" },
+            composition: { type: Type.STRING, description: "Active ingredients and composition details (e.g. Paracetamol 650mg, Zincovit multi-ingredients)" },
+            strength: { type: Type.STRING, description: "Strength of the medicine (e.g., 650 mg, 500 mg, 10 ml)" },
+            dosageForm: { type: Type.STRING, description: "Form of dosage (e.g., Tablet, Capsule, Syrup, Injection, Cream, Drops, etc.)" },
+            packSize: { type: Type.STRING, description: "Standard pack size package (e.g., 10 Tablets in a Strip)" },
+            manufacturer: { type: Type.STRING, description: "Manufacturer or marketer of the drug" },
+            category: { type: Type.STRING, description: "Must be one of: 'Fever & Cold', 'Prescription', 'Allergies', 'Wellness & Vitamins'. Choose the best match." },
+            prescriptionRequired: { type: Type.STRING, description: "Is a prescription required? Must be either 'Yes' or 'No'." },
+            description: { type: Type.STRING, description: "A brief, clear overview description of the medicine" },
+            uses: { type: Type.STRING, description: "Uses and indications of the medicine" },
+            benefits: { type: Type.STRING, description: "Detailed benefits / action mechanisms" },
+            directionsForUse: { type: Type.STRING, description: "Standard directions for use" },
+            dosageInstructions: { type: Type.STRING, description: "Standard dosage instructions" },
+            sideEffects: { type: Type.STRING, description: "Common side effects" },
+            warnings: { type: Type.STRING, description: "Warnings and safety precautions" },
+            safetyAdvice: { type: Type.STRING, description: "Safety advice for general use" },
+            storage: { type: Type.STRING, description: "Storage instructions" },
+            drugInteractions: { type: Type.STRING, description: "Known drug interactions" },
+            contraindications: { type: Type.STRING, description: "Known contraindications" },
+            ageGroup: { type: Type.STRING, description: "Recommended age group (e.g., Adults, Children, Senior Citizens)" },
+            pregnancySafety: { type: Type.STRING, description: "Pregnancy safety advisory" },
+            breastfeedingSafety: { type: Type.STRING, description: "Breastfeeding safety advisory" },
+            drivingSafety: { type: Type.STRING, description: "Driving safety advisory" },
+            alcoholWarning: { type: Type.STRING, description: "Alcohol warning or interaction" },
+            foodInteraction: { type: Type.STRING, description: "Food interaction or warnings" },
+            mrp: { type: Type.NUMBER, description: "Maximum Retail Price (MRP) in Rupees, if standard/known. Else leave null." },
+            gstRate: { type: Type.NUMBER, description: "GST rate percentage if configured or known (e.g., 5, 12, 18). Else leave null." },
+            hsnCode: { type: Type.STRING, description: "HSN code of the medicine if standard/known. Else leave null." },
+            medicineTags: { type: Type.STRING, description: "Comma-separated search tags (e.g., painkiller, fever, paracetamol)" },
+            searchKeywords: { type: Type.STRING, description: "Comma-separated search keywords" },
+            seoMetaTitle: { type: Type.STRING, description: "SEO optimized meta title" },
+            seoMetaDescription: { type: Type.STRING, description: "SEO optimized meta description" }
+          },
+          required: [
+            "genericName", "brand", "composition", "strength", "dosageForm", "packSize", 
+            "manufacturer", "category", "prescriptionRequired", "description", "uses", 
+            "benefits", "directionsForUse", "dosageInstructions", "sideEffects", "warnings", 
+            "safetyAdvice", "storage", "drugInteractions", "contraindications", "ageGroup", 
+            "pregnancySafety", "breastfeedingSafety", "drivingSafety", "alcoholWarning", 
+            "foodInteraction", "mrp", "gstRate", "hsnCode", "medicineTags", "searchKeywords", 
+            "seoMetaTitle", "seoMetaDescription"
+          ]
+        }
+      }
+    });
+
+    const data = JSON.parse(response.text || "{}");
+    res.json(data);
+  } catch (err: any) {
+    console.error("AI Medicine Auto-Fill Error:", err);
+    res.status(500).json({
+      error: err.message || "An internal error occurred during auto-filling.",
     });
   }
 });
