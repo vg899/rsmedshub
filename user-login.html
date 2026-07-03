@@ -134,6 +134,53 @@
     </div>
   </div>
 
+  <!-- FORGOT PASSWORD MODAL -->
+  <div id="forgot-password-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-all duration-300">
+    <div class="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-md overflow-hidden transform scale-95 opacity-0 transition-all duration-300" id="forgot-modal-content">
+      <!-- Modal Header -->
+      <div class="px-6 pt-6 pb-4 flex items-center justify-between border-b border-slate-100">
+        <h3 class="text-lg font-extrabold text-slate-900 flex items-center gap-2 font-sans">
+          <i class="fa-solid fa-key text-teal-500"></i> Recover Password
+        </h3>
+        <button id="btn-close-forgot-modal" type="button" class="w-8 h-8 rounded-full bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition-colors cursor-pointer border-none">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      
+      <!-- Modal Body -->
+      <form id="form-forgot-password" class="p-6 space-y-4 font-sans">
+        <p class="text-xs text-slate-500 leading-relaxed">
+          Enter your registered email address below. We will send you a secure link to reset your account password.
+        </p>
+        
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Email Address</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+              <i class="fa-regular fa-envelope"></i>
+            </span>
+            <input type="email" id="forgot-email" required placeholder="name@example.com" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all">
+          </div>
+          <!-- Error message under input -->
+          <div id="forgot-error-msg" class="hidden mt-2.5 p-3 rounded-xl bg-rose-50 border border-rose-100 text-xs text-rose-600 font-semibold flex items-start gap-2">
+            <i class="fa-solid fa-circle-exclamation mt-0.5"></i>
+            <span id="forgot-error-text"></span>
+          </div>
+          <!-- Success message -->
+          <div id="forgot-success-msg" class="hidden mt-2.5 p-3 rounded-xl bg-emerald-50 border border-emerald-100 text-xs text-emerald-700 font-semibold flex items-start gap-2">
+            <i class="fa-solid fa-circle-check mt-0.5"></i>
+            <span>Password reset link sent! Check your email inbox.</span>
+          </div>
+        </div>
+
+        <button type="submit" id="btn-submit-forgot" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-md shadow-teal-100 flex items-center justify-center gap-2 cursor-pointer hover:-translate-y-0.5 border-none">
+          <span id="btn-submit-forgot-text">Send Recovery Link</span>
+          <i id="btn-submit-forgot-icon" class="fa-solid fa-paper-plane"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
   <script type="module" src="/src/user-login.ts"></script>
 </body>
 </html>

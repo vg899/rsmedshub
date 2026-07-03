@@ -262,21 +262,156 @@ formLogin.addEventListener("submit", async (e) => {
   }
 });
 
-// Forgot Password action
+// Forgot Password modal controls and actions
+const forgotModal = document.getElementById("forgot-password-modal") as HTMLDivElement;
+const forgotModalContent = document.getElementById("forgot-modal-content") as HTMLDivElement;
+const btnCloseForgotModal = document.getElementById("btn-close-forgot-modal") as HTMLButtonElement;
+const formForgotPassword = document.getElementById("form-forgot-password") as HTMLFormElement;
+const forgotEmailInp = document.getElementById("forgot-email") as HTMLInputElement;
+const forgotErrorMsg = document.getElementById("forgot-error-msg") as HTMLDivElement;
+const forgotErrorText = document.getElementById("forgot-error-text") as HTMLSpanElement;
+const forgotSuccessMsg = document.getElementById("forgot-success-msg") as HTMLDivElement;
+const btnSubmitForgot = document.getElementById("btn-submit-forgot") as HTMLButtonElement;
+const btnSubmitForgotText = document.getElementById("btn-submit-forgot-text") as HTMLSpanElement;
+const btnSubmitForgotIcon = document.getElementById("btn-submit-forgot-icon") as HTMLElement;
+
+function openForgotModal() {
+  const loginEmailInp = document.getElementById("login-email") as HTMLInputElement;
+  if (loginEmailInp && forgotEmailInp) {
+    forgotEmailInp.value = loginEmailInp.value.trim();
+  }
+
+  // Reset modal state
+  if (forgotErrorMsg) forgotErrorMsg.classList.add("hidden");
+  if (forgotSuccessMsg) forgotSuccessMsg.classList.add("hidden");
+  if (forgotEmailInp) forgotEmailInp.disabled = false;
+  
+  if (btnSubmitForgot) {
+    btnSubmitForgot.disabled = false;
+    if (btnSubmitForgotText) btnSubmitForgotText.innerText = "Send Recovery Link";
+    if (btnSubmitForgotIcon) {
+      btnSubmitForgotIcon.className = "fa-solid fa-paper-plane";
+    }
+  }
+
+  // Show modal container
+  if (forgotModal) {
+    forgotModal.classList.remove("hidden");
+    // Animate content scale and opacity
+    setTimeout(() => {
+      if (forgotModalContent) {
+        forgotModalContent.classList.remove("scale-95", "opacity-0");
+        forgotModalContent.classList.add("scale-100", "opacity-100");
+      }
+    }, 10);
+  }
+}
+
+function closeForgotModal() {
+  if (forgotModalContent) {
+    forgotModalContent.classList.remove("scale-100", "opacity-100");
+    forgotModalContent.classList.add("scale-95", "opacity-0");
+  }
+  setTimeout(() => {
+    if (forgotModal) {
+      forgotModal.classList.add("hidden");
+    }
+  }, 300);
+}
+
 if (btnForgot) {
-  btnForgot.addEventListener("click", async () => {
-    const emailInput = document.getElementById("login-email") as HTMLInputElement;
-    const email = emailInput.value.trim();
-    if (!email) {
-      showToast("Please enter your email in the email field first.", "info");
-      emailInput.focus();
+  btnForgot.addEventListener("click", openForgotModal);
+}
+
+if (btnCloseForgotModal) {
+  btnCloseForgotModal.addEventListener("click", closeForgotModal);
+}
+
+// Close on backdrop click
+if (forgotModal) {
+  forgotModal.addEventListener("click", (e) => {
+    if (e.target === forgotModal) {
+      closeForgotModal();
+    }
+  });
+}
+
+// Handle submit forgot password recovery link
+if (formForgotPassword) {
+  formForgotPassword.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!forgotEmailInp || !btnSubmitForgot) return;
+
+    const email = forgotEmailInp.value.trim();
+
+    // Reset error & success alerts
+    if (forgotErrorMsg) forgotErrorMsg.classList.add("hidden");
+    if (forgotSuccessMsg) forgotSuccessMsg.classList.add("hidden");
+
+    // Email pattern validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      if (forgotErrorMsg && forgotErrorText) {
+        forgotErrorText.innerText = "Please enter a valid email address (e.g. name@example.com).";
+        forgotErrorMsg.classList.remove("hidden");
+      }
       return;
     }
+
+    // Set loading state (prevent double submit)
+    btnSubmitForgot.disabled = true;
+    forgotEmailInp.disabled = true;
+    if (btnSubmitForgotText) btnSubmitForgotText.innerText = "Sending Link...";
+    if (btnSubmitForgotIcon) {
+      btnSubmitForgotIcon.className = "fa-solid fa-circle-notch fa-spin";
+    }
+
     try {
       await sendPasswordResetEmail(auth, email);
-      showToast(`Password reset link sent to ${email}!`, "success");
+      
+      // Success state
+      showToast("Recovery link dispatched successfully!", "success");
+      if (forgotSuccessMsg) forgotSuccessMsg.classList.remove("hidden");
+      
+      // Clear input
+      forgotEmailInp.value = "";
+
+      // Auto close after brief reading time
+      setTimeout(() => {
+        closeForgotModal();
+      }, 3000);
+
     } catch (err: any) {
-      showToast(err.message || "Failed to send reset email.", "error");
+      console.error("Forgot password reset error:", err);
+      let errMsg = "An unexpected error occurred. Please try again.";
+
+      // Human-readable specific error messages
+      if (err.code === "auth/invalid-email") {
+        errMsg = "The email address is formatted incorrectly.";
+      } else if (err.code === "auth/user-not-found") {
+        errMsg = "This email address is not registered in our system.";
+      } else if (err.code === "auth/network-request-failed") {
+        errMsg = "A network error occurred. Please check your internet connection.";
+      } else if (err.code === "auth/too-many-requests") {
+        errMsg = "Too many requests. Please wait a moment and try again.";
+      } else if (err.message) {
+        errMsg = err.message;
+      }
+
+      // Show custom error block
+      if (forgotErrorMsg && forgotErrorText) {
+        forgotErrorText.innerText = errMsg;
+        forgotErrorMsg.classList.remove("hidden");
+      }
+      showToast(errMsg, "error");
+
+      // Reset button state to try again
+      btnSubmitForgot.disabled = false;
+      forgotEmailInp.disabled = false;
+      if (btnSubmitForgotText) btnSubmitForgotText.innerText = "Send Recovery Link";
+      if (btnSubmitForgotIcon) {
+        btnSubmitForgotIcon.className = "fa-solid fa-paper-plane";
+      }
     }
   });
 }
