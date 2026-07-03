@@ -181,112 +181,10 @@
 
     <!-- MAIN DASHBOARD CONTENT SCROLLABLE SLEEVE -->
     <section id="user-main-scroll" class="flex-1 overflow-y-auto px-4 py-4 space-y-5 pb-24 custom-scrollbar">
-      
-      <!-- TOP DYNAMIC GREETING & LOYALTY STATUS HUD -->
-      <div class="bg-gradient-to-br from-slate-900 to-indigo-950 p-4 rounded-3xl text-white border border-slate-800 shadow-lg space-y-3 animate-fade-in font-sans">
-        <div class="flex justify-between items-start">
-          <div class="space-y-0.5">
-            <span class="text-[9px] uppercase tracking-widest text-indigo-300 font-extrabold" id="home-greeting-prefix">Welcome Back</span>
-            <h1 class="text-base font-black text-white" id="home-greeting-username">Patient User</h1>
-          </div>
-          <div class="text-right">
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/10 text-white border border-white/15 rounded-full text-[9px] font-black uppercase tracking-wider cursor-pointer hover:bg-white/20 transition-all select-none" onclick="document.getElementById('btn-opt-coupons').click()">
-              <i class="fa-solid fa-crown text-amber-400"></i>
-              <span id="tier-pill-display">Silver Care</span>
-            </span>
-          </div>
-        </div>
-        
-        <div class="bg-white/5 border border-white/10 p-2.5 rounded-2xl flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <div class="w-8 h-8 rounded-lg bg-indigo-505 bg-indigo-500/10 flex items-center justify-center text-amber-400 shrink-0 select-none">
-              <i class="fa-solid fa-coins animate-bounce"></i>
-            </div>
-            <div>
-              <p class="text-[9px] text-indigo-200 font-bold leading-none">DawaDo Coins Balance</p>
-              <h4 class="text-xs font-black text-white mt-1" id="home-coins-display">250 Coins</h4>
-            </div>
-          </div>
-          <span class="text-[8.5px] bg-indigo-500 hover:bg-indigo-600 text-white font-extrabold px-3 py-1 rounded-lg uppercase tracking-wider cursor-pointer" onclick="document.getElementById('btn-opt-coupons').click()">Redeem</span>
-        </div>
-      </div>
-
-      <!-- RED SOS EMERGENCY PATIENT HELP BUTTON -->
-      <div class="bg-rose-50 border border-rose-100 p-3 rounded-2xl flex items-center justify-between gap-3 shadow-3xs animate-fade-in font-sans">
-        <div class="flex items-center gap-2.5">
-          <div class="w-9 h-9 bg-rose-500 text-white rounded-full flex items-center justify-center animate-pulse text-sm shrink-0">
-            <i class="fa-solid fa-truck-medical"></i>
-          </div>
-          <div class="leading-tight">
-            <h4 class="text-xs font-black text-rose-950 uppercase tracking-wide">Emergency clinical SOS</h4>
-            <p class="text-[9.5px] text-slate-500 mt-0.5">Instant triage: 24/7 pharmacist lines & ambulance links</p>
-          </div>
-        </div>
-        <button id="btn-home-sos-trigger" class="bg-rose-600 hover:bg-rose-700 hover:scale-103 active:scale-97 text-white font-extrabold text-[9px] px-3.5 py-1.5 rounded-xl uppercase tracking-wider transition-all cursor-pointer shadow-sm shadow-rose-300">SOS Trigger</button>
-      </div>
-
-      <!-- 6-CELL HEALTHCARE & RETENTION BENTO GRID -->
-      <div class="grid grid-cols-3 gap-2.5 font-sans">
-        
-        <div class="bg-violet-50 hover:bg-violet-100 border border-violet-100 p-3 rounded-2xl text-center flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all hover:scale-103 active:scale-97" onclick="document.getElementById('btn-opt-ai-assistant').click()">
-          <span class="w-8 h-8 rounded-full bg-violet-600 text-white flex items-center justify-center text-xs shadow-xs"><i class="fa-solid fa-brain"></i></span>
-          <span class="text-[9px] font-black text-violet-950 uppercase tracking-tight leading-tight">AI assistant</span>
-        </div>
-
-        <div class="bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 p-3 rounded-2xl text-center flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all hover:scale-103 active:scale-97" onclick="document.getElementById('btn-opt-prescription-vault').click()">
-          <span class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs shadow-xs"><i class="fa-solid fa-file-prescription"></i></span>
-          <span class="text-[9px] font-black text-emerald-950 uppercase tracking-tight leading-tight">Rx Vault</span>
-        </div>
-
-        <div class="bg-amber-50 hover:bg-amber-100 border border-amber-100 p-3 rounded-2xl text-center flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all hover:scale-103 active:scale-97" onclick="document.getElementById('btn-opt-refill-reminders').click()">
-          <span class="w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs shadow-xs"><i class="fa-solid fa-clock-rotate-left"></i></span>
-          <span class="text-[9px] font-black text-amber-950 uppercase tracking-tight leading-tight">Refill Alarms</span>
-        </div>
-
-        <div class="bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 p-3 rounded-2xl text-center flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all hover:scale-103 active:scale-97" onclick="document.getElementById('btn-opt-family-profiles').click()">
-          <span class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs shadow-xs"><i class="fa-solid fa-people-roof"></i></span>
-          <span class="text-[9px] font-black text-indigo-950 uppercase tracking-tight leading-tight">Fam Profiles</span>
-        </div>
-
-        <div class="bg-cyan-50 hover:bg-cyan-100 border border-cyan-100 p-3 rounded-2xl text-center flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all hover:scale-103 active:scale-97" onclick="document.getElementById('btn-opt-health-records').click()">
-          <span class="w-8 h-8 rounded-full bg-cyan-600 text-white flex items-center justify-center text-xs shadow-xs"><i class="fa-solid fa-folder-open"></i></span>
-          <span class="text-[9px] font-black text-cyan-950 uppercase tracking-tight leading-tight">Health Hub</span>
-        </div>
-
-        <div class="bg-rose-50 hover:bg-rose-100 border border-rose-100 p-3 rounded-2xl text-center flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all hover:scale-103 active:scale-97" onclick="document.getElementById('btn-opt-subscriptions').click()">
-          <span class="w-8 h-8 rounded-full bg-rose-600 text-white flex items-center justify-center text-xs shadow-xs"><i class="fa-solid fa-rotate animate-pulse"></i></span>
-          <span class="text-[9px] font-black text-rose-950 uppercase tracking-tight leading-tight">Refill Cycles</span>
-        </div>
-
-      </div>
-
-      <!-- DAWADO HEALTHCARE TRUST GUARANTEES (Mimics status strips in Tata 1mg & Apollo) -->
-      <div class="grid grid-cols-4 gap-2 bg-white p-3.5 rounded-2xl border border-slate-100 shadow-3xs text-center font-sans">
-        <div class="flex flex-col items-center justify-center">
-          <span class="w-8.5 h-8.5 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs shadow-3xs mb-1.5"><i class="fa-solid fa-truck-fast"></i></span>
-          <span class="text-[7.5px] font-black text-slate-700 uppercase tracking-tight leading-none">Express</span>
-          <span class="text-[6.5px] text-slate-400 font-bold leading-none mt-1">15-30 Mins</span>
-        </div>
-        <div class="flex flex-col items-center justify-center">
-          <span class="w-8.5 h-8.5 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs shadow-3xs mb-1.5"><i class="fa-solid fa-shield-halved"></i></span>
-          <span class="text-[7.5px] font-black text-slate-700 uppercase tracking-tight leading-none">100% Genuine</span>
-          <span class="text-[6.5px] text-slate-400 font-bold leading-none mt-1">WHO Standards</span>
-        </div>
-        <div class="flex flex-col items-center justify-center">
-          <span class="w-8.5 h-8.5 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center text-xs shadow-3xs mb-1.5"><i class="fa-solid fa-lock"></i></span>
-          <span class="text-[7.5px] font-black text-slate-700 uppercase tracking-tight leading-none">Secure Pay</span>
-          <span class="text-[6.5px] text-slate-400 font-bold leading-none mt-1">PCI Compliant</span>
-        </div>
-        <div class="flex flex-col items-center justify-center">
-          <span class="w-8.5 h-8.5 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center text-xs shadow-3xs mb-1.5"><i class="fa-solid fa-user-nurse"></i></span>
-          <span class="text-[7.5px] font-black text-slate-700 uppercase tracking-tight leading-none">Registered Rx</span>
-          <span class="text-[6.5px] text-slate-400 font-bold leading-none mt-1">24x7 Consult</span>
-        </div>
-      </div>
 
       <!-- SERVICE UNAVAILABLE VIEW -->
-      <div id="service-unavailable-view" class="hidden flex flex-col items-center justify-center text-center p-6 py-10 bg-white border border-rose-100 rounded-3xl shadow-sm space-y-4 animate-fade-in">
-        <div class="w-16 h-16 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center border border-rose-105 shadow-xs relative border border-rose-100">
+      <div id="service-unavailable-view" class="hidden flex flex-col items-center justify-center text-center p-6 py-10 bg-white border border-rose-100 rounded-3xl shadow-xs space-y-4 animate-fade-in">
+        <div class="w-16 h-16 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center border border-rose-100 relative shadow-3xs">
           <i class="fa-solid fa-map-location-dot text-2xl"></i>
           <span class="absolute -top-1 -right-1 w-5 h-5 bg-rose-600 text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-white">!</span>
         </div>
@@ -298,8 +196,8 @@
           <i class="fa-solid fa-location-arrow"></i> Change Delivery Location
         </button>
       </div>
-      
-      <!-- AD BANNER SLIDER (Pristine layout with heartbeat/pill graphic) -->
+
+      <!-- SECTION 1: AUTO-SLIDING HERO BANNER -->
       <div class="relative rounded-2xl overflow-hidden shadow-xs h-36 bg-gradient-to-r from-blue-50 to-blue-100 flex items-center border border-blue-50" id="banner-section">
         <div class="p-5 pr-2 z-10 max-w-[65%] space-y-1">
           <span class="bg-blue-600 text-white text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider font-display">DISCOUNT!</span>
@@ -331,92 +229,153 @@
         </div>
       </div>
 
-      <!-- LOCAL AI SMART SUGGESTION PHARMACY TIPS -->
-      <div id="user-smart-ai-offer" class="p-3.5 bg-violet-50 rounded-2xl border border-violet-100 flex items-start gap-3 shadow-xs">
-        <div class="p-2 bg-violet-100 text-violet-600 rounded-xl flex items-center justify-center shrink-0">
-          <i class="fa-solid fa-brain text-sm animate-pulse"></i>
-        </div>
-        <div class="flex-1">
-          <h4 class="text-xs font-extrabold text-violet-900">AI Personal Healthcare Offer</h4>
-          <p class="text-[10px] text-violet-750 text-violet-700 leading-relaxed font-semibold mt-0.5" id="ai-smart-tip-text">Recommend Cetirizine 10mg allergy pills if you feel local standard cold signs this season!</p>
-          <span class="text-[8px] font-black text-violet-400 uppercase tracking-wide mt-1 inline-block">Dawado SmartCare Insight</span>
-        </div>
-      </div>
-
-      <!-- BRANDED HORIZONTAL CATEGORY SLIDER (Swiggy Instamart / Blinkit / Zepto Style) -->
-      <div class="space-y-2 pb-1 bg-white p-3 rounded-2xl border border-slate-100 shadow-3xs">
-        <div class="flex justify-between items-center">
-          <h4 class="text-[11px] font-black text-slate-800 uppercase tracking-widest flex items-center gap-1 font-display">
-            <span class="w-1.5 h-3 bg-blue-600 rounded-full"></span> Quick Swipe segments
-          </h4>
-          <span class="text-[8px] text-slate-400 font-extrabold uppercase tracking-widest flex items-center gap-1 animate-pulse">
-            Swipe <i class="fa-solid fa-arrow-right"></i>
-          </span>
-        </div>
-        <div id="category-horizontal-slider" class="flex gap-2.5 overflow-x-auto py-1 custom-scrollbar select-none scroll-smooth">
-          <!-- Live Categories track items populate here -->
-          <div class="py-4 text-center text-[9px] font-bold text-slate-400 w-full">Populating active sliders...</div>
-        </div>
-      </div>
-
-      <!-- FEATURED CATEGORIES SECTION (Apollo style bento/grid layout) -->
-      <div class="space-y-2">
-        <h4 class="text-[11px] font-black text-slate-800 uppercase tracking-widest flex items-center gap-1.5 font-display">
-          <span class="w-1.5 h-3.5 bg-amber-500 rounded-full"></span> Featured segments
+      <!-- SECTION 2: FIVE CIRCULAR QUICK-ACCESS CATEGORIES -->
+      <div class="bg-white p-3.5 rounded-2xl border border-slate-100 shadow-3xs">
+        <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 pl-1 font-display">
+          Search By Category
         </h4>
-        <div class="grid grid-cols-2 gap-2" id="categories-featured-grid">
-          <!-- Dynamically populated featured categories cards -->
-          <div class="col-span-2 py-4 text-center text-[10px] font-bold text-slate-400">Loading featured collections...</div>
+        <div class="grid grid-cols-5 gap-1.5" id="quick-categories-container">
+          <!-- Circular button 1: Cardiac -->
+          <button class="quick-cat-btn shrink-0 flex flex-col items-center justify-center text-center cursor-pointer focus:outline-none transition-all hover:scale-105 bg-transparent border-none" data-category="Cardiac">
+            <div class="w-12 h-12 md:w-13 md:h-13 rounded-full overflow-hidden flex items-center justify-center bg-rose-50 border border-rose-100 p-2 text-rose-500 shadow-3xs">
+              <i class="fa-solid fa-heart-pulse text-lg"></i>
+            </div>
+            <span class="text-[8px] font-black text-slate-700 leading-tight mt-2 max-w-[64px] truncate uppercase font-sans">Cardiac</span>
+          </button>
+          <!-- Circular button 2: Diabetes -->
+          <button class="quick-cat-btn shrink-0 flex flex-col items-center justify-center text-center cursor-pointer focus:outline-none transition-all hover:scale-105 bg-transparent border-none" data-category="Diabetes">
+            <div class="w-12 h-12 md:w-13 md:h-13 rounded-full overflow-hidden flex items-center justify-center bg-blue-50 border border-blue-100 p-2 text-blue-500 shadow-3xs">
+              <i class="fa-solid fa-droplet text-lg"></i>
+            </div>
+            <span class="text-[8px] font-black text-slate-700 leading-tight mt-2 max-w-[64px] truncate uppercase font-sans">Diabetes</span>
+          </button>
+          <!-- Circular button 3: Pain Relief -->
+          <button class="quick-cat-btn shrink-0 flex flex-col items-center justify-center text-center cursor-pointer focus:outline-none transition-all hover:scale-105 bg-transparent border-none" data-category="Pain Relief">
+            <div class="w-12 h-12 md:w-13 md:h-13 rounded-full overflow-hidden flex items-center justify-center bg-purple-50 border border-purple-100 p-2 text-purple-500 shadow-3xs">
+              <i class="fa-solid fa-bolt text-lg"></i>
+            </div>
+            <span class="text-[8px] font-black text-slate-700 leading-tight mt-2 max-w-[64px] truncate uppercase font-sans">Pain Relief</span>
+          </button>
+          <!-- Circular button 4: Vitamins -->
+          <button class="quick-cat-btn shrink-0 flex flex-col items-center justify-center text-center cursor-pointer focus:outline-none transition-all hover:scale-105 bg-transparent border-none" data-category="Vitamins">
+            <div class="w-12 h-12 md:w-13 md:h-13 rounded-full overflow-hidden flex items-center justify-center bg-teal-50 border border-teal-100 p-2 text-teal-500 shadow-3xs">
+              <i class="fa-solid fa-capsules text-lg"></i>
+            </div>
+            <span class="text-[8px] font-black text-slate-700 leading-tight mt-2 max-w-[64px] truncate uppercase font-sans">Vitamins</span>
+          </button>
+          <!-- Circular button 5: Allergy -->
+          <button class="quick-cat-btn shrink-0 flex flex-col items-center justify-center text-center cursor-pointer focus:outline-none transition-all hover:scale-105 bg-transparent border-none" data-category="Allergy">
+            <div class="w-12 h-12 md:w-13 md:h-13 rounded-full overflow-hidden flex items-center justify-center bg-amber-50 border border-amber-100 p-2 text-amber-500 shadow-3xs">
+              <i class="fa-solid fa-prescription-bottle-medical text-lg"></i>
+            </div>
+            <span class="text-[8px] font-black text-slate-700 leading-tight mt-2 max-w-[64px] truncate uppercase font-sans">Allergy</span>
+          </button>
         </div>
       </div>
 
-      <!-- TRENDING CATEGORIES SECTION (Express pill / badge style) -->
-      <div class="space-y-2">
-        <div class="flex justify-between items-center">
-          <h4 class="text-[11px] font-black text-slate-800 uppercase tracking-widest flex items-center gap-1.5 font-display">
-            <span class="w-1.5 h-3.5 bg-rose-500 rounded-full"></span> Trending categories
-          </h4>
-          <span class="text-[8px] font-black bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded uppercase animate-bounce">On Fire</span>
-        </div>
-        <div id="category-trending-slider" class="flex gap-2 overflow-x-auto py-1 custom-scrollbar select-none scroll-smooth">
-          <!-- Swipeable high-contrast trending cards populate dynamically -->
-          <div class="py-3 text-center text-[10px] font-bold text-slate-450 w-full text-slate-400">Loading trending tags...</div>
+      <!-- SECTION 3: PROMOTIONAL OFFER BANNER -->
+      <div class="relative overflow-hidden rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-600 text-white p-4.5 shadow-sm border border-orange-400/20">
+        <div class="absolute -right-8 -top-8 w-28 h-28 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+        <div class="relative z-10 space-y-1">
+          <span class="bg-white/20 text-white text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider">FIRST ORDER PROMO</span>
+          <h3 class="text-sm font-black uppercase tracking-tight leading-tight">Get flat 20% OFF on your first purchase!</h3>
+          <p class="text-[10px] opacity-90 font-medium">Enjoy rapid sterile delivery with cold-chain storage assurance.</p>
+          <div class="flex items-center gap-2 pt-2">
+            <span class="bg-black/20 text-[9px] font-mono font-bold tracking-widest px-2.5 py-1 rounded-lg border border-white/10 uppercase">Code: DAWADO20</span>
+            <button class="bg-white hover:bg-orange-50 text-orange-700 font-extrabold text-[8.5px] px-3.5 py-1.5 rounded-full uppercase tracking-wider shadow-sm transition-all border-none cursor-pointer" onclick="showToast('Promo code DAWADO20 copied to cart!', 'success')">Copy Code</button>
+          </div>
         </div>
       </div>
 
-      <!-- MEDICINE CARDS GRID (Sleek cards layout) -->
+      <!-- SECTION 4: "TOP PICKS FOR YOU" HORIZONTAL MEDICINE CARDS -->
       <div class="space-y-3">
         <div class="flex justify-between items-center">
           <h4 class="text-xs font-black text-slate-900 uppercase tracking-widest flex items-center gap-1.5 font-display">
-            <span class="w-1.5 h-3.5 bg-blue-600 rounded-full"></span> Medicine Cards
+            <span class="w-1.5 h-3.5 bg-blue-600 rounded-full"></span> Top Picks For You
           </h4>
           <span class="text-[9px] bg-blue-50 text-blue-600 font-extrabold px-2 py-0.5 rounded shadow-xs" id="user-meds-cnt">0 Items</span>
         </div>
         
-        <div class="grid grid-cols-2 gap-3" id="user-medicines-grid">
-          <!-- Dynamically populated card items -->
-          <div class="col-span-2 text-center py-8 text-slate-400">
+        <div id="user-medicines-grid" class="flex gap-3.5 overflow-x-auto pb-4 pt-1 custom-scrollbar scroll-smooth select-none">
+          <!-- Dynamically populated horizontal medicine card items -->
+          <div class="text-center py-8 text-slate-400 w-full flex flex-col items-center justify-center">
             <i class="fa-solid fa-circle-notch fa-spin text-2xl text-blue-500 mb-2"></i>
             <p class="text-xs font-semibold">Synchronizing central apothecary...</p>
           </div>
         </div>
       </div>
 
-      <!-- NEARBY PHARMACY STORES (Horizontal cards) -->
-      <div class="space-y-3">
-        <div class="flex items-center justify-between">
-          <h4 class="text-xs font-black text-slate-900 uppercase tracking-widest flex items-center gap-1.5 font-display">
-            <span class="w-1.5 h-3.5 bg-blue-600 rounded-full"></span> Nearby Stores
-          </h4>
-          <span class="text-[9px] text-slate-400 font-bold" id="user-store-cnt">0 Available</span>
+      <!-- SECTION 5: FOUR TRUST FEATURE CARDS -->
+      <div class="grid grid-cols-2 gap-3">
+        <!-- Trust Card 1: Quick Delivery -->
+        <div class="bg-white border border-slate-100 p-3.5 rounded-2xl shadow-3xs flex flex-col justify-between text-left space-y-1.5 hover:border-blue-100 transition-all">
+          <span class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs shadow-3xs"><i class="fa-solid fa-truck-fast"></i></span>
+          <div>
+            <h5 class="text-[10px] font-black text-slate-800 uppercase tracking-wide leading-tight">Quick Delivery</h5>
+            <p class="text-[8.5px] text-slate-400 font-bold leading-tight mt-0.5">15-30 mins express dispatch</p>
+          </div>
         </div>
-        <div class="flex gap-3 overflow-x-auto custom-scrollbar scroll-smooth py-1" id="user-store-slider">
-          <!-- Dynamic Stores selection landscape cards -->
+        <!-- Trust Card 2: Genuine Medicines -->
+        <div class="bg-white border border-slate-100 p-3.5 rounded-2xl shadow-3xs flex flex-col justify-between text-left space-y-1.5 hover:border-emerald-100 transition-all">
+          <span class="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs shadow-3xs"><i class="fa-solid fa-shield-halved"></i></span>
+          <div>
+            <h5 class="text-[10px] font-black text-slate-800 uppercase tracking-wide leading-tight">Genuine Medicines</h5>
+            <p class="text-[8.5px] text-slate-400 font-bold leading-tight mt-0.5">WHO certified standards</p>
+          </div>
+        </div>
+        <!-- Trust Card 3: Secure Payments -->
+        <div class="bg-white border border-slate-100 p-3.5 rounded-2xl shadow-3xs flex flex-col justify-between text-left space-y-1.5 hover:border-amber-100 transition-all">
+          <span class="w-8 h-8 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center text-xs shadow-3xs"><i class="fa-solid fa-lock"></i></span>
+          <div>
+            <h5 class="text-[10px] font-black text-slate-800 uppercase tracking-wide leading-tight">Secure Payments</h5>
+            <p class="text-[8.5px] text-slate-400 font-bold leading-tight mt-0.5">PCI-compliant secure gateway</p>
+          </div>
+        </div>
+        <!-- Trust Card 4: 24x7 Support -->
+        <div class="bg-white border border-slate-100 p-3.5 rounded-2xl shadow-3xs flex flex-col justify-between text-left space-y-1.5 hover:border-rose-100 transition-all">
+          <span class="w-8 h-8 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center text-xs shadow-3xs"><i class="fa-solid fa-user-nurse"></i></span>
+          <div>
+            <h5 class="text-[10px] font-black text-slate-800 uppercase tracking-wide leading-tight">24x7 Support</h5>
+            <p class="text-[8.5px] text-slate-400 font-bold leading-tight mt-0.5">Consult expert registered Rx</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 6: UPLOAD PRESCRIPTION PROMOTIONAL BANNER -->
+      <div class="relative overflow-hidden rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-700 text-white p-4.5 shadow-sm border border-emerald-500/20 cursor-pointer hover:shadow-md transition-all" onclick="document.getElementById('btn-opt-prescription-vault').click()">
+        <div class="absolute -right-10 -bottom-10 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+        <div class="flex items-center justify-between gap-4">
+          <div class="space-y-1 flex-1">
+            <span class="bg-white/20 text-white text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider">Fast Verification</span>
+            <h3 class="text-sm font-black uppercase tracking-tight leading-tight">Upload Prescription Slips</h3>
+            <p class="text-[9.5px] opacity-90 font-medium">Verify slips in 5 minutes with our certified clinical pharmacists.</p>
+          </div>
+          <div class="w-14 h-14 bg-white/15 backdrop-blur-md rounded-xl flex items-center justify-center text-emerald-100 shrink-0 border border-white/10 shadow-inner">
+            <i class="fa-solid fa-file-prescription text-3xl"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- HIDDEN CORE DATA CONTAINER (To satisfy DOM references in JS cleanly and prevent errors) -->
+      <div class="hidden" aria-hidden="true">
+        <!-- Stores container -->
+        <div id="user-store-cnt">0 Available</div>
+        <div id="user-store-slider">
           <div class="w-48 bg-white border border-slate-100 p-3.5 rounded-2xl shadow-xs shrink-0 flex items-center gap-2">
             <i class="fa-solid fa-location-crosshairs fa-spin text-blue-500"></i>
             <span class="text-xs font-semibold text-slate-400">Locating coordinates...</span>
           </div>
         </div>
+        <!-- Greeting & Loyalty HUD -->
+        <span id="home-greeting-prefix">Welcome Back</span>
+        <span id="home-greeting-username">Patient User</span>
+        <span id="tier-pill-display">Silver Care</span>
+        <span id="home-coins-display">250 Coins</span>
+        <!-- Tips suggestion tipText -->
+        <span id="ai-smart-tip-text">Recommend Cetirizine 10mg allergy pills if you feel local standard cold signs this season!</span>
+        <div id="user-smart-ai-offer">AI Personal Healthcare Offer</div>
+        <!-- SOS trigger button reference -->
+        <button id="btn-home-sos-trigger">SOS Trigger</button>
       </div>
 
     </section>
@@ -1100,7 +1059,7 @@
       </div>
     </div>
 
-    <!-- FLOATING BOTTOM NAVIGATION BAR (Mimicking screenshot - HOME, SEARCH, CART, ORDERS, PROFILE) -->
+    <!-- FLOATING BOTTOM NAVIGATION BAR (Mimicking screenshot - HOME, ORDERS, CATEGORIES, OFFERS, ACCOUNT) -->
     <nav class="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 shadow-lg px-4 py-2 flex items-center justify-between z-20 shrink-0 select-none">
       
       <!-- ITEM 1: HOME (Active by default) -->
@@ -1109,32 +1068,28 @@
         <span>HOME</span>
       </button>
 
-      <!-- ITEM 2: SEARCH -->
-      <button id="navitem-search" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 text-[9px] font-bold flex-1 focus:outline-none transition-all cursor-pointer">
-        <i class="fa-solid fa-magnifying-glass text-base"></i>
-        <span>SEARCH</span>
-      </button>
-
-      <!-- ITEM 3: CART/BASKET (with 3-count badge style overlay matching screenshot) -->
-      <button id="navitem-cart" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 text-[9px] font-bold flex-1 focus:outline-none relative transition-all cursor-pointer">
-        <div class="relative">
-          <i class="fa-solid fa-cart-shopping text-base"></i>
-          <!-- Badge counter -->
-          <span id="badge-cart-cnt" class="absolute -top-1.5 -right-3 animate-bounce bg-blue-600 text-white text-[8px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center border-2 border-white hidden">0</span>
-        </div>
-        <span>CART</span>
-      </button>
-
-      <!-- ITEM 4: ORDERS HISTORY -->
+      <!-- ITEM 2: ORDERS -->
       <button id="navitem-orders" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 text-[9px] font-bold flex-1 focus:outline-none transition-all cursor-pointer">
-        <i class="fa-solid fa-receipt text-base"></i>
+        <i class="fa-solid fa-bag-shopping text-base"></i>
         <span>ORDERS</span>
       </button>
 
-      <!-- ITEM 5: PROFILE LOGOUT CONTROL widget -->
-      <button id="navitem-profile" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-650 hover:text-slate-600 text-[9px] font-bold flex-1 focus:outline-none transition-all cursor-pointer">
-        <i class="fa-solid fa-user-circle text-base"></i>
-        <span>PROFILE</span>
+      <!-- ITEM 3: CATEGORIES -->
+      <button id="navitem-categories" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 text-[9px] font-bold flex-1 focus:outline-none transition-all cursor-pointer">
+        <i class="fa-solid fa-grip text-base"></i>
+        <span>CATEGORIES</span>
+      </button>
+
+      <!-- ITEM 4: OFFERS -->
+      <button id="navitem-offers" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 text-[9px] font-bold flex-1 focus:outline-none transition-all cursor-pointer">
+        <i class="fa-solid fa-tags text-base"></i>
+        <span>OFFERS</span>
+      </button>
+
+      <!-- ITEM 5: ACCOUNT -->
+      <button id="navitem-account" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 text-[9px] font-bold flex-1 focus:outline-none transition-all cursor-pointer">
+        <i class="fa-solid fa-circle-user text-base"></i>
+        <span>ACCOUNT</span>
       </button>
     </nav>
 

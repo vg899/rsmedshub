@@ -39,10 +39,10 @@ const userProfileSection = document.getElementById("user-profile-view") as HTMLE
 const checkoutDrawer = document.getElementById("checkout-drawer") as HTMLDivElement;
 
 const navHome = document.getElementById("navitem-home") as HTMLButtonElement;
-const navSearch = document.getElementById("navitem-search") as HTMLButtonElement;
-const navCart = document.getElementById("navitem-cart") as HTMLButtonElement;
 const navOrders = document.getElementById("navitem-orders") as HTMLButtonElement;
-const navProfile = document.getElementById("navitem-profile") as HTMLButtonElement;
+const navCategories = document.getElementById("navitem-categories") as HTMLButtonElement;
+const navOffers = document.getElementById("navitem-offers") as HTMLButtonElement;
+const navAccount = document.getElementById("navitem-account") as HTMLButtonElement;
 
 // Suggestions block
 const addrSuggestions = document.getElementById("address-suggestions") as HTMLDivElement;
@@ -364,30 +364,26 @@ async function bootstrapGeoLocation() {
 navHome.addEventListener("click", () => {
   toggleSections("home");
 });
-navSearch.addEventListener("click", () => {
-  toggleSections("home");
-  const searchBar = document.getElementById("search-medicine-input") as HTMLInputElement;
-  if (searchBar) {
-    searchBar.focus();
-    searchBar.scrollIntoView({ behavior: "smooth", block: "center" });
-    // Flash visually to highlight search bar
-    searchBar.classList.add("ring-2", "ring-blue-400");
-    setTimeout(() => {
-      searchBar.classList.remove("ring-2", "ring-blue-400");
-    }, 1500);
-  }
-  navHome.className = "flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 text-[9px] font-bold flex-1 focus:outline-none transition-all cursor-pointer";
-  navSearch.className = "flex flex-col items-center gap-1 text-blue-600 text-[9px] font-black flex-1 focus:outline-none transition-all cursor-pointer";
-});
-navCart.addEventListener("click", () => {
-  checkoutDrawer.classList.remove("hidden");
-  renderCartDrawer();
-});
 navOrders.addEventListener("click", () => {
   toggleSections("orders");
   syncOrdersHistory();
 });
-navProfile.addEventListener("click", () => {
+navCategories.addEventListener("click", () => {
+  toggleSections("home");
+  const quickCategories = document.getElementById("quick-categories-container");
+  if (quickCategories) {
+    quickCategories.scrollIntoView({ behavior: "smooth", block: "center" });
+    // Flash visually to highlight the categories section
+    quickCategories.classList.add("ring-2", "ring-blue-400");
+    setTimeout(() => {
+      quickCategories.classList.remove("ring-2", "ring-blue-400");
+    }, 1500);
+  }
+});
+navOffers.addEventListener("click", () => {
+  document.getElementById("btn-opt-coupons")?.click();
+});
+navAccount.addEventListener("click", () => {
   toggleSections("profile");
   syncUserProfileDash();
 });
@@ -402,24 +398,27 @@ function toggleSections(view: "home" | "orders" | "profile") {
     userProfileSection?.classList.add("hidden");
     navHome.className = activeClass;
     navOrders.className = inactiveClass;
-    navSearch.className = inactiveClass;
-    navProfile.className = inactiveClass;
+    navCategories.className = inactiveClass;
+    navOffers.className = inactiveClass;
+    navAccount.className = inactiveClass;
   } else if (view === "orders") {
     userOrdersSection.classList.remove("hidden");
     userScrollSection.classList.add("hidden");
     userProfileSection?.classList.add("hidden");
     navOrders.className = activeClass;
     navHome.className = inactiveClass;
-    navSearch.className = inactiveClass;
-    navProfile.className = inactiveClass;
+    navCategories.className = inactiveClass;
+    navOffers.className = inactiveClass;
+    navAccount.className = inactiveClass;
   } else if (view === "profile") {
     userProfileSection?.classList.remove("hidden");
     userScrollSection.classList.add("hidden");
     userOrdersSection.classList.add("hidden");
-    navProfile.className = activeClass;
+    navAccount.className = activeClass;
     navHome.className = inactiveClass;
     navOrders.className = inactiveClass;
-    navSearch.className = inactiveClass;
+    navCategories.className = inactiveClass;
+    navOffers.className = inactiveClass;
   }
 }
 
@@ -1006,7 +1005,7 @@ function renderDynamicCategoriesList(categories: any[]) {
   }
 
   // Register interactive click handlers for Category clicks across all sections!
-  document.querySelectorAll(".category-slider-btn, .category-grid-card").forEach((btn) => {
+  document.querySelectorAll(".category-slider-btn, .category-grid-card, .quick-cat-btn").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       const target = e.currentTarget as HTMLElement;
       const catName = target.getAttribute("data-category");
@@ -1584,7 +1583,7 @@ function renderMedicinesGrid() {
 
   if (filtered.length === 0) {
     container.innerHTML = `
-      <div class="col-span-2 text-center py-12 text-slate-400 font-semibold text-xs animate-fade-in">
+      <div class="text-center py-12 text-slate-400 font-semibold text-xs animate-fade-in w-full">
         <i class="fa-solid fa-box-open text-2xl mb-2 text-slate-300"></i>
         <p>No medicines match your segment filters.</p>
       </div>
@@ -1602,7 +1601,7 @@ function renderMedicinesGrid() {
     const originalPrice = Math.round(m.price / (1 - discount / 100));
 
     return `
-      <div class="bg-white rounded-2xl overflow-hidden border border-slate-100/80 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-emerald-100 transition-all duration-300 relative group">
+      <div class="bg-white rounded-2xl overflow-hidden border border-slate-100/80 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-emerald-100 transition-all duration-300 relative group shrink-0 w-[155px]">
         <!-- Discount Badging -->
         <span class="absolute top-2.5 left-2.5 bg-rose-500 text-white text-[7.5px] font-black px-2 py-0.5 rounded-full shadow-3xs z-10 uppercase tracking-widest leading-none">${discount}% OFF</span>
         
@@ -5305,6 +5304,17 @@ onAuthStateChanged(auth, (user) => {
     setTimeout(() => {
       upgradeHomeDynamicHUD();
       initDiagnosticGreetingsAndVoiceSearch();
+      
+      // Ensure quick category buttons are registered
+      document.querySelectorAll(".quick-cat-btn").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          const target = e.currentTarget as HTMLElement;
+          const catName = target.getAttribute("data-category");
+          if (catName) {
+            openCategoryStorefront(catName);
+          }
+        });
+      });
     }, 1200);
   }
 });
