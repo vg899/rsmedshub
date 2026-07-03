@@ -4590,6 +4590,89 @@ function initPlatformSettings() {
       lastUserActivityTime = Date.now();
     });
   });
+
+  // =================================== User Panel Branding Settings Logic ===================================
+  const brandAppNameInp = document.getElementById("brand-app-name") as HTMLInputElement;
+  const brandTaglineInp = document.getElementById("brand-tagline") as HTMLInputElement;
+  const brandLogoUrlInp = document.getElementById("brand-logo-url") as HTMLInputElement;
+  const brandLogoFileInp = document.getElementById("brand-logo-file") as HTMLInputElement;
+  const brandForm = document.getElementById("form-branding-settings") as HTMLFormElement;
+
+  const previewAppName = document.getElementById("preview-app-name");
+  const previewTagline = document.getElementById("preview-tagline");
+  const previewLogoWrapper = document.getElementById("preview-logo-wrapper");
+  const previewLogoImg = document.getElementById("preview-logo-img") as HTMLImageElement;
+
+  const updateLiveBrandingPreview = () => {
+    const appName = brandAppNameInp?.value || "DawaDo";
+    const tagline = brandTaglineInp?.value || "Your Medicine Partner";
+    const logoUrl = brandLogoUrlInp?.value || "";
+
+    if (previewAppName) previewAppName.innerText = appName;
+    if (previewTagline) previewTagline.innerText = tagline;
+
+    if (logoUrl) {
+      if (previewLogoImg) previewLogoImg.src = logoUrl;
+      previewLogoWrapper?.classList.remove("hidden");
+    } else {
+      previewLogoWrapper?.classList.add("hidden");
+    }
+  };
+
+  if (brandAppNameInp) brandAppNameInp.addEventListener("input", updateLiveBrandingPreview);
+  if (brandTaglineInp) brandTaglineInp.addEventListener("input", updateLiveBrandingPreview);
+  if (brandLogoUrlInp) brandLogoUrlInp.addEventListener("input", updateLiveBrandingPreview);
+
+  // Load existing branding settings
+  onValue(ref(db, "settings/branding"), (snapshot) => {
+    if (snapshot.exists()) {
+      const b = snapshot.val();
+      if (brandAppNameInp) brandAppNameInp.value = b.appName || "DawaDo";
+      if (brandTaglineInp) brandTaglineInp.value = b.tagline || "Your Medicine Partner";
+      if (brandLogoUrlInp) brandLogoUrlInp.value = b.logoUrl || "";
+      updateLiveBrandingPreview();
+    }
+  });
+
+  // Handle logo file upload
+  if (brandLogoFileInp) {
+    brandLogoFileInp.addEventListener("change", async (e: any) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      showToast("Uploading User Panel logo asset...", "info");
+      try {
+        const url = await uploadToCloudinary(file);
+        if (brandLogoUrlInp) {
+          brandLogoUrlInp.value = url;
+          updateLiveBrandingPreview();
+        }
+        showToast("User Panel logo uploaded!", "success");
+      } catch (err) {
+        showToast("User Panel logo upload failed", "error");
+      }
+    });
+  }
+
+  // Handle branding form submission
+  if (brandForm) {
+    brandForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const appName = brandAppNameInp.value.trim() || "DawaDo";
+      const tagline = brandTaglineInp.value.trim() || "Your Medicine Partner";
+      const logoUrl = brandLogoUrlInp.value.trim();
+
+      set(ref(db, "settings/branding"), {
+        appName,
+        tagline,
+        logoUrl
+      }).then(() => {
+        showToast("Branding settings saved successfully!", "success");
+      }).catch((err) => {
+        console.error("Save branding error:", err);
+        showToast("Failed to save branding settings", "error");
+      });
+    });
+  }
 }
 
 // =================================== Realtime Logistics Dispatch Tracker Center ===================================

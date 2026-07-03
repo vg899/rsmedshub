@@ -5,8 +5,62 @@ import {
   sendPasswordResetEmail,
   signOut,
 } from "firebase/auth";
-import { ref, set, get } from "firebase/database";
+import { ref, set, get, onValue } from "firebase/database";
 import { showToast } from "./utils";
+
+// Dynamic Branding Loader
+function initDynamicBranding() {
+  const brandLogoContainer = document.getElementById("brand-logo-container");
+  const brandLogoImg = document.getElementById("brand-logo-img") as HTMLImageElement;
+  const appNameHeading = document.getElementById("app-name-heading");
+  const appTaglineText = document.getElementById("app-tagline-text");
+
+  onValue(ref(db, "settings/branding"), (snapshot) => {
+    if (snapshot.exists()) {
+      const data = snapshot.val();
+      const appName = data.appName || "DawaDo";
+      const tagline = data.tagline || "Your Medicine Partner";
+      const logoUrl = data.logoUrl || "";
+
+      // Update App Name
+      if (appNameHeading) {
+        appNameHeading.innerText = appName;
+      }
+      // Update Tagline
+      if (appTaglineText) {
+        appTaglineText.innerText = tagline;
+      }
+      // Update Logo
+      if (logoUrl) {
+        if (brandLogoImg) brandLogoImg.src = logoUrl;
+        if (brandLogoContainer) {
+          brandLogoContainer.classList.remove("hidden");
+          brandLogoContainer.classList.add("flex");
+        }
+      } else {
+        if (brandLogoContainer) {
+          brandLogoContainer.classList.add("hidden");
+          brandLogoContainer.classList.remove("flex");
+        }
+      }
+      
+      // Update page title dynamically
+      document.title = `${appName} - Customer Login & Register`;
+    } else {
+      // Defaults if not set yet
+      if (appNameHeading) appNameHeading.innerText = "DawaDo";
+      if (appTaglineText) appTaglineText.innerText = "Your Medicine Partner";
+      if (brandLogoContainer) {
+        brandLogoContainer.classList.add("hidden");
+        brandLogoContainer.classList.remove("flex");
+      }
+      document.title = "DawaDo - Customer Login & Register";
+    }
+  });
+}
+
+// Call dynamic branding
+initDynamicBranding();
 
 // HTML Elements
 const tabLogin = document.getElementById("tab-login") as HTMLButtonElement;
