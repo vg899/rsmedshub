@@ -402,7 +402,7 @@ function switchTabPanel(tabName: string) {
 
       const isCurrent = bTab === tabName;
       if (isCurrent) {
-        btn.className = "flex flex-col items-center justify-center gap-1 text-indigo-600 font-black transition-all font-display group cursor-pointer w-12 text-center scale-102";
+        btn.className = "flex flex-col items-center justify-center gap-1 text-blue-600 font-black transition-all font-display group cursor-pointer w-12 text-center scale-102";
       } else {
         btn.className = "flex flex-col items-center justify-center gap-1 text-slate-400 font-medium transition-all font-display group cursor-pointer w-12 text-center opacity-70 hover:opacity-100 hover:scale-102";
       }
