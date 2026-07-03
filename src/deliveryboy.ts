@@ -57,7 +57,7 @@ const tabFrames: { [key: string]: HTMLElement | null } = {
 onAuthStateChanged(auth, (user) => {
   if (!user) {
     showToast("Session expired. Log in to Rider Terminal.", "error");
-    window.location.href = "/delivery-login.html";
+    window.location.href = "/deliveryboy-login.html";
     return;
   }
 
@@ -143,7 +143,7 @@ function syncSecurityRoleGuard() {
     } else {
       showToast("Profile mismatch. Sign up again.", "error");
       signOut(auth).then(() => {
-        window.location.href = "/delivery-login.html";
+        window.location.href = "/deliveryboy-login.html";
       });
     }
   }).catch((err) => {
@@ -646,10 +646,10 @@ document.getElementById("btn-delivery-signout")?.addEventListener("click", async
     try {
       await update(ref(db, `deliveryboy1/${currentRiderId}`), { active: false });
       await signOut(auth);
-      window.location.href = "/delivery-login.html";
+      window.location.href = "/deliveryboy-login.html";
     } catch (err) {
       console.error(err);
-      window.location.href = "/delivery-login.html";
+      window.location.href = "/deliveryboy-login.html";
     }
   }
 });

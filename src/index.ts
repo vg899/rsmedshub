@@ -174,7 +174,7 @@ async function handleUserRedirect(uid: string) {
     } else if (userData.role === "store") {
       window.location.href = "/store.html";
     } else if (userData.role === "delivery" || userData.role === "deliveryboy1") {
-      window.location.href = "/delivery.html";
+      window.location.href = "/deliveryboy.html";
     }
   } catch (error) {
     console.error("Redirect check error:", error);

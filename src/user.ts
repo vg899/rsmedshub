@@ -69,7 +69,7 @@ onAuthStateChanged(auth, async (user) => {
         } else if (uData.role === "store") {
           targetUrl = "/store.html";
         } else if (uData.role === "delivery" || uData.role === "deliveryboy1") {
-          targetUrl = "/delivery.html";
+          targetUrl = "/deliveryboy.html";
         }
 
         // Show beautiful, full-screen Access Denied overlay and auto-redirect

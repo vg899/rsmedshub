@@ -155,7 +155,7 @@ async function handleUserRedirect(uid: string) {
     }
 
     showToast(`Welcome back to the Fleet, ${userData.name}!`, "success");
-    window.location.href = "/delivery.html";
+    window.location.href = "/deliveryboy.html";
   } catch (error) {
     console.error("Redirect check error:", error);
     showToast("Error checking user system record", "error");

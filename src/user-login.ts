@@ -70,7 +70,7 @@ async function handleUserRedirect(uid: string) {
       } else if (userData.role === "store") {
         targetUrl = "/store.html";
       } else if (userData.role === "delivery" || userData.role === "deliveryboy1") {
-        targetUrl = "/delivery.html";
+        targetUrl = "/deliveryboy.html";
       }
 
       // Show Access Denied overlay
